@@ -1,0 +1,107 @@
+/* Full-screen game: no scrolling, no text selection, no browser zoom gestures. */
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #0058f8; /* NES ocean blue */
+  overscroll-behavior: none;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%; /* phones: don't auto-enlarge text when rotating */
+  text-size-adjust: 100%;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Buttons: no double-tap zoom delay, no text selection when tapped. */
+button {
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Pop-up screens always cover the corner buttons (sign, map, book, gear, sound). */
+.encounter,
+.book,
+.howto,
+.parent {
+  z-index: 10;
+}
+
+/* Panels that scroll (the book, the grown-ups area): scrolling stops at the
+   edge instead of dragging the whole page or triggering pull-to-refresh. */
+.book__body,
+.parent__box {
+  overscroll-behavior: contain;
+}
+
+#game {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+}
+
+/* UI layer sits above the canvas. Touches pass through it to the game.
+   (A future button would opt back in with `pointer-events: auto`.) */
+#ui {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* ---------- Biome sign (top-left): a pixel-art canvas, scaled up with crisp pixels ---------- */
+.biome-badge {
+  position: absolute;
+  top: calc(12px + env(safe-area-inset-top));
+  left: calc(12px + env(safe-area-inset-left));
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+.biome-badge.pop {
+  /* steps() = jumpy like an old console, instead of smooth */
+  animation: badge-pop 0.3s steps(3);
+}
+@keyframes badge-pop {
+  0% { transform: translateY(-12px); }
+  100% { transform: translateY(0); }
+}
+
+/* ---------- Shared NES-style box: black with a white border ---------- */
+.nes-box {
+  background: #000;
+  border: 4px solid #fcfcfc;
+  box-shadow: 0 0 0 4px #000;
+}
+
+/* ---------- Mute button (bottom-right) ---------- */
+.mute-button {
+  position: absolute;
+  right: calc(16px + env(safe-area-inset-right));
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  width: 72px;
+  height: 72px;
+  padding: 12px;
+  pointer-events: auto; /* the UI layer ignores touches; this button opts back in */
+  cursor: pointer;
+}
+.mute-button svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* ---------- World map (top-right): pixel canvas; JS sets a whole-number width ---------- */
+.world-map {
+  position: absolute;
+  top: calc(12px + env(safe-area-inset-top)); /* the top-right corner is all the map's now */
+  right: calc(12px + env(safe-area-inset-right));
+  height: auto;
+  image-rendering: pixelated;
+  pointer-events: none; /* touches go through to the game */
+}

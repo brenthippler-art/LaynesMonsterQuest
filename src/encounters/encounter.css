@@ -1,0 +1,212 @@
+/* ---------- Encounter screen: an NES-style box over the dimmed world ---------- */
+.encounter {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  box-sizing: border-box;
+  background: rgba(0, 0, 0, 0.55);
+  pointer-events: auto;
+  touch-action: none;
+  font-family: 'Courier New', ui-monospace, monospace;
+  font-weight: 700;
+  color: #fcfcfc;
+}
+.encounter[hidden] {
+  display: none;
+}
+
+.encounter__box {
+  width: min(100%, 460px);
+  max-height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.encounter__title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.encounter__title h2 {
+  margin: 0;
+  font-size: clamp(22px, 5vw, 30px);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.encounter__type svg {
+  display: block;
+}
+.rarity-rare .encounter__title h2 {
+  color: #f8b800;
+}
+
+/* The monster with the ring around it. Square, and as big as the screen allows. */
+.catch-stage {
+  position: relative;
+  width: min(72vw, 42vh, 320px);
+  aspect-ratio: 1;
+}
+.catch-monster {
+  position: absolute;
+  inset: 12%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.catch-monster svg {
+  width: 100%;
+  height: auto;
+}
+.catch-ring {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}
+.catch-ring[hidden] {
+  display: none;
+}
+
+.encounter__tries {
+  display: flex;
+  gap: 8px;
+  height: 36px;
+}
+.encounter__tries svg {
+  width: 36px;
+  height: 36px;
+}
+
+.encounter__message {
+  margin: 0;
+  min-height: 1.3em;
+  font-size: clamp(18px, 4.5vw, 24px);
+  color: #f8d878;
+}
+.encounter__ability {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 400;
+  color: #bcbcbc;
+}
+.encounter__ability b {
+  color: #fcfcfc;
+}
+
+.encounter__buttons {
+  display: flex;
+  gap: 16px;
+}
+.nes-button {
+  min-width: 72px;
+  min-height: 72px;
+  padding: 12px;
+  background: #0058f8;
+  border: 4px solid #fcfcfc;
+  box-shadow: 0 0 0 4px #000, 0 6px 0 4px #000;
+  cursor: pointer;
+}
+.nes-button:active {
+  transform: translateY(4px);
+  box-shadow: 0 0 0 4px #000;
+}
+.nes-button svg {
+  width: 36px;
+  height: 36px;
+  display: block;
+}
+.nes-button[hidden] {
+  display: none;
+}
+.encounter__ok {
+  background: #00a800;
+}
+
+/* Short landscape screens (phones turned sideways): monster on the left, everything else on the right,
+   so the ring stays big and the buttons never get cut off. */
+@media (orientation: landscape) and (max-height: 540px) {
+  .encounter__box {
+    width: min(100%, 760px);
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-areas:
+      'stage title'
+      'stage tries'
+      'stage message'
+      'stage ability'
+      'stage buttons';
+    align-items: center;
+    column-gap: 16px;
+    row-gap: 4px;
+    padding: 10px 16px;
+  }
+  .catch-stage {
+    grid-area: stage;
+    width: min(calc(100vh - 64px), 320px);
+    width: min(calc(100dvh - 64px), 320px);
+  }
+  .encounter__title {
+    grid-area: title;
+    justify-content: center;
+  }
+  .encounter__tries {
+    grid-area: tries;
+    justify-self: center;
+  }
+  .encounter__message {
+    grid-area: message;
+  }
+  .encounter__ability {
+    grid-area: ability;
+  }
+  .encounter__buttons {
+    grid-area: buttons;
+    justify-content: center;
+  }
+}
+
+.encounter__confetti {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* ---------- Monster animations (steps() keeps them jumpy, like an old console) ---------- */
+.pop-in {
+  animation: pop-in 0.4s steps(4);
+}
+@keyframes pop-in {
+  from { transform: scale(0.2); }
+  to { transform: scale(1); }
+}
+.celebrate {
+  animation: celebrate 0.5s steps(2) infinite alternate;
+}
+@keyframes celebrate {
+  from { transform: translateY(0); }
+  to { transform: translateY(-8%); }
+}
+.hop-away {
+  animation: hop-away 1.6s steps(12) forwards;
+}
+@keyframes hop-away {
+  0% { transform: translate(0, 0); }
+  15% { transform: translate(10%, -15%); }
+  30% { transform: translate(20%, 0); }
+  45% { transform: translate(35%, -15%); }
+  60% { transform: translate(50%, 0); }
+  75% { transform: translate(70%, -15%); opacity: 1; }
+  100% { transform: translate(110%, 0); opacity: 0; }
+}

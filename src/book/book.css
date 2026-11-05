@@ -1,0 +1,262 @@
+/* ---------- Book button (bottom-left corner, lined up with the gear and sound buttons) ---------- */
+.book-button {
+  position: absolute;
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  left: calc(16px + env(safe-area-inset-left));
+  width: 72px;
+  height: 72px;
+  padding: 10px;
+  pointer-events: auto;
+  cursor: pointer;
+}
+.book-button svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* ---------- The book: a big NES box over the dimmed world ---------- */
+.book {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  box-sizing: border-box;
+  background: rgba(0, 0, 0, 0.6);
+  pointer-events: auto;
+  font-family: 'Courier New', ui-monospace, monospace;
+  font-weight: 700;
+  color: #fcfcfc;
+}
+.book[hidden] {
+  display: none;
+}
+.book__box {
+  width: min(100%, 900px);
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+}
+.book__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 16px 24px;
+  touch-action: pan-y; /* let fingers scroll the book */
+}
+
+.book__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: sticky;
+  top: -12px;
+  z-index: 1;
+  padding: 12px 0 8px;
+  background: #000;
+}
+.book__header h2 {
+  flex: 1;
+  margin: 0;
+  font-size: clamp(22px, 5vw, 32px);
+  text-transform: uppercase;
+}
+.rare-tag {
+  color: #f8b800;
+}
+
+/* Progress: star + bar + "12 / 108" */
+.book__progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 4px 0 8px;
+  font-size: 22px;
+}
+.book__progress svg {
+  width: 32px;
+  height: 32px;
+  flex: none;
+}
+.book__bar {
+  flex: 1;
+  height: 20px;
+  border: 3px solid #fcfcfc;
+  background: #000;
+}
+.book__bar div {
+  height: 100%;
+  background: repeating-linear-gradient(90deg, #f8b800 0 12px, #fca044 12px 16px);
+}
+
+/* Habitat sections */
+.book__habitat h3 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 20px 0 8px;
+  font-size: 22px;
+  text-transform: uppercase;
+}
+.book__habitat h3 small {
+  margin-left: auto;
+  color: #bcbcbc;
+  font-size: 18px;
+}
+.hab-icon {
+  display: inline-flex;
+  width: 32px;
+  height: 32px;
+  vertical-align: middle;
+}
+.hab-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Monster slots: big touch targets */
+.book__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 10px;
+}
+.slot {
+  min-height: 96px;
+  padding: 4px 4px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: 3px solid #fcfcfc;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.slot.known {
+  background: #3cbcfc;
+}
+.slot.unknown {
+  background: #7c7c7c;
+}
+.slot.rare {
+  border-color: #f8b800;
+}
+.slot__art {
+  width: 100%;
+  aspect-ratio: 42 / 35;
+  position: relative;
+}
+.slot__art svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.slot__name {
+  font-size: 12px;
+  color: #000;
+  text-transform: uppercase;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  white-space: nowrap;
+}
+.slot.unknown .slot__name {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+  color: #fcfcfc;
+  text-shadow: 3px 3px 0 #000;
+}
+.slot.unknown {
+  position: relative;
+}
+.wiggle {
+  animation: wiggle 0.4s steps(4);
+}
+@keyframes wiggle {
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+/* One monster's page */
+.page {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+  justify-content: center;
+}
+.page__art {
+  width: min(100%, 360px);
+  aspect-ratio: 84 / 70;
+  background: #3cbcfc;
+  border: 4px solid #fcfcfc;
+}
+.page__art svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.page__facts {
+  flex: 1 1 260px;
+  font-size: 18px;
+}
+.page__facts p {
+  margin: 10px 0;
+}
+.page__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px 4px 6px;
+  border: 3px solid #fcfcfc;
+}
+.page__found {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 22px;
+  color: #f8d878;
+}
+.page__found svg {
+  width: 28px;
+  height: 28px;
+}
+.page__fact {
+  font-style: italic;
+  color: #bcbcbc;
+}
+.page__date {
+  font-weight: 400;
+  color: #bcbcbc;
+}
+
+/* Big "Print Coloring Page" button */
+.book__print {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  font: inherit;
+  font-size: 18px;
+  color: #fcfcfc;
+  text-transform: uppercase;
+  background: #00a800;
+}
+.book__print svg {
+  width: 44px;
+  height: 44px;
+  flex: none;
+}
+.book__print:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}

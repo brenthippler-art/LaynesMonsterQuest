@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- DEV ONLY (served at /devices by `npm run dev`; not part of the build). Shows the game at tablet and phone sizes. -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; frame-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'none'; form-action 'none'"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Device sizes (dev)</title>
+    <style>
+      body { margin: 0; padding: 16px; background: #2b2b2b; color: #eee; font: 14px system-ui, sans-serif; }
+      .row { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; }
+      figure { margin: 0; }
+      .screen { overflow: hidden; border: 6px solid #111; border-radius: 14px; }
+      iframe { border: 0; transform-origin: 0 0; display: block; }
+    </style>
+  </head>
+  <body>
+    <p>Each frame is the real game at that device's size (scaled down to fit). <code>?nosave</code> keeps these copies from saving.</p>
+    <div class="row">
+      <figure>
+        <div class="screen" style="width: 345.6px; height: 460.8px"><iframe src="/?nosave" style="width: 768px; height: 1024px; transform: scale(0.45)" title="iPad portrait"></iframe></div>
+        <figcaption>iPad portrait 768×1024</figcaption>
+      </figure>
+      <figure>
+        <div class="screen" style="width: 460.8px; height: 345.6px"><iframe src="/?nosave" style="width: 1024px; height: 768px; transform: scale(0.45)" title="iPad landscape"></iframe></div>
+        <figcaption>iPad landscape 1024×768</figcaption>
+      </figure>
+      <figure>
+        <div class="screen" style="width: 234px; height: 506.4px"><iframe src="/?nosave" style="width: 390px; height: 844px; transform: scale(0.6)" title="Phone portrait"></iframe></div>
+        <figcaption>Phone portrait 390×844</figcaption>
+      </figure>
+      <figure>
+        <div class="screen" style="width: 506.4px; height: 234px"><iframe src="/?nosave" style="width: 844px; height: 390px; transform: scale(0.6)" title="Phone landscape"></iframe></div>
+        <figcaption>Phone landscape 844×390</figcaption>
+      </figure>
+    </div>
+  </body>
+</html>

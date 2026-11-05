@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- Same safety rules as the game. -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; connect-src 'none'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self'; frame-src 'none'; form-action 'none'"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="data:," />
+    <title>Monster Gallery (dev)</title>
+  </head>
+  <body>
+    <!-- DEV ONLY: served by `npm run dev` at /gallery. Not part of `npm run build`, not linked from the game. -->
+    <div id="gallery"></div>
+    <script type="module" src="/src/gallery/main.ts"></script>
+  </body>
+</html>
