@@ -70,7 +70,7 @@ folder and security headers).
 
 **Option A: from GitHub (easiest):**
 
-1. Put the project in a GitHub repository.
+1. Put the project in a GitHub repository (if the folder isn't a git repository yet: `git init`, `git add .`, `git commit -m "First version"`, then push it to a new GitHub repository).
 2. In the Vercel dashboard choose **Add New → Project** and pick the repository.
 3. Vercel detects Vite. Keep the defaults: build command `npm run build`, output directory `dist`.
 4. Press **Deploy**. Every push to the main branch deploys again automatically.
@@ -91,6 +91,10 @@ Open the game's address in the tablet's browser, then:
 
 It then opens full-screen like an app, and after the first visit it works
 **offline**: a small service worker keeps copies of the game's own files.
+
+**Known limitation:** on iPad/iPhone, printing coloring pages may not work from
+the Home Screen app (an iOS restriction). If nothing happens, open the game in
+Safari itself and print from there. The grown-ups area shows this tip on iOS.
 
 ---
 

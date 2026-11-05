@@ -147,7 +147,12 @@
   71%, 100% { opacity: 1; }
 }
 
-/* 3: tap when the ring is in the green → stars! */
+/* 3: tap when the ring is in the green → stars!
+   Black like the real catch screen: on grass, the green zone would be invisible. */
+.scene--catch {
+  background-color: #000;
+  background-image: none;
+}
 .scene--catch .scene__monster.big {
   left: 30%;
   bottom: 16%;

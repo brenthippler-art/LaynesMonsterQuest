@@ -136,7 +136,12 @@ function layneOnScreen(): Point {
 // ----- Finger / mouse: tap to walk there, hold or drag to steer -----
 let target: Point | null = null;
 const pointer = new PointerControls(canvas, (cssX, cssY) => {
-  const goal = nearestWalkable(world.current, tileUnder(cssX, cssY));
+  // Tapped a monster? It notices Layne and waits, and he walks right up to it.
+  const spot = camera.screenToWorld(cssX * camera.dpr, cssY * camera.dpr);
+  const tappedMonster = wild.monsterAt(spot.x, spot.y);
+  if (tappedMonster) wild.holdStill(tappedMonster);
+  const tapped = tappedMonster ? { x: Math.floor(tappedMonster.x), y: Math.floor(tappedMonster.y) } : tileUnder(cssX, cssY);
+  const goal = nearestWalkable(world.current, tapped);
   if (!goal) return;
   const path = findPath(world.current, { x: Math.floor(player.x), y: Math.floor(player.y) }, goal);
   if (!path) return;

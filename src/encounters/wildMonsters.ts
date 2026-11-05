@@ -16,7 +16,7 @@ const SPAWN_DIST = { min: 3.5, max: 7 }; // tiles from Layne: on screen, but not
 const DESPAWN_DIST = 12;
 const HOME_RADIUS = 3; // how far a monster wanders from where it appeared
 const SPEED = 1.3; // tiles per second
-const TOUCH_DIST = 0.75; // closer than this = Layne bumped into it
+const TOUCH_DIST = 0.9; // closer than this = Layne bumped into it (generous: side by side counts)
 const SPAWN_GRACE = 0.6; // seconds before a new monster can be bumped (it's still popping in)
 
 /** Rare monsters show up less often: out of every 15 picks, about 10 common, 4 uncommon, 1 rare. */
@@ -72,7 +72,7 @@ export class WildMonsters {
     if (this.spawnTimer <= 0) {
       if (this.list.length < MAX_NEARBY) this.trySpawn(map, px, py);
       // Fill up quickly to 2, then add the 3rd (and replacements) more slowly.
-      this.spawnTimer = this.list.length < 2 ? 1 : 2.5 + Math.random() * 2.5;
+      this.spawnTimer = this.list.length < 2 ? 0.5 : 2.5 + Math.random() * 2.5;
     }
 
     for (const w of this.list) {
@@ -85,6 +85,21 @@ export class WildMonsters {
 
   remove(w: WildMonster): void {
     this.list = this.list.filter((other) => other !== w);
+  }
+
+  /**
+   * The monster drawn at this world spot, if any. Monsters are drawn standing
+   * on their feet, so the body reaches about a tile above (x, y) = feet.
+   */
+  monsterAt(x: number, y: number): WildMonster | null {
+    return this.list.find((w) => w.sprite && Math.abs(x - w.x) < 0.75 && y > w.y - 1.3 && y < w.y + 0.4) ?? null;
+  }
+
+  /** "It noticed you!": stop wandering for a while, so Layne can walk right up to it. */
+  holdStill(w: WildMonster, seconds = 6): void {
+    w.target = { x: w.x, y: w.y };
+    w.moving = false;
+    w.wait = seconds;
   }
 
   private trySpawn(map: TileMap, px: number, py: number): void {
