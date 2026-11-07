@@ -1,4 +1,5 @@
 import { engine } from './engine';
+import { noise } from './instruments';
 import { noteFreq } from './notes';
 
 /**
@@ -63,6 +64,29 @@ class Sfx {
   hopAway(): void {
     this.tone(300, 0, 0.18, 'triangle', 0.2, 700);
     this.tone(350, 0.22, 0.18, 'triangle', 0.2, 900);
+  }
+
+  /** "Whoosh!": off to another world. Noise swept from low to high, like wind rushing past. */
+  whoosh(): void {
+    const ctx = engine.ctx;
+    if (!ctx || engine.muted) return;
+    const t0 = ctx.currentTime;
+    const dur = 0.4;
+    const src = ctx.createBufferSource();
+    src.buffer = noise(ctx);
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.Q.value = 3;
+    filter.frequency.setValueAtTime(250, t0);
+    filter.frequency.exponentialRampToValueAtTime(3500, t0 + dur);
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.exponentialRampToValueAtTime(0.5, t0 + dur * 0.4);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    src.connect(filter).connect(gain).connect(engine.sfxBus);
+    src.start(t0, Math.random() * 0.5);
+    src.stop(t0 + dur + 0.02);
+    this.tone(220, 0, dur, 'triangle', 0.12, 880); // a soft rising tone underneath
   }
 
   /** A soft click for buttons. */

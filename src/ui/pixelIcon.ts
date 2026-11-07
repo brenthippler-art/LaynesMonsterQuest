@@ -1,6 +1,6 @@
 import { SPRITE_COLORS } from '../render/decorArt';
 import { NES } from '../render/nesPalette';
-import { type RealmDef } from '../worlds/types';
+import { type RealmDef, type WorldDef } from '../worlds/types';
 
 /** Turn a pixel grid (like the realm icons) into a crisp SVG for HTML menus. */
 export function gridSvg(rows: readonly string[], colorOf: (ch: string) => string | undefined): string {
@@ -22,4 +22,14 @@ export const realmIconColor = (ch: string): string => (ch === 'f' ? NES.pink : c
 /** The pixel icon for a realm (the same picture as the corner sign). */
 export function realmIconSvg(realm: RealmDef): string {
   return gridSvg(realm.icon, realmIconColor);
+}
+
+/** A realm icon as one flat color (the "not finished yet" look in the world picker). */
+export function realmSilhouetteSvg(realm: RealmDef, color: string): string {
+  return gridSvg(realm.icon, () => color);
+}
+
+/** A world's little scene picture (world cards, book tabs). */
+export function worldSceneSvg(world: WorldDef): string {
+  return gridSvg(world.scene, realmIconColor);
 }

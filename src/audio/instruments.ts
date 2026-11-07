@@ -25,8 +25,8 @@ function pulseWave(ctx: AudioContext): PeriodicWave {
   return wave;
 }
 
-/** One second of random noise, reused for every drum hit. */
-function noise(ctx: AudioContext): AudioBuffer {
+/** One second of random noise, reused for every drum hit (and the "whoosh" sound effect). */
+export function noise(ctx: AudioContext): AudioBuffer {
   let buf = noiseBuffers.get(ctx);
   if (!buf) {
     buf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);

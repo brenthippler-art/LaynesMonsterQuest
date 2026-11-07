@@ -7,13 +7,16 @@ import { pixelsToSvg } from '../monsters/pixel/paint';
 import { typeIconSvg } from '../monsters/typeIcons';
 import { preparePrint, printColoringPages } from '../print/printer';
 import { type SaveData } from '../save/save';
-import { realmIconSvg } from '../ui/pixelIcon';
-import { realmOf } from '../worlds';
+import { realmIconSvg, worldSceneSvg } from '../ui/pixelIcon';
+import { realmOf, WORLD_LIST, WORLDS } from '../worlds';
 import { type WorldDef } from '../worlds/types';
+import { isWorldId } from '../worlds/worldIds';
 
 /**
- * The Monster Book: every monster of the CURRENT world, grouped by realm. Found ones in color,
+ * The Monster Book: one world's monsters, grouped by realm. Found ones in color,
  * the rest as dark silhouettes with a "?". Tap a found one to see its page.
+ * It opens on the world Layne is in; the tabs at the top (one picture per world)
+ * show any other world's page. Totals count only the world being shown.
  */
 const BOOK_ICON =
   '<svg viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true"><path d="M2 3h5l1 1 1-1h5v10H9l-1 1-1-1H2z" fill="#F83800" stroke="#FCFCFC"/><path d="M8 4v9" stroke="#FCFCFC"/></svg>';
@@ -32,14 +35,17 @@ export class MonsterBook {
   private root: HTMLDivElement;
   private body: HTMLElement;
   private gridScroll = 0;
+  /** The world whose page is showing. */
+  private world: WorldDef;
   isOpen = false;
 
   constructor(
     parent: HTMLElement,
     private save: SaveData,
-    /** The world Layne is in: the book shows its realms and monsters. */
-    private world: WorldDef,
+    /** The world Layne is in right now (the book opens there). */
+    private currentWorld: () => WorldDef,
   ) {
+    this.world = currentWorld();
     const button = document.createElement('button');
     button.className = 'book-button nes-box';
     button.setAttribute('aria-label', 'Monster Book');
@@ -65,6 +71,9 @@ export class MonsterBook {
     sfx.click();
     this.isOpen = true;
     this.root.hidden = false;
+    const here = this.currentWorld();
+    if (here !== this.world) this.gridScroll = 0;
+    this.world = here;
     this.showGrid();
   }
 
@@ -81,6 +90,17 @@ export class MonsterBook {
   private onClick(e: MouseEvent): void {
     const target = e.target as HTMLElement;
     if (target.closest('.book__close')) return this.close();
+    const tab = target.closest<HTMLElement>('.book__tab');
+    if (tab) {
+      const id = tab.dataset.world;
+      if (isWorldId(id) && WORLDS[id] !== this.world) {
+        sfx.click();
+        this.world = WORLDS[id];
+        this.gridScroll = 0;
+        this.showGrid();
+      }
+      return;
+    }
     if (target.closest('.book__back')) {
       sfx.click();
       return this.showGrid();
@@ -113,7 +133,11 @@ export class MonsterBook {
     const all = monstersOf(this.world.id);
     const total = all.length;
     const foundCount = all.filter((m) => this.found(m)).length;
-    const percent = Math.round((foundCount / total) * 100);
+    const percent = total ? Math.round((foundCount / total) * 100) : 0;
+    const tabs = WORLD_LIST.map((w) => {
+      const on = w === this.world;
+      return `<button class="book__tab${on ? ' on' : ''}" data-world="${w.id}" aria-label="${esc(w.name)}" aria-pressed="${on}">${worldSceneSvg(w)}</button>`;
+    }).join('');
 
     const sections = this.world.realms.map((r) => {
       const list = monstersIn(this.world.id, r.id);
@@ -138,6 +162,7 @@ export class MonsterBook {
         <h2>Monster Book</h2>
         <button class="nes-button book__close" aria-label="Close">${CLOSE_ICON}</button>
       </header>
+      <nav class="book__tabs" aria-label="Worlds">${tabs}</nav>
       <div class="book__progress" aria-label="${foundCount} of ${total} found">
         ${STAR}
         <div class="book__bar"><div style="width:${percent}%"></div></div>

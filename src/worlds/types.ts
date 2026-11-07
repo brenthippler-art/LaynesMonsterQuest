@@ -43,8 +43,13 @@ export interface BuiltWorld {
 export interface WorldDef {
   /** Lowercase and permanent: it's used in save files. */
   id: WorldId;
-  /** Short name (for the title screen, later). */
+  /** Short name, shown in big pixel letters on its world card. */
   name: string;
+  /**
+   * A little pixel-art picture of the world (about 32x18), for its world card
+   * and its tab in the Monster Book. Letters are colored like decorations.
+   */
+  scene: readonly string[];
   /** Same seed = same world, every visit. */
   seed: number;
   /** Exactly 9 (checked on /gallery). */

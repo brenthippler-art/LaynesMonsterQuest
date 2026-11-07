@@ -23,12 +23,49 @@ button {
   -webkit-user-select: none;
 }
 
-/* Pop-up screens always cover the corner buttons (sign, map, book, gear, sound). */
+/* Layers, bottom to top:
+     the world canvas and its corner pieces (sign, map, book, home)
+     5   title screen, world picker (they cover the world)
+     6   sound button and grown-ups gear (they work on every screen)
+     10  pop-up screens (encounter, book, how-to-play, grown-ups area)
+     20  the pixel wipe between screens */
+.title,
+.picker {
+  z-index: 5;
+}
+.mute-button,
+.gear-button {
+  z-index: 6;
+}
 .encounter,
 .book,
 .howto,
 .parent {
   z-index: 10;
+}
+
+/* Everything that belongs to playing in a world. Hidden on the title screen and world picker. */
+.hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.hud[hidden] {
+  display: none;
+}
+
+/* The screen change: a tiny canvas of black squares stretched over everything, crisp. */
+.pixel-wipe {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  pointer-events: auto; /* catches taps while it runs, so nothing is pressed twice */
+}
+.pixel-wipe[hidden] {
+  display: none;
 }
 
 /* Panels that scroll (the book, the grown-ups area): scrolling stops at the
@@ -91,6 +128,23 @@ button {
   cursor: pointer;
 }
 .mute-button svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* ---------- Home button (right side, just above the sound button) ---------- */
+.home-button {
+  position: absolute;
+  right: calc(16px + env(safe-area-inset-right));
+  bottom: calc(16px + 72px + 16px + env(safe-area-inset-bottom));
+  width: 72px;
+  height: 72px;
+  padding: 12px;
+  pointer-events: auto;
+  cursor: pointer;
+}
+.home-button svg {
   width: 100%;
   height: 100%;
   display: block;

@@ -68,6 +68,17 @@ export class ChunkCache {
     }
   }
 
+  /** Throw every chunk away (leaving a world: its pictures would only waste memory). */
+  clear(): void {
+    this.chunks.clear();
+    this.building = null;
+  }
+
+  /** How many chunk pictures are kept right now (handy for checking memory in the console). */
+  get size(): number {
+    return this.chunks.size;
+  }
+
   private store(key: string, canvas: HTMLCanvasElement): void {
     if (!this.chunks.has(key) && this.chunks.size >= this.maxChunks) {
       const oldest = this.chunks.keys().next().value;

@@ -1,0 +1,150 @@
+/* ---------- World picker: fills the screen (the sound button and the gear stay on top) ---------- */
+.picker {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: #0058f8;
+  pointer-events: auto;
+}
+.picker[hidden] {
+  display: none;
+}
+.picker__top {
+  padding: calc(16px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) 0 calc(16px + env(safe-area-inset-left));
+}
+
+/* Landscape: one row of cards that you swipe sideways (snapping to each card). */
+.picker__cards {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  /* Bottom room so the sound button and gear never cover a card. */
+  padding: 40px max(32px, calc(50% - 210px)) 104px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  touch-action: pan-x; /* fingers scroll the row (the rest of the game blocks scrolling) */
+  overscroll-behavior: contain;
+}
+
+.world-card {
+  position: relative;
+  flex: none;
+  width: min(80vw, 420px);
+  min-height: 64px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  box-sizing: border-box;
+  background: #000;
+  border: 4px solid #fcfcfc;
+  box-shadow: 0 0 0 4px #000, 0 8px 0 4px #000;
+  scroll-snap-align: center;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+.world-card:active {
+  transform: translateY(6px);
+  box-shadow: 0 0 0 4px #000;
+}
+.world-card:focus-visible {
+  outline: 6px solid #f8b800;
+  outline-offset: 6px;
+}
+.world-card.complete {
+  border-color: #f8b800;
+}
+.world-card svg {
+  display: block;
+}
+
+.world-card__scene {
+  width: 100%;
+  background: #3cbcfc; /* sky */
+  border: 3px solid #fcfcfc;
+}
+.world-card__scene svg {
+  width: 100%;
+  height: auto;
+}
+.world-card__name svg {
+  height: clamp(36px, 7vmin, 52px);
+  width: auto;
+}
+.world-card__realms {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 4px;
+  width: 100%;
+}
+.world-card__realm svg {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+}
+.world-card__count {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.world-card__count svg {
+  height: 32px;
+  width: auto;
+}
+.world-card__crown {
+  position: absolute;
+  top: -40px;
+  left: 50%;
+  width: 88px;
+  transform: translateX(-50%);
+}
+.world-card__crown svg {
+  width: 100%;
+  height: auto;
+}
+
+/* Portrait: cards stacked, scroll up and down. */
+@media (orientation: portrait) {
+  .picker__cards {
+    flex-direction: column;
+    align-items: center;
+    padding: 48px 16px 104px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    scroll-snap-type: y proximity;
+    touch-action: pan-y;
+  }
+  .world-card {
+    width: min(100%, 520px);
+  }
+}
+
+/* Short landscape screens (phones turned sideways): smaller cards, and the back button floats
+   in the corner instead of taking a row, so a whole card (crown included) fits the height. */
+@media (orientation: landscape) and (max-height: 540px) {
+  .picker__top {
+    position: absolute;
+    z-index: 1;
+  }
+  .picker__cards {
+    padding: 44px max(120px, calc(50% - 150px)) 12px;
+  }
+  .world-card {
+    width: min(60vw, (100vh - 210px) * 1.4);
+    width: min(60vw, (100dvh - 210px) * 1.4);
+    gap: 8px;
+    padding: 10px;
+  }
+  .world-card__name svg {
+    height: 28px;
+  }
+  .world-card__count svg {
+    height: 24px;
+  }
+}

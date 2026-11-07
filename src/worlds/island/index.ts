@@ -4,6 +4,7 @@ import { generateOverworld } from '../../world/overworld';
 import { inBounds, indexOf, type TileMap } from '../../world/tilemap';
 import { type RealmDef, type WorldDef } from '../types';
 import { ISLAND_REALMS } from './realms';
+import { ISLAND_SCENE } from './scene';
 
 /**
  * The first world: the big island from src/world/ (overworld.ts + 6 caves).
@@ -14,6 +15,7 @@ const REALM_OF_BIOME = new Map<Biome, RealmDef>(ISLAND_REALMS.map((r) => [r.biom
 export const ISLAND: WorldDef = {
   id: 'island',
   name: 'Island',
+  scene: ISLAND_SCENE,
   seed: WORLD_SEED,
   realms: ISLAND_REALMS,
   build(seed) {

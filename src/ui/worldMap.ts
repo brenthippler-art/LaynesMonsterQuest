@@ -35,6 +35,12 @@ export class WorldMap {
     parent.append(this.canvas);
   }
 
+  /** Forget the map pictures (called when leaving a world). */
+  forgetMaps(): void {
+    this.pictures.clear();
+    this.lastDrawn = '';
+  }
+
   /** Call every frame. It only redraws when the dot moves or blinks. */
   update(map: TileMap, playerX: number, playerY: number, time: number): void {
     const step = map.width > 100 ? 2 : 1; // the big overworld: 1 map pixel = 2x2 tiles

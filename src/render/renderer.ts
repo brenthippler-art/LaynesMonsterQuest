@@ -33,11 +33,22 @@ const TARGET_CORNERS = [
 
 /** Draws one frame: ground chunks → tap target → Layne → door fade. */
 export class Renderer {
-  private chunks = new ChunkCache();
+  readonly chunks = new ChunkCache();
   /** Where the camera was last frame (to know which way Layne is walking). */
   private lastCamera = { x: 0, y: 0 };
 
   constructor(private ctx: CanvasRenderingContext2D) {}
+
+  /** Forget every map picture (called when leaving a world). */
+  forgetMaps(): void {
+    this.chunks.clear();
+  }
+
+  /** Just black (title screen and world picker, where no world is loaded). */
+  clear(width: number, height: number): void {
+    this.ctx.fillStyle = NES.black;
+    this.ctx.fillRect(0, 0, width, height);
+  }
 
   draw(s: Scene): void {
     const { ctx } = this;

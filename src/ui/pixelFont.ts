@@ -1,7 +1,7 @@
 import { type PixelBuffer } from '../render/pixels';
 
 /**
- * A tiny 5x7 pixel font (capital letters), drawn from text grids just like
+ * A tiny 5x7 pixel font (capital letters, digits, / and '), drawn from text grids just like
  * the sprites. Real fonts would need a download or look too smooth; this
  * one is part of the game and looks like old console text.
  */
@@ -32,6 +32,18 @@ const GLYPHS: Record<string, string[]> = {
   X: ['#...#', '#...#', '.#.#.', '..#..', '.#.#.', '#...#', '#...#'],
   Y: ['#...#', '#...#', '.#.#.', '..#..', '..#..', '..#..', '..#..'],
   Z: ['#####', '....#', '...#.', '..#..', '.#...', '#....', '#####'],
+  '0': ['.###.', '#...#', '#..##', '#.#.#', '##..#', '#...#', '.###.'],
+  '1': ['..#..', '.##..', '..#..', '..#..', '..#..', '..#..', '.###.'],
+  '2': ['.###.', '#...#', '....#', '...#.', '..#..', '.#...', '#####'],
+  '3': ['####.', '....#', '....#', '.###.', '....#', '....#', '####.'],
+  '4': ['...#.', '..##.', '.#.#.', '#..#.', '#####', '...#.', '...#.'],
+  '5': ['#####', '#....', '####.', '....#', '....#', '#...#', '.###.'],
+  '6': ['.###.', '#....', '#....', '####.', '#...#', '#...#', '.###.'],
+  '7': ['#####', '....#', '...#.', '..#..', '.#...', '.#...', '.#...'],
+  '8': ['.###.', '#...#', '#...#', '.###.', '#...#', '#...#', '.###.'],
+  '9': ['.###.', '#...#', '#...#', '.####', '....#', '....#', '.###.'],
+  '/': ['....#', '....#', '...#.', '..#..', '.#...', '#....', '#....'],
+  "'": ['..#..', '..#..', '.#...', '.....', '.....', '.....', '.....'],
 };
 
 export const GLYPH_H = 7;
@@ -51,4 +63,14 @@ export function drawText(buf: PixelBuffer, text: string, x: number, y: number, c
       for (let gx = 0; gx < GLYPH_W; gx++) if (row[gx] === '#') buf.set(x + i * (GLYPH_W + GAP) + gx, y + gy, color);
     });
   });
+}
+
+/** Text as rows of '#' (ink) and '.' (empty), one string per pixel row (see ui/pixelText.ts). */
+export function textRows(text: string): string[] {
+  const rows: string[] = Array.from({ length: GLYPH_H }, () => '');
+  [...text.toUpperCase()].forEach((ch, i) => {
+    const glyph = GLYPHS[ch];
+    for (let y = 0; y < GLYPH_H; y++) rows[y] += (i ? '.'.repeat(GAP) : '') + (glyph ? glyph[y] : '.'.repeat(GLYPH_W));
+  });
+  return rows;
 }

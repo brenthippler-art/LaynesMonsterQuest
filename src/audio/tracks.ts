@@ -1,7 +1,7 @@
 import { type Voice } from './instruments';
 
 /**
- * The game's three songs, written as text you can edit (all original tunes).
+ * The game's songs, written as text you can edit (all original tunes).
  *
  * Each part is a list of steps, separated by spaces ("|" between bars is
  * just to help you read it):
@@ -28,9 +28,35 @@ export interface Song {
   parts: Part[];
 }
 
-export type SongName = 'explore' | 'cave' | 'catch';
+export type SongName = 'title' | 'explore' | 'cave' | 'catch';
 
 export const SONGS: Record<SongName, Song> = {
+  // The title screen: bright and bouncy, "let's go on an adventure!". F major, 8 bars of eighth notes.
+  title: {
+    bpm: 132,
+    stepsPerBeat: 2,
+    parts: [
+      {
+        voice: 'pulse',
+        volume: 0.13,
+        notes: `F5 . A5 . C6 . A5 . | Bb5 . A5 . G5 . F5 . | G5 . . A5 Bb5 . G5 . | A5 . . . C6 . . .
+                D6 . C6 . Bb5 . A5 . | G5 . A5 . Bb5 . D6 . | C6 . A5 . G5 . E5 . | F5 . . . - - - -`,
+      },
+      {
+        voice: 'triangle',
+        volume: 0.22,
+        notes: `F2 . C3 . F2 . C3 . | Bb2 . F3 . Bb2 . F3 . | C3 . G3 . C3 . G3 . | F2 . C3 . F2 . C3 .
+                Bb2 . F3 . Bb2 . F3 . | G2 . D3 . G2 . D3 . | C3 . G3 . C3 . E3 . | F2 . C3 . F2 . - -`,
+      },
+      {
+        voice: 'drums',
+        volume: 0.05,
+        notes: `k h s h k h s h | k h s h k h s h | k h s h k h s h | k h s h k k s h
+                k h s h k h s h | k h s h k h s h | k h s h k h s h | k h s h k - - -`,
+      },
+    ],
+  },
+
   // Cheerful and bouncy: walking around in the sunshine. C major, 8 bars of eighth notes.
   explore: {
     bpm: 116,

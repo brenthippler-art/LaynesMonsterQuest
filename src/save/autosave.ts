@@ -22,8 +22,8 @@ export class AutoSave {
 
   constructor(
     private data: SaveData,
-    /** Where Layne is right now. */
-    private whereIsLayne: () => Whereabouts,
+    /** Where Layne is right now (null = he isn't in a world: title screen or world picker). */
+    private whereIsLayne: () => Whereabouts | null,
   ) {
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'hidden') this.now();
@@ -36,16 +36,19 @@ export class AutoSave {
     this.timer += dt;
     if (this.timer < EVERY_SECONDS) return;
     this.timer = 0;
-    if (this.spotKey(this.whereIsLayne()) !== this.lastSpot) this.now();
+    const where = this.whereIsLayne();
+    if (where && this.spotKey(where) !== this.lastSpot) this.now();
   }
 
   /** Save right now. */
   now(): void {
     if (!this.enabled) return;
     const where = this.whereIsLayne();
-    this.data.players[where.world] = where.spot;
-    this.data.lastWorld = where.world;
-    this.lastSpot = this.spotKey(where);
+    if (where) {
+      this.data.players[where.world] = where.spot;
+      this.data.lastWorld = where.world;
+      this.lastSpot = this.spotKey(where);
+    }
     writeSave(this.data);
   }
 

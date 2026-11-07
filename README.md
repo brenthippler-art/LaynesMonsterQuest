@@ -20,6 +20,7 @@ What's in it:
 | Monster Book | Every monster you've found, with silhouettes for the rest |
 | Coloring pages | Print any found monster as a line-art coloring page (US Letter) |
 | Music & sound | Chiptune music and sound effects, all generated in code |
+| Title & worlds | Title screen with a big PLAY button (carries on where Layne left off) and a world picker: one card per world with its progress |
 | Grown-ups area | Hold the gear for 3 seconds: export/import the save, reset, print all, how-to-play |
 
 ---
@@ -41,7 +42,8 @@ Developer pages (only while `npm run dev` is running, never part of the real gam
 | `/devices` | The game at iPad and phone sizes, portrait and landscape, side by side |
 
 In the browser console during `npm run dev`, `__lmq` lets you peek at the game
-(for example `__lmq.save` or `__lmq.wild.list`).
+(for example `__lmq.save`, `__lmq.screen`, `__lmq.session.wild.list`, or
+`__lmq.renderer.chunks.size`, which drops to 0 whenever Layne leaves a world).
 
 ### Try it on a real tablet
 
@@ -186,6 +188,9 @@ There's no cloud sync, on purpose.
 | Layne's pixel art | `src/render/layneSprites.ts` |
 | Trees, cacti and other decorations | `src/render/decorSprites.ts` |
 | The music (written as text!) | `src/audio/tracks.ts` |
+| Title screen, world picker | `src/screens/` |
+| Playing in one world (Layne, doors, wild monsters) | `src/game/worldSession.ts` |
+| Switching between title, picker and worlds | `src/main.ts` |
 | Sound effects | `src/audio/sfx.ts` |
 | World size and seed, walking speed | `src/config.ts` |
 | How the island is shaped | `src/world/overworld.ts`, `src/world/biomes.ts` |

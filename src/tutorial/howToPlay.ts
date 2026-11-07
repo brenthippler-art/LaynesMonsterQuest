@@ -6,15 +6,17 @@ import { monsterSprite, monsterSvg } from '../monsters/pixel/monsterSprite';
 import { pixelsToSvg } from '../monsters/pixel/paint';
 import { type GlassesStyle } from '../player/glasses';
 import { drawLayne } from '../render/playerArt';
-import { gridSvg } from '../ui/pixelIcon';
+import { gridSvg, worldSceneSvg } from '../ui/pixelIcon';
+import { WORLD_LIST } from '../worlds';
 
 /**
- * "How to play", for a kid who can't read yet: four little animated scenes,
+ * "How to play", for a kid who can't read yet: five little animated scenes,
  * no words at all.
- *   1. Tap a spot (or use the arrow keys) and Layne walks there.
- *   2. Walk into a monster to meet it.
- *   3. Tap when the ring is in the green to catch it.
- *   4. Your monsters go in your book.
+ *   1. Tap a world card to go there.
+ *   2. Tap a spot (or use the arrow keys) and Layne walks there.
+ *   3. Walk into a monster to meet it.
+ *   4. Tap when the ring is in the green to catch it.
+ *   5. Your monsters go in your book.
  * Big ▶ button for the next scene, ✓ to start playing.
  */
 const HAND = [
@@ -49,7 +51,9 @@ const NEXT_ICON = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5 2l7 6
 const OK_ICON = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8l3 3 7-7" fill="none" stroke="#FCFCFC" stroke-width="3"/></svg>';
 const CLOSE_ICON = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" stroke="#FCFCFC" stroke-width="3"/></svg>';
 
-const SCENES = 4;
+const SCENES = 5;
+/** Up to 3 little world cards in the first scene (the hand taps the first one). */
+const MINI_CARDS = WORLD_LIST.slice(0, 3);
 const RING_RULES = RULES.common;
 
 export class HowToPlay {
@@ -87,7 +91,7 @@ export class HowToPlay {
     this.scenes = [...this.root.querySelectorAll<HTMLElement>('.scene')];
     this.dots = this.root.querySelector('.howto__dots')!;
     this.nextButton = this.root.querySelector('.howto__next')!;
-    this.catchScene = this.scenes[2];
+    this.catchScene = this.root.querySelector('.scene--catch')!;
     this.ring = this.root.querySelector('.scene__ring')!;
     this.laynes = [...this.root.querySelectorAll<HTMLCanvasElement>('canvas.scene__layne')];
     this.nextButton.addEventListener('click', () => this.next());
@@ -120,7 +124,7 @@ export class HowToPlay {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       drawLayne(ctx, canvas.width / 2, canvas.height, 4, 'right', frame, this.glasses);
     }
-    if (this.page === 2) this.updateCatch(dt);
+    if (this.scenes[this.page] === this.catchScene) this.updateCatch(dt);
   }
 
   private updateCatch(dt: number): void {
@@ -169,8 +173,13 @@ export class HowToPlay {
 
   private sceneHtml(): string {
     const layne = '<canvas class="scene__layne" width="80" height="104"></canvas>';
+    const cards = MINI_CARDS.map((w) => `<div class="scene__card">${worldSceneSvg(w)}<i></i></div>`).join('');
     return `
-      <div class="scene scene--move" aria-label="Tap a spot and Layne walks there">
+      <div class="scene scene--world" aria-label="Tap a world to go there">
+        <div class="scene__cards">${cards}</div>
+        <div class="scene__hand">${handSvg}</div>
+      </div>
+      <div class="scene scene--move" aria-label="Tap a spot and Layne walks there" hidden>
         ${layne}
         <div class="scene__target">${BRACKETS}</div>
         <div class="scene__hand tap">${handSvg}</div>
