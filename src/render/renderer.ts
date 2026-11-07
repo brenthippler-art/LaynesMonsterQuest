@@ -58,7 +58,7 @@ export class Renderer {
     ctx.imageSmoothingEnabled = false; // big crisp pixels, never blurry
 
     // Anything past the map edge: plain ocean (or rock in caves).
-    ctx.fillStyle = TILE_INFO[map.outside].color;
+    ctx.fillStyle = map.look ? map.look.color(map.outside) : TILE_INFO[map.outside].color;
     ctx.fillRect(0, 0, camera.viewW, camera.viewH);
 
     // Only the chunks that are on screen.

@@ -182,7 +182,9 @@ There's no cloud sync, on purpose.
 
 | To change… | Look in |
 |---|---|
-| Worlds and their 9 realms (labels, icons, music) | `src/worlds/` (the island is `src/worlds/island/`) |
+| Worlds and their 9 realms (labels, icons, music) | `src/worlds/` (the island is `src/worlds/island/`, Home Sweet Home is `src/worlds/home/`) |
+| The house's layout (ASCII map you can retype) | `src/worlds/home/layout.ts` |
+| Building-world engine (templates → maps, furniture scatter, reach check) | `src/worlds/building/` |
 | Monster names, abilities, facts, colors, looks | `src/monsters/worlds/` (one file per world, e.g. `island.ts`) |
 | Monster body parts (ears, tails, eyes…) | `src/monsters/art/` (one file per group: `bodies.ts`, `creatureBodies.ts`, `objectBodies.ts`, `tops.ts`, `creatureTops.ts`, `hats.ts`, `limbs.ts`, `creatureLimbs.ts`, `wings.ts`, `creatureTails.ts`, `face.ts`, `patterns.ts`, `heads.ts`) |
 | Layne's pixel art | `src/render/layneSprites.ts` |

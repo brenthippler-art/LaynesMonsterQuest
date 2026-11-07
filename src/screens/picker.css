@@ -73,9 +73,16 @@
   width: 100%;
   height: auto;
 }
+/* Long names (HOME SWEET HOME) shrink to fit the card instead of spilling over its edges. */
+.world-card__name {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
 .world-card__name svg {
   height: clamp(36px, 7vmin, 52px);
   width: auto;
+  max-width: 100%;
 }
 .world-card__realms {
   display: grid;

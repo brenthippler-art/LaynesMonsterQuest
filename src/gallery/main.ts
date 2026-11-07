@@ -60,9 +60,18 @@ function worldSection(world: WorldDef, problems: string[]): string {
     .join('');
   return `
     <h1 id="world-${world.id}">${esc(world.name)} <small>${world.id} · ${count} monsters · ${world.realms.length} realms</small></h1>
-    ${status(problems, `All ${esc(world.name)} checks passed: 9 realms, 12 monsters each, rare rule, unique abilities, short facts.`)}
+    ${status(problems, `All ${esc(world.name)} checks passed (monster data${world.id === 'island' ? '' : ', creature mix, text lengths'} and maps).`)}
     <nav>${nav}</nav>
     ${sections}`;
+}
+
+/** Build the world's maps and report what the builder found (e.g. squares Layne could never reach). */
+function mapProblems(world: WorldDef): string[] {
+  try {
+    return world.build(world.seed).problems ?? [];
+  } catch (e) {
+    return [`The maps couldn't be built: ${(e as Error).message}`];
+  }
 }
 
 function renderPage(): void {
@@ -72,7 +81,7 @@ function renderPage(): void {
     <h1>Monster Gallery <small>dev only · ${WORLD_LIST.length} world(s) · ${MONSTERS.length} monsters · pixel art</small></h1>
     ${status(report.across, `Across all worlds: ${MONSTERS.length} monsters, every id and name unique.`)}
     <nav>${worldNav}</nav>
-    ${report.perWorld.map((r) => worldSection(r.world, r.problems)).join('')}`;
+    ${report.perWorld.map((r) => worldSection(r.world, [...r.problems, ...mapProblems(r.world)])).join('')}`;
 }
 
 /** Sprites take a moment each, so fill the pictures in one monster at a time. */

@@ -1,0 +1,21 @@
+/** Home Sweet Home's picture for its world card and book tab: a little house with a tree (letters as in decorArt.ts). */
+export const HOME_SCENE = [
+  '......................a.........',
+  '.....................aa.........',
+  '...............kk.....a.........',
+  '..............krrk..kAk.........',
+  '.............krrrrk.kAk.........',
+  '............krrrrrrkkAk...kkkk..',
+  '...........krrrrrrrrkAk..kgllgk.',
+  '..........krrrrrrrrrrk..kglgggGk',
+  '.........krrrrrrrrrrrrk.kgggggGk',
+  '.......kkkkkkkkkkkkkkkkkkkgGGGk.',
+  '........kssssssssssssssk..knnk..',
+  '........kkkkkskkkkskkkkk...nN...',
+  '........kkUUkskOOkskUUkk...nN...',
+  '..P.p.P.kkkkkskOYkskkkkk...nN...',
+  '..g.g.g.kssssskOOksssssk...nN...',
+  'gllllgllkkkkkkkkkkkkkkkklgllllgl',
+  'llllgllllgllllaaaalgllllgllllgll',
+  'lllgllllgllllaaaaaallllgllllglll',
+];

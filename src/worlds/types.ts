@@ -3,11 +3,12 @@ import { type TileMap } from '../world/tilemap';
 import { type WorldId } from './worldIds';
 
 /**
- * How the encounter screen looks behind the monster's box.
- * 'dim' = the world, darkened (the only style so far). A new style gets a
- * `.encounter[data-bg='name']` rule in encounters/encounter.css.
+ * How the encounter screen looks behind the monster's box:
+ *   'dim'      the world, darkened (the island)
+ *   { scene }  a little pixel picture of the room, filling the screen (building worlds).
+ *              scene() is only called the first time it's needed; keep the canvas it returns.
  */
-export type EncounterBg = 'dim';
+export type EncounterBg = 'dim' | { scene: () => HTMLCanvasElement };
 
 /** One of a world's 9 areas, where 12 of its monsters live. */
 export interface RealmDef {
@@ -38,6 +39,8 @@ export interface BuiltWorld {
   spawn: SpawnPoint;
   /** Which realm a tile belongs to, or null (open water, walls...). */
   realmAt: (map: TileMap, x: number, y: number) => RealmDef | null;
+  /** Problems found while building (e.g. squares Layne can't reach). Shown on /gallery and in the dev console. */
+  problems?: string[];
 }
 
 export interface WorldDef {

@@ -1,4 +1,5 @@
 import { type Monster } from '../monsters/monsterTypes';
+import { HOME } from './home';
 import { ISLAND } from './island';
 import { type RealmDef, type WorldDef } from './types';
 import { type WorldId } from './worldIds';
@@ -9,6 +10,7 @@ import { type WorldId } from './worldIds';
  */
 export const WORLDS: Record<WorldId, WorldDef> = {
   island: ISLAND,
+  home: HOME,
 };
 
 /** All worlds, in order (for the title screen and /gallery). */

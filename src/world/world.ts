@@ -18,6 +18,7 @@ export class World {
 
     const bad = badMapIds(def.id, [...this.maps.keys()]);
     if (import.meta.env.DEV && bad.length) console.error(`World "${def.id}": map ids must start with "${def.id}/":`, bad);
+    if (import.meta.env.DEV && built.problems?.length) console.error(`World "${def.id}" has map problems:`, built.problems);
   }
 
   /** Which realm a tile belongs to (null = nobody lives there: water, walls...). */

@@ -27,6 +27,8 @@ These rules apply to every task in this project.
 - Every world has exactly 9 realms and 108 monsters: 12 per realm, exactly 2 rare per realm (the island, made first, may have fewer).
 - Worlds may be inspired by real places, but use original names, and no real logos, mascots, brand colors used as a logo, or menu item names.
 - Monster ids and names are unique across ALL worlds. World ids, monster ids and map ids are saved: never change them once shipped. New worlds' map ids are `<worldId>/<mapName>`.
+- Indoor / real-place worlds use the building engine (`src/worlds/building/`): draw the maps as ASCII templates, list tiles, decorations and realms. Every walkable square must be reachable from the start (checked on `/gallery`).
+- Monster rules for every world after the island are in `src/monsters/newWorldRules.ts` (2 rare / 4 uncommon / 6 common per realm, creature and object mix, name and text lengths).
 - `/gallery` must show zero problems.
 
 ## Tech
