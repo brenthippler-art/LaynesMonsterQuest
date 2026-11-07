@@ -1,0 +1,53 @@
+import { type SongName } from '../audio/tracks';
+import { type TileMap } from '../world/tilemap';
+import { type WorldId } from './worldIds';
+
+/**
+ * How the encounter screen looks behind the monster's box.
+ * 'dim' = the world, darkened (the only style so far). A new style gets a
+ * `.encounter[data-bg='name']` rule in encounters/encounter.css.
+ */
+export type EncounterBg = 'dim';
+
+/** One of a world's 9 areas, where 12 of its monsters live. */
+export interface RealmDef {
+  /** Lowercase, unique inside its world. Monsters' `habitat` is this id. */
+  id: string;
+  /** ONE short uppercase word for the corner badge and the Monster Book (e.g. 'SNOW'). */
+  label: string;
+  /** Pixel-art picture (up to 16x16), letters colored like decorations (see render/decorArt.ts). */
+  icon: readonly string[];
+  /** Music that plays while Layne walks here. */
+  music: SongName;
+  encounterBg: EncounterBg;
+  /** Little pictures sprinkled around the edges of this realm's coloring pages. */
+  printDecor: readonly (readonly string[])[];
+}
+
+/** Where a world starts: a map id and a tile on it. */
+export interface SpawnPoint {
+  map: string;
+  x: number;
+  y: number;
+}
+
+/** Everything build() makes. */
+export interface BuiltWorld {
+  /** All of the world's maps (see worlds/mapIds.ts for how they're named). */
+  maps: TileMap[];
+  spawn: SpawnPoint;
+  /** Which realm a tile belongs to, or null (open water, walls...). */
+  realmAt: (map: TileMap, x: number, y: number) => RealmDef | null;
+}
+
+export interface WorldDef {
+  /** Lowercase and permanent: it's used in save files. */
+  id: WorldId;
+  /** Short name (for the title screen, later). */
+  name: string;
+  /** Same seed = same world, every visit. */
+  seed: number;
+  /** Exactly 9 (checked on /gallery). */
+  realms: readonly RealmDef[];
+  build: (seed: number) => BuiltWorld;
+}

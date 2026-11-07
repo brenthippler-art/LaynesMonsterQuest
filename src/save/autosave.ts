@@ -1,4 +1,11 @@
+import { type WorldId } from '../worlds/worldIds';
 import { type PlayerSpot, type SaveData, writeSave } from './save';
+
+/** Which world Layne is in, and where in it. */
+export interface Whereabouts {
+  world: WorldId;
+  spot: PlayerSpot;
+}
 
 /**
  * Saves the game automatically:
@@ -16,7 +23,7 @@ export class AutoSave {
   constructor(
     private data: SaveData,
     /** Where Layne is right now. */
-    private whereIsLayne: () => PlayerSpot,
+    private whereIsLayne: () => Whereabouts,
   ) {
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'hidden') this.now();
@@ -35,8 +42,10 @@ export class AutoSave {
   /** Save right now. */
   now(): void {
     if (!this.enabled) return;
-    this.data.player = this.whereIsLayne();
-    this.lastSpot = this.spotKey(this.data.player);
+    const where = this.whereIsLayne();
+    this.data.players[where.world] = where.spot;
+    this.data.lastWorld = where.world;
+    this.lastSpot = this.spotKey(where);
     writeSave(this.data);
   }
 
@@ -45,7 +54,7 @@ export class AutoSave {
     this.enabled = false;
   }
 
-  private spotKey(p: PlayerSpot): string {
-    return `${p.map}:${p.x.toFixed(2)}:${p.y.toFixed(2)}:${p.facing}`;
+  private spotKey({ world, spot: p }: Whereabouts): string {
+    return `${world}:${p.map}:${p.x.toFixed(2)}:${p.y.toFixed(2)}:${p.facing}`;
   }
 }

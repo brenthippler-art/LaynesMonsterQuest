@@ -1,5 +1,5 @@
 import './parent.css';
-import { MONSTERS } from '../monsters/monsters';
+import { MONSTERS } from '../monsters/worlds';
 import { isPrintReady, preparePrint, printColoringPages } from '../print/printer';
 import { type AutoSave } from '../save/autosave';
 import { backupSave, clearSave, currentSaveText, readBackup, type SaveData, writeSave } from '../save/save';

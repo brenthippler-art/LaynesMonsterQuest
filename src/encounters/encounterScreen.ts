@@ -3,6 +3,7 @@ import { sfx } from '../audio/sfx';
 import { type Monster } from '../monsters/monsterTypes';
 import { monsterSvg } from '../monsters/pixel/monsterSprite';
 import { typeIconSvg } from '../monsters/typeIcons';
+import { type EncounterBg } from '../worlds/types';
 import { type CatchRules, drawRing, inZone, RING_CANVAS, ringScale, RULES } from './catchRing';
 import { Confetti } from './confetti';
 
@@ -126,7 +127,8 @@ export class EncounterScreen {
     return this.state === 'intro' || this.state === 'ring' || this.state === 'almost';
   }
 
-  show(m: Monster): void {
+  /** Meet a monster. `bg` is the look behind the box (from the realm it was met in). */
+  show(m: Monster, bg: EncounterBg): void {
     this.monster = m;
     this.rules = RULES[m.rarity];
     this.triesLeft = TRIES;
@@ -151,6 +153,7 @@ export class EncounterScreen {
     this.el.back.hidden = false;
     this.el.ok.hidden = true;
     this.root.className = `encounter rarity-${m.rarity}`;
+    this.root.dataset.bg = bg;
     this.root.hidden = false;
     sfx.appear();
   }

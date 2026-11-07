@@ -1,3 +1,5 @@
+import { isWorldId, type WorldId } from '../worlds/worldIds';
+
 /**
  * Everything the game remembers between visits, stored in ONE localStorage key.
  * When the shape of the data changes, bump the version and add an upgrade
@@ -8,6 +10,8 @@
  *   v2 + found (id → times found), muted
  *   v3 + player (map, position, facing); found → collection (count + first-found date)
  *   v4 + tutorialSeen (has the how-to-play been shown?)
+ *   v5 player → players (one spot per world id, the island's spot moves to players.island)
+ *      + lastWorld (the world Layne was in last). collection stays one list: ids are unique across worlds.
  *
  * If the save is damaged (or from a future version we don't understand), we
  * NEVER crash: a copy goes to a backup key and the game starts fresh.
@@ -26,7 +30,7 @@ export interface FoundRecord {
 }
 
 export interface PlayerSpot {
-  /** 'overworld' or a cave id like 'cave-3'. */
+  /** A map id of that world: 'overworld' or 'cave-3' on the island, '<worldId>/<map>' in newer worlds. */
   map: string;
   x: number;
   y: number;
@@ -34,13 +38,15 @@ export interface PlayerSpot {
 }
 
 export interface SaveData {
-  version: 4;
+  version: 5;
   /** Which glasses style Layne wore last visit, so we can pick a different one. */
   lastGlasses: number | null;
   /** Sound off? */
   muted: boolean;
-  /** Where Layne is (null = start of the game). */
-  player: PlayerSpot | null;
+  /** Where Layne is in each world he's visited (a missing world = start at its beginning). */
+  players: Partial<Record<WorldId, PlayerSpot>>;
+  /** The world he was in last time (null = brand-new game). */
+  lastWorld: WorldId | null;
   /** Monster id → how many times found + when first found. */
   collection: Record<string, FoundRecord>;
   /** Has the picture "how to play" been shown? (Only on the very first visit.) */
@@ -48,7 +54,7 @@ export interface SaveData {
 }
 
 export function freshSave(): SaveData {
-  return { version: 4, lastGlasses: null, muted: false, player: null, collection: {}, tutorialSeen: false };
+  return { version: 5, lastGlasses: null, muted: false, players: {}, lastWorld: null, collection: {}, tutorialSeen: false };
 }
 
 // ---------- Reading untrusted data safely ----------
@@ -64,6 +70,17 @@ function cleanPlayer(v: unknown): PlayerSpot | null {
   if (typeof p.map !== 'string' || x === null || y === null) return null;
   const facing = FACINGS.includes(p.facing as Facing) ? (p.facing as Facing) : 'down';
   return { map: p.map, x, y, facing };
+}
+
+/** Keep only spots for worlds we know about (an unknown world id is just dropped). */
+function cleanPlayers(v: unknown): Partial<Record<WorldId, PlayerSpot>> {
+  const out: Partial<Record<WorldId, PlayerSpot>> = {};
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return out;
+  for (const [world, spot] of Object.entries(v)) {
+    const clean = cleanPlayer(spot);
+    if (isWorldId(world) && clean) out[world] = clean;
+  }
+  return out;
 }
 
 function cleanCollection(v: unknown): Record<string, FoundRecord> {
@@ -106,13 +123,21 @@ export function migrate(raw: unknown): SaveData | null {
     const played = d.player != null || Object.keys(cleanCollection(d.collection)).length > 0;
     d = { ...d, version: 4, tutorialSeen: played };
   }
-  if (d.version !== 4) return null; // unknown or future version
+  if (d.version === 4) {
+    // Before v5 there was only the island.
+    const spot = cleanPlayer(d.player);
+    d = { ...d, version: 5, player: undefined, players: spot ? { island: spot } : {}, lastWorld: spot ? 'island' : null };
+  }
+  if (d.version !== 5) return null; // unknown or future version
 
+  const players = cleanPlayers(d.players);
   return {
-    version: 4,
+    version: 5,
     lastGlasses: num(d.lastGlasses),
     muted: d.muted === true,
-    player: cleanPlayer(d.player),
+    players,
+    // A last world we don't know (or have no spot for) just means "start in the default world".
+    lastWorld: isWorldId(d.lastWorld) ? d.lastWorld : null,
     collection: cleanCollection(d.collection),
     tutorialSeen: d.tutorialSeen === true,
   };

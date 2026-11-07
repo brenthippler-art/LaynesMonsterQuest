@@ -1,27 +1,10 @@
-import { DECOR_SPRITES } from '../render/decorSprites';
-import { CAVE_ENTRANCE, PEAK } from '../render/tileSprites';
-import { Biome } from '../world/biomes';
-import { Decor } from '../world/decorations';
-
 /**
- * A pixel-art picture for each biome (up to 16x16), shown in the corner sign.
- * Several reuse the decoration and tile sprites; the rest are drawn here.
+ * The island's hand-drawn realm pictures (up to 16x16), for the corner sign,
+ * the Monster Book and coloring pages. The other realms reuse decoration and
+ * tile sprites (see realms.ts).
  * Letters use the same colors as decorations (see SPRITE_COLORS in render/decorArt.ts).
  */
-const WAVES = [
-  '................',
-  '..uuu.....uuu...',
-  '.uUUUu...uUUUu..',
-  'uU...Uu.uU...Uu.',
-  '.......u.......u',
-  '................',
-  '..uuu.....uuu...',
-  '.uUUUu...uUUUu..',
-  'uU...Uu.uU...Uu.',
-  '.......u.......u',
-];
-
-const FLOWER = [
+export const FLOWER = [
   '....kk.kk....',
   '...kffkffk...',
   '..kfffkfffk..',
@@ -38,7 +21,7 @@ const FLOWER = [
   '.....kgk.....',
 ];
 
-const SUN = [
+export const SUN = [
   '.......Y.......',
   '...Y...Y...Y...',
   '....Y.....Y....',
@@ -55,7 +38,7 @@ const SUN = [
   '.......Y.......',
 ];
 
-const SNOWFLAKE = [
+export const SNOWFLAKE = [
   '......w......',
   '...w..w..w...',
   '....w.w.w....',
@@ -71,7 +54,7 @@ const SNOWFLAKE = [
   '......w......',
 ];
 
-const FROG = [
+export const FROG = [
   '..www....www..',
   '.wwkww..wwkww.',
   '.gwwwg..gwwwg.',
@@ -84,7 +67,7 @@ const FROG = [
   '.ggg......ggg.',
 ];
 
-const VOLCANO = [
+export const VOLCANO = [
   '......Y..Y......',
   '.....Y.OY.Y.....',
   '.......YO.......',
@@ -100,16 +83,3 @@ const VOLCANO = [
   '.kaaaaaaAAAAAAk.',
   'kkkkkkkkkkkkkkkk',
 ];
-
-export const BIOME_ICONS: Record<Biome, readonly string[]> = {
-  [Biome.Ocean]: WAVES,
-  [Biome.Beach]: DECOR_SPRITES[Decor.Palm]!,
-  [Biome.Grassland]: FLOWER,
-  [Biome.Forest]: DECOR_SPRITES[Decor.Pine]!,
-  [Biome.Desert]: SUN,
-  [Biome.Arctic]: SNOWFLAKE,
-  [Biome.Mountains]: PEAK,
-  [Biome.Swamp]: FROG,
-  [Biome.Volcano]: VOLCANO,
-  [Biome.Cave]: CAVE_ENTRANCE,
-};

@@ -1,4 +1,6 @@
-/* ---------- Encounter screen: an NES-style box over the dimmed world ---------- */
+/* ---------- Encounter screen: an NES-style box over the dimmed world ----------
+   The background below is the 'dim' style (data-bg="dim"), used by every island realm.
+   New styles from worlds/types.ts (EncounterBg) go here as .encounter[data-bg='name'] { ... } */
 .encounter {
   position: absolute;
   inset: 0;

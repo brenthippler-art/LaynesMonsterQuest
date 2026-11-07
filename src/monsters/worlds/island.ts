@@ -1,19 +1,20 @@
-import { NES as C } from '../render/nesPalette';
-import { type Monster } from './monsterTypes';
+import { NES as C } from '../../render/nesPalette';
+import { type MonsterData, worldMonsters } from '../monsterTypes';
 
 /**
- * ALL the monsters in Layne's Monster Quest: 12 per habitat, 108 in total.
+ * The ISLAND's monsters: 12 per realm, 108 in total.
  *
  * Edit freely: names, abilities, facts, colors and looks. A few rules
  * (checked on the /gallery page):
- *   - every id is unique, lowercase letters and dashes only
- *   - 12 monsters per habitat, at most 2 rare
+ *   - every id and name is unique across ALL worlds, ids lowercase letters and dashes only
+ *   - 12 monsters per realm, at most 2 rare (new worlds: exactly 2)
  *   - every monster is an ORIGINAL design
  *
+ * `habitat` is one of the island's realm ids (see src/worlds/island/realms.ts).
  * `look` picks one part of each kind; see src/monsters/art/ for the options.
  * Colors come from the NES palette (C.something) so they match the game.
  */
-export const MONSTERS: Monster[] = [
+const LIST: MonsterData[] = [
   // ───────────── GRASSLAND / SAVANNAH ─────────────
   {
     id: 'hopsy', name: 'Hopsy', habitat: 'grassland', type: 'Fluff', rarity: 'common', size: 'small',
@@ -788,3 +789,5 @@ export const MONSTERS: Monster[] = [
     look: { body: 'cloud', eyes: 'big', mouth: 'cat', top: 'cat', tail: 'fluffy', feet: 'paws', arms: 'none', pattern: 'glow' },
   },
 ];
+
+export const ISLAND_MONSTERS = worldMonsters('island', LIST);

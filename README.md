@@ -37,7 +37,7 @@ Developer pages (only while `npm run dev` is running, never part of the real gam
 
 | Address | What it is |
 |---|---|
-| `/gallery` | All 108 monsters, in color and as coloring pages, with data checks |
+| `/gallery` | Every monster of every world, in color and as coloring pages, with data checks per world |
 | `/devices` | The game at iPad and phone sizes, portrait and landscape, side by side |
 
 In the browser console during `npm run dev`, `__lmq` lets you peek at the game
@@ -107,11 +107,14 @@ in **one key**: `lmq-save-v1`. Nothing is sent anywhere.
 
 ```jsonc
 {
-  "version": 4,
+  "version": 5,
   "lastGlasses": 17,            // so Layne's glasses can change every visit
   "muted": false,
-  "player": { "map": "cave-3", "x": 16.5, "y": 4.5, "facing": "up" },
-  "collection": {
+  "players": {                  // where Layne is in each world (by world id)
+    "island": { "map": "cave-3", "x": 16.5, "y": 4.5, "facing": "up" }
+  },
+  "lastWorld": "island",        // the world he was in last (null = new game)
+  "collection": {               // one list for ALL worlds (monster ids are unique across worlds)
     "hopsy": { "count": 3, "firstFound": "2026-11-05T14:52:55.400Z" }
   },
   "tutorialSeen": true
@@ -125,13 +128,16 @@ in **one key**: `lmq-save-v1`. Nothing is sent anywhere.
 - when the page is hidden or closed (switching apps, closing the tab)
 
 On start-up the save loads automatically and Layne appears exactly where he left
-off (on the same map, facing the same way).
+off (in the same world, on the same map, facing the same way). Each world
+remembers its own spot. Island map ids are `overworld` and `cave-1`…`cave-6`;
+newer worlds name their maps `<worldId>/<mapName>` so they can never clash.
+A spot for a world id the game doesn't know is quietly dropped.
 
 ### Versions and upgrades
 
 The `version` number goes up whenever the save's shape changes, and
 `migrate()` in `src/save/save.ts` upgrades old saves step by step
-(v1 → v2 → v3 → v4), so progress is never lost when the game is updated.
+(v1 → v2 → v3 → v4 → v5; v5 moved `player` into `players.island`), so progress is never lost when the game is updated.
 To add a new field: bump the version, add one upgrade step, and give the
 field a sensible default.
 
@@ -174,7 +180,8 @@ There's no cloud sync, on purpose.
 
 | To change… | Look in |
 |---|---|
-| Monster names, abilities, facts, colors, looks | `src/monsters/monsters.ts` |
+| Worlds and their 9 realms (labels, icons, music) | `src/worlds/` (the island is `src/worlds/island/`) |
+| Monster names, abilities, facts, colors, looks | `src/monsters/worlds/` (one file per world, e.g. `island.ts`) |
 | Monster body parts (ears, tails, eyes…) | `src/monsters/art/` |
 | Layne's pixel art | `src/render/layneSprites.ts` |
 | Trees, cacti and other decorations | `src/render/decorSprites.ts` |

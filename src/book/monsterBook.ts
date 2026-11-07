@@ -1,16 +1,18 @@
 import './book.css';
 import { sfx } from '../audio/sfx';
-import { HABITATS, type Monster } from '../monsters/monsterTypes';
-import { MONSTERS } from '../monsters/monsters';
+import { type Monster } from '../monsters/monsterTypes';
+import { MONSTERS, monstersIn, monstersOf } from '../monsters/worlds';
 import { monsterSprite, monsterSvg } from '../monsters/pixel/monsterSprite';
 import { pixelsToSvg } from '../monsters/pixel/paint';
 import { typeIconSvg } from '../monsters/typeIcons';
 import { preparePrint, printColoringPages } from '../print/printer';
 import { type SaveData } from '../save/save';
-import { habitatIconSvg } from '../ui/pixelIcon';
+import { realmIconSvg } from '../ui/pixelIcon';
+import { realmOf } from '../worlds';
+import { type WorldDef } from '../worlds/types';
 
 /**
- * The Monster Book: every monster, grouped by habitat. Found ones in color,
+ * The Monster Book: every monster of the CURRENT world, grouped by realm. Found ones in color,
  * the rest as dark silhouettes with a "?". Tap a found one to see its page.
  */
 const BOOK_ICON =
@@ -35,6 +37,8 @@ export class MonsterBook {
   constructor(
     parent: HTMLElement,
     private save: SaveData,
+    /** The world Layne is in: the book shows its realms and monsters. */
+    private world: WorldDef,
   ) {
     const button = document.createElement('button');
     button.className = 'book-button nes-box';
@@ -106,12 +110,13 @@ export class MonsterBook {
   // ---------- The grid of all monsters ----------
 
   private showGrid(): void {
-    const total = MONSTERS.length;
-    const foundCount = MONSTERS.filter((m) => this.found(m)).length;
+    const all = monstersOf(this.world.id);
+    const total = all.length;
+    const foundCount = all.filter((m) => this.found(m)).length;
     const percent = Math.round((foundCount / total) * 100);
 
-    const sections = HABITATS.map((h) => {
-      const list = MONSTERS.filter((m) => m.habitat === h.id);
+    const sections = this.world.realms.map((r) => {
+      const list = monstersIn(this.world.id, r.id);
       const here = list.filter((m) => this.found(m)).length;
       const slots = list
         .map((m) => {
@@ -123,7 +128,7 @@ export class MonsterBook {
         })
         .join('');
       return `<section class="book__habitat">
-          <h3><span class="hab-icon">${habitatIconSvg(h.id)}</span>${h.label}<small>${here} / ${list.length}</small></h3>
+          <h3><span class="hab-icon">${realmIconSvg(r)}</span>${r.label}<small>${here} / ${list.length}</small></h3>
           <div class="book__grid">${slots}</div>
         </section>`;
     }).join('');
@@ -145,7 +150,7 @@ export class MonsterBook {
 
   /** Pictures take a moment to build, so fill them in one by one (they're cached after the first time). */
   private async fillArt(): Promise<void> {
-    for (const m of MONSTERS) {
+    for (const m of monstersOf(this.world.id)) {
       const sprite = await monsterSprite(m, 'small');
       const slot = this.body.querySelector<HTMLElement>(`.slot[data-id="${m.id}"] .slot__art`);
       if (!slot) return; // the book was closed or changed page
@@ -159,7 +164,7 @@ export class MonsterBook {
 
   private showPage(m: Monster): void {
     const rec = this.found(m)!;
-    const habitat = HABITATS.find((h) => h.id === m.habitat)!;
+    const realm = realmOf(m);
     const first = rec.firstFound
       ? new Date(rec.firstFound).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
       : null;
@@ -175,7 +180,7 @@ export class MonsterBook {
         <div class="page__facts">
           <p class="page__chips">
             <span class="chip">${typeIconSvg(m.type, 28)} ${m.type}</span>
-            <span class="chip"><span class="hab-icon">${habitatIconSvg(m.habitat)}</span> ${habitat.label}</span>
+            ${realm ? `<span class="chip"><span class="hab-icon">${realmIconSvg(realm)}</span> ${realm.label}</span>` : ''}
           </p>
           <p class="page__found">${STAR} Found ${rec.count} ${rec.count === 1 ? 'time' : 'times'}</p>
           <p><b>${esc(m.ability.name)}:</b> ${esc(m.ability.description)}</p>

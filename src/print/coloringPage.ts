@@ -1,6 +1,7 @@
 import { type Monster } from '../monsters/monsterTypes';
 import { type MonsterSprite } from '../monsters/pixel/monsterSprite';
-import { bwPixelsSvg, HABITAT_DECOR, outlineGridSvg } from './outlineArt';
+import { realmOf } from '../worlds';
+import { bwPixelsSvg, outlineGridSvg } from './outlineArt';
 
 /**
  * One coloring page (US Letter), laid out in inches:
@@ -8,7 +9,7 @@ import { bwPixelsSvg, HABITAT_DECOR, outlineGridSvg } from './outlineArt';
  *   ┌──────────────────────────────┐
  *   │          H O P S Y           │  name in big bubble letters
  *   │ ✿                          ✿ │
- *   │ ✿        (monster)         ✿ │  habitat pictures down the sides
+ *   │ ✿        (monster)         ✿ │  realm pictures down the sides
  *   │ ✿                          ✿ │
  *   │    ✿      ✿      ✿      ✿    │  ...and along the bottom
  *   │ Colored by: ________________ │
@@ -66,8 +67,9 @@ export function buildColoringPage(m: Monster, sprite: MonsterSprite): HTMLElemen
   page.className = 'cp-page';
   page.setAttribute('aria-label', `Coloring page: ${m.name}`);
 
-  const decor = HABITAT_DECOR[m.habitat];
-  const pictures = DECOR_SPOTS.map(
+  // The little pictures come from the monster's own realm (its world's RealmDef.printDecor).
+  const decor = realmOf(m)?.printDecor ?? [];
+  const pictures = (decor.length ? DECOR_SPOTS : []).map(
     ([x, y], i) => `<div class="cp-decor" style="left:${x}in;top:${y}in">${outlineGridSvg(decor[i % decor.length])}</div>`,
   ).join('');
 

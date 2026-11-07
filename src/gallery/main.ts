@@ -1,19 +1,27 @@
 import './gallery.css';
-import { checkMonsters } from '../monsters/checkMonsters';
-import { HABITATS, type Monster } from '../monsters/monsterTypes';
-import { MONSTERS } from '../monsters/monsters';
+import { checkAllWorlds } from '../monsters/checkMonsters';
+import { type Monster } from '../monsters/monsterTypes';
+import { MONSTERS, monstersIn } from '../monsters/worlds';
 import { monsterSvg } from '../monsters/pixel/monsterSprite';
 import { typeIconSvg } from '../monsters/typeIcons';
+import { WORLD_LIST } from '../worlds';
+import { type WorldDef } from '../worlds/types';
 
 /**
  * DEV-ONLY review page: every monster as pixel art, in color and as a
- * coloring page, side by side, grouped by habitat, with data problems
- * listed at the top. Open it with `npm run dev`, then go to /gallery.
+ * coloring page, side by side, grouped by world and realm, with data problems
+ * listed at the top of each world. Open it with `npm run dev`, then go to /gallery.
  */
 const root = document.getElementById('gallery')!;
 
 function esc(text: string): string {
   return text.replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[ch]!);
+}
+
+function status(problems: string[], allGood: string): string {
+  return problems.length
+    ? `<div class="status bad"><b>${problems.length} problem(s):</b><ul>${problems.map((p) => `<li>${esc(p)}</li>`).join('')}</ul></div>`
+    : `<div class="status good">${allGood}</div>`;
 }
 
 function card(m: Monster, index: number): string {
@@ -34,25 +42,33 @@ function card(m: Monster, index: number): string {
     </article>`;
 }
 
-function renderPage(): void {
-  const problems = checkMonsters(MONSTERS);
-  const status = problems.length
-    ? `<div class="status bad"><b>${problems.length} problem(s):</b><ul>${problems.map((p) => `<li>${esc(p)}</li>`).join('')}</ul></div>`
-    : `<div class="status good">All checks passed: ${MONSTERS.length} monsters, 12 per habitat, max 2 rare each, unique ids and names.</div>`;
-
-  const nav = HABITATS.map((h) => `<a href="#h-${h.id}">${h.label}</a>`).join('');
+/** One world: its check results, a realm menu, and a section per realm. Numbering restarts per world. */
+function worldSection(world: WorldDef, problems: string[]): string {
+  const count = MONSTERS.filter((m) => m.world === world.id).length;
+  const nav = world.realms.map((r) => `<a href="#${world.id}-${r.id}">${r.label}</a>`).join('');
   let index = 0;
-  const sections = HABITATS.map((h) => {
-    const list = MONSTERS.filter((m) => m.habitat === h.id);
-    const cards = list.map((m) => card(m, index++)).join('');
-    return `<section id="h-${h.id}"><h2>${h.label} <small>(${list.length})</small></h2><div class="grid">${cards}</div></section>`;
-  }).join('');
-
-  root.innerHTML = `
-    <h1>Monster Gallery <small>dev only · ${MONSTERS.length} monsters · pixel art</small></h1>
-    ${status}
+  const sections = world.realms
+    .map((r) => {
+      const list = monstersIn(world.id, r.id);
+      const cards = list.map((m) => card(m, index++)).join('');
+      return `<section id="${world.id}-${r.id}"><h2>${r.label} <small>(${list.length})</small></h2><div class="grid">${cards}</div></section>`;
+    })
+    .join('');
+  return `
+    <h1 id="world-${world.id}">${esc(world.name)} <small>${world.id} · ${count} monsters · ${world.realms.length} realms</small></h1>
+    ${status(problems, `All ${esc(world.name)} checks passed: 9 realms, 12 monsters each, rare rule, unique abilities, short facts.`)}
     <nav>${nav}</nav>
     ${sections}`;
+}
+
+function renderPage(): void {
+  const report = checkAllWorlds(WORLD_LIST, MONSTERS);
+  const worldNav = WORLD_LIST.map((w) => `<a href="#world-${w.id}">${esc(w.name)}</a>`).join('');
+  root.innerHTML = `
+    <h1>Monster Gallery <small>dev only · ${WORLD_LIST.length} world(s) · ${MONSTERS.length} monsters · pixel art</small></h1>
+    ${status(report.across, `Across all worlds: ${MONSTERS.length} monsters, every id and name unique.`)}
+    <nav>${worldNav}</nav>
+    ${report.perWorld.map((r) => worldSection(r.world, r.problems)).join('')}`;
 }
 
 /** Sprites take a moment each, so fill the pictures in one monster at a time. */

@@ -1,7 +1,6 @@
 import './style.css';
 import { music } from './audio/music';
 import { sfx } from './audio/sfx';
-import { WORLD_SEED } from './config';
 import { EncounterScreen } from './encounters/encounterScreen';
 import { type WildMonster, WildMonsters } from './encounters/wildMonsters';
 import { startLoop } from './core/loop';
@@ -19,32 +18,34 @@ import { ParentArea } from './parent/parentArea';
 import { AutoSave } from './save/autosave';
 import { loadSave, recordFound } from './save/save';
 import { HowToPlay } from './tutorial/howToPlay';
-import { BiomeBadge } from './ui/biomeBadge';
 import { MuteButton } from './ui/muteButton';
+import { RealmBadge } from './ui/realmBadge';
 import { WorldMap } from './ui/worldMap';
-import { biomeAt, doorAt, isWalkable } from './world/tilemap';
+import { doorAt, isWalkable } from './world/tilemap';
 import { World } from './world/world';
+import { WORLDS } from './worlds';
+import { DEFAULT_WORLD } from './worlds/worldIds';
 
 const canvas = document.getElementById('game') as HTMLCanvasElement;
 const ui = document.getElementById('ui') as HTMLElement;
 // alpha: false = the canvas is never see-through, which lets the browser draw it faster.
 const ctx = canvas.getContext('2d', { alpha: false })!;
 
-// ----- Build everything -----
-const world = new World(WORLD_SEED);
+// ----- Load the save (a damaged save is backed up and a new game starts; it never crashes) -----
+const { data: save, recovered } = loadSave();
+
+// ----- Build everything, in the world Layne was in last (a title screen will choose, later) -----
+const world = new World(WORLDS[save.lastWorld ?? DEFAULT_WORLD]);
 const player = new Player(world.spawn.x + 0.5, world.spawn.y + 0.5);
 const camera = new Camera();
 const renderer = new Renderer(ctx);
 const keyboard = new Keyboard();
-const badge = new BiomeBadge(ui);
+const badge = new RealmBadge(ui);
 const worldMap = new WorldMap(ui);
 
-// ----- Load the save (a damaged save is backed up and a new game starts; it never crashes) -----
-const { data: save, recovered } = loadSave();
-
-// Put Layne back where he left off: same map, same spot, facing the same way.
+// Put Layne back where he left off in this world: same map, same spot, facing the same way.
 // (If that spot isn't valid anymore, he just starts at the beginning.)
-const spot = save.player;
+const spot = save.players[world.def.id];
 const savedMap = spot ? world.maps.get(spot.map) : undefined;
 if (spot && savedMap && isWalkable(savedMap, Math.floor(spot.x), Math.floor(spot.y))) {
   world.current = savedMap;
@@ -52,7 +53,10 @@ if (spot && savedMap && isWalkable(savedMap, Math.floor(spot.x), Math.floor(spot
   player.facing = spot.facing;
 }
 
-const autosave = new AutoSave(save, () => ({ map: world.current.id, x: player.x, y: player.y, facing: player.facing }));
+const autosave = new AutoSave(save, () => ({
+  world: world.def.id,
+  spot: { map: world.current.id, x: player.x, y: player.y, facing: player.facing },
+}));
 // Dev only: /devices shows several copies of the game at once; "?nosave" stops them overwriting the real save.
 if (import.meta.env.DEV && new URLSearchParams(location.search).has('nosave')) autosave.stop();
 
@@ -81,7 +85,7 @@ new MuteButton(ui, save.muted, (muted) => {
 });
 
 // ----- Monster Book (bottom-left) and the grown-ups area (hold the gear for 3 seconds) -----
-const book = new MonsterBook(ui, save);
+const book = new MonsterBook(ui, save, world.def);
 
 // ----- Picture "how to play": shown on the very first visit (and from the grown-ups area) -----
 const howToPlay = new HowToPlay(ui, glasses, () => {
@@ -93,7 +97,7 @@ if (!save.tutorialSeen) howToPlay.open();
 const parentArea = new ParentArea(ui, save, autosave, recovered, () => howToPlay.open());
 
 // ----- Monsters: wandering nearby, and the encounter screen -----
-const wild = new WildMonsters();
+const wild = new WildMonsters(world);
 let meeting: WildMonster | null = null;
 /** Seconds after an encounter before another can start (so you don't bump straight into the next one). */
 let encounterCooldown = 0;
@@ -111,6 +115,12 @@ const encounter = new EncounterScreen(
     encounterCooldown = 1;
   },
 );
+
+/**
+ * The realm Layne is standing in (for the corner sign and the music). On a square
+ * that belongs to no realm it keeps the last one, so the sign doesn't flicker.
+ */
+let realm = world.realmAt(world.current, Math.floor(player.x), Math.floor(player.y)) ?? world.def.realms[0];
 
 /** Aim the camera a little above Layne's feet, so his whole body is centered. */
 const cameraTarget = () => ({ x: player.x, y: player.y - 0.5 });
@@ -181,9 +191,9 @@ startLoop(
     howToPlay.update(dt);
     autosave.update(dt); // saves every 5 s if Layne has moved (even while a screen is open)
 
-    // Music: exciting while catching, quiet for the result (so the fanfare shines), cave or explore otherwise.
+    // Music: exciting while catching, quiet for the result (so the fanfare shines), otherwise the realm's own song.
     if (encounter.isOpen) music.play(encounter.isCatching ? 'catch' : null);
-    else music.play(world.current.kind === 'cave' ? 'cave' : 'explore');
+    else music.play(realm.music);
     fade = Math.max(0, fade - dt * 2.5);
     // The world waits while a monster, the book, the how-to-play or the grown-ups area is open.
     if (encounter.isOpen || book.isOpen || parentArea.isOpen || howToPlay.isOpen) return;
@@ -201,7 +211,8 @@ startLoop(
     checkDoors();
     const t = cameraTarget();
     camera.follow(t.x, t.y, world.current, dt);
-    badge.show(biomeAt(world.current, Math.floor(player.x), Math.floor(player.y)));
+    realm = world.realmAt(world.current, Math.floor(player.x), Math.floor(player.y)) ?? realm;
+    badge.show(realm);
     worldMap.update(world.current, player.x, player.y, time);
 
     const bumped = wild.update(dt, world.current, player.x, player.y);
@@ -210,7 +221,7 @@ startLoop(
       pointer.release(); // a finger that was steering shouldn't keep steering afterwards
       player.setPath([]);
       target = null;
-      encounter.show(bumped.monster);
+      encounter.show(bumped.monster, bumped.home.realm.encounterBg);
     }
   },
   () => renderer.draw({ map: world.current, camera, player, glasses, wild: wild.list, target, fade, time }),

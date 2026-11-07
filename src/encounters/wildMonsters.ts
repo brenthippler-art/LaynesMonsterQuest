@@ -1,15 +1,16 @@
-import { HABITATS, type Habitat, type Monster, type Rarity } from '../monsters/monsterTypes';
-import { MONSTERS } from '../monsters/monsters';
+import { type Monster, type Rarity } from '../monsters/monsterTypes';
 import { monsterCanvas } from '../monsters/pixel/monsterSprite';
-import { type Biome } from '../world/biomes';
-import { biomeAt, doorAt, isWalkable, type TileMap } from '../world/tilemap';
+import { monstersIn } from '../monsters/worlds';
+import { doorAt, isWalkable, type TileMap } from '../world/tilemap';
+import { type World } from '../world/world';
+import { type RealmDef } from '../worlds/types';
 
 /**
  * Monsters you can SEE wandering around (no surprise battles).
  * We keep 2-3 near Layne: new ones pop in a few tiles away, wander around
- * their own little patch of their own biome, and drift off when Layne
- * walks far away. Only monsters whose habitat matches the ground spawn there,
- * so cave monsters only appear in caves.
+ * their own little patch of their own realm, and drift off when Layne
+ * walks far away. Only the current world's monsters whose habitat matches the
+ * realm under the ground spawn there, so cave monsters only appear in caves.
  */
 const MAX_NEARBY = 3;
 const SPAWN_DIST = { min: 3.5, max: 7 }; // tiles from Layne: on screen, but not on top of him
@@ -22,15 +23,12 @@ const SPAWN_GRACE = 0.6; // seconds before a new monster can be bumped (it's sti
 /** Rare monsters show up less often: out of every 15 picks, about 10 common, 4 uncommon, 1 rare. */
 const RARITY_WEIGHT: Record<Rarity, number> = { common: 10, uncommon: 4, rare: 1 };
 
-const HABITAT_OF_BIOME = new Map<Biome, Habitat>(HABITATS.map((h) => [h.biome, h.id]));
-const BY_HABITAT = new Map<Habitat, Monster[]>(HABITATS.map((h) => [h.id, MONSTERS.filter((m) => m.habitat === h.id)]));
-
 export interface WildMonster {
   monster: Monster;
   /** Feet position, in tiles. */
   x: number;
   y: number;
-  home: { x: number; y: number; biome: Biome };
+  home: { x: number; y: number; realm: RealmDef };
   target: { x: number; y: number };
   /** Seconds left to stand still before wandering again. */
   wait: number;
@@ -42,8 +40,7 @@ export interface WildMonster {
   sprite: HTMLCanvasElement | null;
 }
 
-function pickMonster(habitat: Habitat): Monster | null {
-  const list = BY_HABITAT.get(habitat) ?? [];
+function pickMonster(list: Monster[]): Monster | null {
   const total = list.reduce((sum, m) => sum + RARITY_WEIGHT[m.rarity], 0);
   let roll = Math.random() * total;
   for (const m of list) {
@@ -57,6 +54,12 @@ export class WildMonsters {
   list: WildMonster[] = [];
   private mapId = '';
   private spawnTimer = 0.5;
+  /** Who lives in each realm of this world (realm id → monsters). */
+  private byRealm: Map<string, Monster[]>;
+
+  constructor(private world: World) {
+    this.byRealm = new Map(world.def.realms.map((r) => [r.id, monstersIn(world.def.id, r.id)]));
+  }
 
   /** Move everyone, spawn/despawn as needed. Returns a monster Layne just bumped into, if any. */
   update(dt: number, map: TileMap, px: number, py: number): WildMonster | null {
@@ -109,18 +112,17 @@ export class WildMonsters {
       const tx = Math.floor(px + Math.cos(angle) * dist);
       const ty = Math.floor(py + Math.sin(angle) * dist);
       if (!isWalkable(map, tx, ty) || doorAt(map, tx, ty)) continue;
-      const biome = biomeAt(map, tx, ty);
-      const habitat = HABITAT_OF_BIOME.get(biome);
-      if (!habitat) continue; // e.g. open water: nobody lives there (yet!)
+      const realm = this.world.realmAt(map, tx, ty);
+      if (!realm) continue; // e.g. open water: nobody lives there (yet!)
       if (this.list.some((w) => Math.hypot(w.x - tx - 0.5, w.y - ty - 0.5) < 2.5)) continue;
-      const monster = pickMonster(habitat);
+      const monster = pickMonster(this.byRealm.get(realm.id) ?? []);
       if (!monster) continue;
 
       const w: WildMonster = {
         monster,
         x: tx + 0.5,
         y: ty + 0.5,
-        home: { x: tx + 0.5, y: ty + 0.5, biome },
+        home: { x: tx + 0.5, y: ty + 0.5, realm },
         target: { x: tx + 0.5, y: ty + 0.5 },
         wait: 0.5 + Math.random(),
         facing: Math.random() < 0.5 ? 1 : -1,
@@ -134,7 +136,7 @@ export class WildMonsters {
     }
   }
 
-  /** Stand around for a bit, then hop to a nearby spot in its own biome. */
+  /** Stand around for a bit, then hop to a nearby spot in its own realm. */
   private wander(w: WildMonster, dt: number, map: TileMap): void {
     if (w.wait > 0) {
       w.wait -= dt;
@@ -161,7 +163,7 @@ export class WildMonsters {
     const ok = (x: number, y: number) =>
       isWalkable(map, Math.floor(x), Math.floor(y)) &&
       !doorAt(map, Math.floor(x), Math.floor(y)) &&
-      biomeAt(map, Math.floor(x), Math.floor(y)) === w.home.biome;
+      this.world.realmAt(map, Math.floor(x), Math.floor(y)) === w.home.realm;
     for (let attempt = 0; attempt < 8; attempt++) {
       const tx = Math.floor(w.home.x + (Math.random() * 2 - 1) * HOME_RADIUS) + 0.5;
       const ty = Math.floor(w.home.y + (Math.random() * 2 - 1) * HOME_RADIUS) + 0.5;

@@ -1,6 +1,10 @@
 import { Tile } from './tiles';
 
-/** The big areas of the world. Monsters will later live in the biome that suits them. */
+/**
+ * The island's big areas, as stored in its maps. This is an inner detail of the
+ * island generator: the rest of the game asks the world for REALMS instead
+ * (see worlds/island/realms.ts, which pairs each realm with its biome).
+ */
 export const Biome = {
   Ocean: 0,
   Beach: 1,
@@ -14,24 +18,6 @@ export const Biome = {
   Cave: 9,
 } as const;
 export type Biome = (typeof Biome)[keyof typeof Biome];
-
-interface BiomeInfo {
-  /** One short word for the corner badge (its pixel icon lives in ui/biomeIcons.ts). */
-  label: string;
-}
-
-export const BIOME_INFO: Record<Biome, BiomeInfo> = {
-  [Biome.Ocean]: { label: 'SEA' },
-  [Biome.Beach]: { label: 'BEACH' },
-  [Biome.Grassland]: { label: 'GRASS' },
-  [Biome.Forest]: { label: 'FOREST' },
-  [Biome.Desert]: { label: 'DESERT' },
-  [Biome.Arctic]: { label: 'SNOW' },
-  [Biome.Mountains]: { label: 'HILLS' },
-  [Biome.Swamp]: { label: 'SWAMP' },
-  [Biome.Volcano]: { label: 'VOLCANO' },
-  [Biome.Cave]: { label: 'CAVE' },
-};
 
 /**
  * Turn three noise values (all roughly 0..1) into a ground tile + biome.

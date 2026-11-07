@@ -1,9 +1,8 @@
-import { SPRITE_COLORS } from '../render/decorArt';
 import { NES } from '../render/nesPalette';
 import { PixelBuffer, rgba, stamp } from '../render/pixels';
-import { BIOME_INFO, type Biome } from '../world/biomes';
-import { BIOME_ICONS } from './biomeIcons';
+import { type RealmDef } from '../worlds/types';
 import { drawText, GLYPH_H, textWidth } from './pixelFont';
+import { realmIconColor } from './pixelIcon';
 
 /** Each badge pixel becomes a SCALE x SCALE square of CSS pixels (24 px tall x 3 = 72px). */
 const SCALE = 3;
@@ -11,16 +10,15 @@ const HEIGHT = 24;
 const ICON = 16;
 const PAD = 4;
 
-/** Fixed colors for the "changes per flower/crystal" letters, so the icon always looks the same. */
-const iconColors = (ch: string) => rgba(ch === 'f' ? NES.pink : ch === 'c' ? NES.skyLight : SPRITE_COLORS[ch]);
+const iconColors = (ch: string) => rgba(realmIconColor(ch));
 
 /**
  * The sign in the top-left showing where Layne is: a black box with a white
  * border, a pixel-art icon and a pixel-font word, like an NES menu.
  */
-export class BiomeBadge {
+export class RealmBadge {
   private canvas: HTMLCanvasElement;
-  private current: Biome | null = null;
+  private current: RealmDef | null = null;
 
   constructor(parent: HTMLElement) {
     this.canvas = document.createElement('canvas');
@@ -29,12 +27,11 @@ export class BiomeBadge {
     parent.append(this.canvas);
   }
 
-  /** Cheap to call every frame: only redraws when the biome actually changes. */
-  show(biome: Biome): void {
-    if (biome === this.current) return;
-    this.current = biome;
-    const label = BIOME_INFO[biome].label;
-    const icon = BIOME_ICONS[biome];
+  /** Cheap to call every frame: only redraws when the realm actually changes. */
+  show(realm: RealmDef): void {
+    if (realm === this.current) return;
+    this.current = realm;
+    const { label, icon } = realm;
 
     const width = PAD + ICON + PAD + textWidth(label) + PAD + 1;
     const buf = new PixelBuffer(width, HEIGHT);

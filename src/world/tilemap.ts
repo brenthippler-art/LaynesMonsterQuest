@@ -1,4 +1,3 @@
-import { Biome } from './biomes';
 import { Tile, isWalkableTile } from './tiles';
 
 /** A doorway: step on (x, y) and you appear at (toX, toY) on another map. */
@@ -18,7 +17,7 @@ export interface TileMap {
   height: number;
   /** Ground tile for each square (index = y * width + x). */
   tiles: Uint8Array;
-  /** Biome for each square. */
+  /** Area code for each square. Each world decides what the numbers mean (the island uses its Biome list). */
   biome: Uint8Array;
   /** Decoration for each square (tree, rock, ...). 0 = none. */
   decor: Uint8Array;
@@ -59,10 +58,6 @@ export function inBounds(map: TileMap, x: number, y: number): boolean {
 
 export function tileAt(map: TileMap, x: number, y: number): Tile {
   return inBounds(map, x, y) ? (map.tiles[indexOf(map, x, y)] as Tile) : map.outside;
-}
-
-export function biomeAt(map: TileMap, x: number, y: number): Biome {
-  return inBounds(map, x, y) ? (map.biome[indexOf(map, x, y)] as Biome) : Biome.Ocean;
 }
 
 export function isWalkable(map: TileMap, x: number, y: number): boolean {

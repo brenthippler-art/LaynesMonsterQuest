@@ -21,11 +21,19 @@ These rules apply to every task in this project.
 - No chat, messaging, accounts, sign-in, leaderboards, share buttons, external links, or ads.
 - Every monster is an ORIGINAL design. Do not copy or imitate characters or names from Pokémon or any other existing franchise.
 
+## Worlds
+
+- The game has several worlds (registry in `src/worlds/`, monsters in `src/monsters/worlds/`).
+- Every world has exactly 9 realms and 108 monsters: 12 per realm, exactly 2 rare per realm (the island, made first, may have fewer).
+- Worlds may be inspired by real places, but use original names, and no real logos, mascots, brand colors used as a logo, or menu item names.
+- Monster ids and names are unique across ALL worlds. World ids, monster ids and map ids are saved: never change them once shipped. New worlds' map ids are `<worldId>/<mapName>`.
+- `/gallery` must show zero problems.
+
 ## Tech
 
 - Vite + TypeScript. HTML5 Canvas for the world, plain DOM/CSS for menus.
 - No game framework unless the reason is explained to the user and they agree first.
-- Save data goes in localStorage under one versioned key (e.g. `lmq-save-v1`), with a migration function for future versions.
+- Save data goes in localStorage under one key, `lmq-save-v1`, with a `version` field and a migration step for every version change.
 - Must work on a tablet (touch, portrait AND landscape) and on desktop (keyboard + mouse).
 - Static build that deploys to Vercel.
 

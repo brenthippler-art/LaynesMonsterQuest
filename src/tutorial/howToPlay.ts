@@ -1,7 +1,7 @@
 import './howToPlay.css';
 import { sfx } from '../audio/sfx';
 import { drawRing, inZone, RING_CANVAS, ringScale, RULES } from '../encounters/catchRing';
-import { MONSTERS } from '../monsters/monsters';
+import { MONSTERS } from '../monsters/worlds';
 import { monsterSprite, monsterSvg } from '../monsters/pixel/monsterSprite';
 import { pixelsToSvg } from '../monsters/pixel/paint';
 import { type GlassesStyle } from '../player/glasses';

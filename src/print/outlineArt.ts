@@ -1,9 +1,3 @@
-import { DECOR_SPRITES } from '../render/decorSprites';
-import { PEAK } from '../render/tileSprites';
-import { Decor } from '../world/decorations';
-import { HABITATS, type Habitat } from '../monsters/monsterTypes';
-import { BIOME_ICONS } from '../ui/biomeIcons';
-
 /**
  * Black-and-white line-art versions of pixel pictures, for coloring pages.
  */
@@ -60,19 +54,3 @@ export function outlineGridSvg(rows: readonly string[]): string {
   }
   return bwPixelsSvg(pixels, w, h);
 }
-
-const D = (d: Decor) => DECOR_SPRITES[d]!;
-const icon = (habitat: Habitat) => BIOME_ICONS[HABITATS.find((h) => h.id === habitat)!.biome];
-
-/** Little pictures that "belong" in each habitat, sprinkled around the page edges. */
-export const HABITAT_DECOR: Record<Habitat, readonly (readonly string[])[]> = {
-  grassland: [D(Decor.Flower), D(Decor.TallGrass), icon('grassland'), D(Decor.Bush), D(Decor.Tree)],
-  forest: [D(Decor.Tree), D(Decor.Mushroom), D(Decor.Pine), D(Decor.Bush), D(Decor.Flower)],
-  desert: [D(Decor.Cactus), icon('desert'), D(Decor.Rock), D(Decor.Pebbles), D(Decor.Cactus)],
-  arctic: [icon('arctic'), D(Decor.SnowPine), D(Decor.SnowDrift), icon('arctic'), D(Decor.SnowPine)],
-  mountain: [PEAK, D(Decor.Rock), D(Decor.Pine), D(Decor.Pebbles), PEAK],
-  beach: [D(Decor.Palm), D(Decor.Shell), icon('beach'), D(Decor.Pebbles), D(Decor.Shell)],
-  swamp: [D(Decor.Reeds), icon('swamp'), D(Decor.Puddle), D(Decor.Mushroom), D(Decor.Reeds)],
-  volcano: [icon('volcano'), D(Decor.LavaCrack), D(Decor.Rock), D(Decor.Pebbles), D(Decor.LavaCrack)],
-  cave: [D(Decor.Crystal), D(Decor.Mushroom), D(Decor.Rock), D(Decor.Crystal), D(Decor.Pebbles)],
-};

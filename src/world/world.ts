@@ -1,18 +1,28 @@
-import { generateOverworld } from './overworld';
+import { badMapIds } from '../worlds/mapIds';
+import { type RealmDef, type SpawnPoint, type WorldDef } from '../worlds/types';
 import { type Door, type TileMap } from './tilemap';
 
-/** All the maps in the game, and which one Layne is on right now. */
+/** One world's maps (built from its WorldDef), and which one Layne is on right now. */
 export class World {
   readonly maps = new Map<string, TileMap>();
-  readonly spawn: { x: number; y: number };
+  readonly spawn: SpawnPoint;
   current: TileMap;
+  private realmLookup: (map: TileMap, x: number, y: number) => RealmDef | null;
 
-  constructor(seed: number) {
-    const { map, caves, spawn } = generateOverworld(seed);
-    this.maps.set(map.id, map);
-    for (const cave of caves) this.maps.set(cave.id, cave);
-    this.current = map;
-    this.spawn = spawn;
+  constructor(readonly def: WorldDef) {
+    const built = def.build(def.seed);
+    for (const map of built.maps) this.maps.set(map.id, map);
+    this.current = this.maps.get(built.spawn.map) ?? built.maps[0];
+    this.spawn = built.spawn;
+    this.realmLookup = built.realmAt;
+
+    const bad = badMapIds(def.id, [...this.maps.keys()]);
+    if (import.meta.env.DEV && bad.length) console.error(`World "${def.id}": map ids must start with "${def.id}/":`, bad);
+  }
+
+  /** Which realm a tile belongs to (null = nobody lives there: water, walls...). */
+  realmAt(map: TileMap, x: number, y: number): RealmDef | null {
+    return this.realmLookup(map, x, y);
   }
 
   /** Switch to the map a door leads to. */

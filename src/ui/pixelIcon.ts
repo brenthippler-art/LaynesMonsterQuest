@@ -1,9 +1,8 @@
-import { HABITATS, type Habitat } from '../monsters/monsterTypes';
 import { SPRITE_COLORS } from '../render/decorArt';
 import { NES } from '../render/nesPalette';
-import { BIOME_ICONS } from './biomeIcons';
+import { type RealmDef } from '../worlds/types';
 
-/** Turn a pixel grid (like the biome icons) into a crisp SVG for HTML menus. */
+/** Turn a pixel grid (like the realm icons) into a crisp SVG for HTML menus. */
 export function gridSvg(rows: readonly string[], colorOf: (ch: string) => string | undefined): string {
   const w = rows[0].length;
   const h = rows.length;
@@ -17,8 +16,10 @@ export function gridSvg(rows: readonly string[], colorOf: (ch: string) => string
   return `<svg viewBox="0 0 ${w} ${h}" shape-rendering="crispEdges" aria-hidden="true">${rects}</svg>`;
 }
 
-/** The pixel icon for a habitat (the same pictures as the corner sign). */
-export function habitatIconSvg(habitat: Habitat): string {
-  const biome = HABITATS.find((h) => h.id === habitat)!.biome;
-  return gridSvg(BIOME_ICONS[biome], (ch) => (ch === 'f' ? NES.pink : ch === 'c' ? NES.skyLight : SPRITE_COLORS[ch]));
+/** Fixed colors for the "changes per flower/crystal" letters, so a realm icon always looks the same. */
+export const realmIconColor = (ch: string): string => (ch === 'f' ? NES.pink : ch === 'c' ? NES.skyLight : SPRITE_COLORS[ch]);
+
+/** The pixel icon for a realm (the same picture as the corner sign). */
+export function realmIconSvg(realm: RealmDef): string {
+  return gridSvg(realm.icon, realmIconColor);
 }
