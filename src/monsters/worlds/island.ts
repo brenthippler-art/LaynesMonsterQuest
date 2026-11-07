@@ -27,15 +27,15 @@ const LIST: MonsterData[] = [
     id: 'buttercub', name: 'Buttercub', habitat: 'grassland', type: 'Leaf', rarity: 'common', size: 'small',
     ability: { name: 'Sunny Smile', description: 'Its smile makes flowers open up!' },
     fact: 'Buttercub naps in sunny patches of buttercups.',
-    colors: { main: C.gold, accent: C.green, belly: C.sand },
-    look: { body: 'round', eyes: 'round', mouth: 'cat', top: 'leaf', tail: 'puff', feet: 'paws', arms: 'none', pattern: 'none', belly: true, cheeks: true },
+    colors: { main: C.yellowLight, accent: C.green, belly: C.sand },
+    look: { body: 'beast', eyes: 'round', mouth: 'cat', top: 'leaf', tail: 'puff', feet: 'paws', arms: 'none', pattern: 'none', belly: true, cheeks: true },
   },
   {
     id: 'zipzap', name: 'Zipzap', habitat: 'grassland', type: 'Zap', rarity: 'uncommon', size: 'small',
     ability: { name: 'Zoom Zap', description: 'Runs so fast it leaves a sparkly trail!' },
     fact: "Zipzap's antennae buzz when a storm is coming.",
     colors: { main: C.lime, accent: C.purple, belly: C.limeLight },
-    look: { body: 'round', eyes: 'round', mouth: 'grin', top: 'antennae', tail: 'zigzag', feet: 'stubs', arms: 'nubs', pattern: 'none', belly: true },
+    look: { body: 'long', eyes: 'round', mouth: 'grin', top: 'antennae', tail: 'zigzag', feet: 'stubs', arms: 'nubs', pattern: 'none', belly: true },
   },
   {
     id: 'moomble', name: 'Moomble', habitat: 'grassland', type: 'Fluff', rarity: 'common', size: 'large',
@@ -63,7 +63,7 @@ const LIST: MonsterData[] = [
     ability: { name: 'Stripe Dash', description: 'Its stripes blur together when it runs!' },
     fact: 'No two Stripeos have the same stripes.',
     colors: { main: C.white, accent: C.black, belly: C.grayLight },
-    look: { body: 'long', eyes: 'round', mouth: 'smile', top: 'cat', tail: 'long', feet: 'four', arms: 'none', pattern: 'stripes' },
+    look: { body: 'beast', eyes: 'round', mouth: 'smile', top: 'cat', tail: 'long', feet: 'four', arms: 'none', pattern: 'stripes' },
   },
   {
     id: 'giggleroo', name: 'Giggleroo', habitat: 'grassland', type: 'Fluff', rarity: 'uncommon', size: 'medium',
@@ -84,14 +84,14 @@ const LIST: MonsterData[] = [
     ability: { name: 'Song Sparkle', description: 'Sings a tune that makes rainbows appear!' },
     fact: 'Pipwing builds nests out of soft grass.',
     colors: { main: C.sky, accent: C.blueMid, belly: C.white, feet: C.gold },
-    look: { body: 'round', eyes: 'dot', mouth: 'beak', top: 'tuft', tail: 'fish', feet: 'stubs', arms: 'bird', pattern: 'none', belly: true },
+    look: { body: 'bird', eyes: 'dot', mouth: 'beak', top: 'tuft', tail: 'fish', feet: 'stubs', arms: 'bird', pattern: 'none', belly: true },
   },
   {
     id: 'leomane', name: 'Leomane', habitat: 'grassland', type: 'Zap', rarity: 'rare', size: 'large',
     ability: { name: 'Sunset Glow', description: 'Its mane glows so bright it lights up the sky!' },
     fact: "Leomane's fluffy mane is warm like sunshine.",
     colors: { main: C.gold, accent: C.orange, belly: C.yellowLight },
-    look: { body: 'cloud', eyes: 'round', mouth: 'cat', top: 'round', tail: 'long', feet: 'paws', arms: 'none', pattern: 'none', belly: true },
+    look: { body: 'beast', eyes: 'round', mouth: 'cat', top: 'mane', tail: 'long', feet: 'paws', arms: 'none', pattern: 'none', belly: true },
   },
   {
     id: 'starhop', name: 'Starhop', habitat: 'grassland', type: 'Fluff', rarity: 'rare', size: 'small',
@@ -113,7 +113,7 @@ const LIST: MonsterData[] = [
     id: 'mossmunch', name: 'Mossmunch', habitat: 'forest', type: 'Leaf', rarity: 'common', size: 'medium',
     ability: { name: 'Moss Blanket', description: 'Grows a soft mossy coat to stay warm.' },
     fact: 'Mossmunch loves to munch on berries.',
-    colors: { main: C.ochre, accent: C.greenBright, belly: C.sand },
+    colors: { main: C.green, accent: C.greenBright, belly: C.sand },
     look: { body: 'round', eyes: 'dot', mouth: 'open', top: 'round', tail: 'none', feet: 'paws', arms: 'nubs', pattern: 'patches' },
   },
   {
@@ -217,9 +217,9 @@ const LIST: MonsterData[] = [
     look: { body: 'tall', eyes: 'dot', mouth: 'o', top: 'tuft', tail: 'none', feet: 'stubs', arms: 'nubs', pattern: 'stripes' },
   },
   {
-    id: 'rollo', name: 'Rollo', habitat: 'desert', type: 'Stone', rarity: 'common', size: 'small',
+    id: 'rollo', name: 'Curlydill', habitat: 'desert', type: 'Stone', rarity: 'common', size: 'small',
     ability: { name: 'Ball Roll', description: 'Curls into a ball and rolls super fast!' },
-    fact: 'Rollo sleeps curled up like a tiny boulder.',
+    fact: 'Curlydill sleeps curled up like a tiny boulder.',
     colors: { main: C.skin, accent: C.ochre, belly: C.sand },
     look: { body: 'square', eyes: 'dot', mouth: 'smile', top: 'round', tail: 'long', feet: 'four', arms: 'none', pattern: 'stripes' },
   },
@@ -235,7 +235,7 @@ const LIST: MonsterData[] = [
     ability: { name: 'Water Saver', description: 'Carries water for a long, long trip!' },
     fact: "Humpaloo's long eyelashes keep sand out of its eyes.",
     colors: { main: C.orangeLight, accent: C.ochre, belly: C.sand },
-    look: { body: 'long', eyes: 'sleepy', mouth: 'smile', top: 'round', tail: 'long', feet: 'four', arms: 'none', pattern: 'patches' },
+    look: { body: 'beast', eyes: 'sleepy', mouth: 'smile', top: 'round', tail: 'long', feet: 'four', arms: 'none', pattern: 'patches' },
   },
   {
     id: 'zapscarab', name: 'Zapscarab', habitat: 'desert', type: 'Zap', rarity: 'uncommon', size: 'tiny',
@@ -286,7 +286,7 @@ const LIST: MonsterData[] = [
     ability: { name: 'Ice Slide', description: 'Slides on its tummy across the ice!' },
     fact: "Icicub's paws never get cold.",
     colors: { main: C.white, accent: C.skyLight, belly: C.skyLight },
-    look: { body: 'round', eyes: 'round', mouth: 'open', top: 'round', tail: 'none', feet: 'paws', arms: 'nubs', pattern: 'none', belly: true },
+    look: { body: 'beast', eyes: 'round', mouth: 'open', top: 'round', tail: 'none', feet: 'paws', arms: 'nubs', pattern: 'none', belly: true },
   },
   {
     id: 'pengwee', name: 'Pengwee', habitat: 'arctic', type: 'Splash', rarity: 'common', size: 'small',
@@ -335,7 +335,7 @@ const LIST: MonsterData[] = [
     ability: { name: 'Snow Hug', description: 'Gives giant, cuddly snow hugs!' },
     fact: 'Yetiny makes the best snow forts.',
     colors: { main: C.white, accent: C.skyLight, belly: C.pastelBlue },
-    look: { body: 'cloud', eyes: 'dot', mouth: 'grin', top: 'horns', tail: 'none', feet: 'paws', arms: 'nubs', pattern: 'none', belly: true },
+    look: { body: 'tall', eyes: 'dot', mouth: 'grin', top: 'horns', tail: 'none', feet: 'paws', arms: 'nubs', pattern: 'none', belly: true },
   },
   {
     id: 'flakelet', name: 'Flakelet', habitat: 'arctic', type: 'Frost', rarity: 'common', size: 'tiny',
@@ -428,7 +428,7 @@ const LIST: MonsterData[] = [
     ability: { name: 'Shell Fort', description: 'Hides in its shell when it feels shy.' },
     fact: 'Slowstone is older than the tallest tree.',
     colors: { main: C.gray, accent: C.greenBright, belly: C.sand },
-    look: { body: 'square', eyes: 'dot', mouth: 'smile', top: 'spikes', tail: 'none', feet: 'four', arms: 'none', pattern: 'patches' },
+    look: { body: 'long', eyes: 'dot', mouth: 'smile', top: 'spikes', tail: 'none', feet: 'four', arms: 'none', pattern: 'patches' },
   },
   {
     id: 'stormram', name: 'Stormram', habitat: 'mountain', type: 'Zap', rarity: 'rare', size: 'large',
@@ -489,9 +489,9 @@ const LIST: MonsterData[] = [
     look: { body: 'round', eyes: 'dot', mouth: 'cat', top: 'bunny', tail: 'puff', feet: 'paws', arms: 'none', pattern: 'spots', cheeks: true },
   },
   {
-    id: 'otterpop', name: 'Otterpop', habitat: 'beach', type: 'Splash', rarity: 'uncommon', size: 'medium',
+    id: 'otterpop', name: 'Floatter', habitat: 'beach', type: 'Splash', rarity: 'uncommon', size: 'medium',
     ability: { name: 'Float Nap', description: 'Floats on its back and holds paws with friends!' },
-    fact: 'Otterpop keeps a favorite pebble in its pocket.',
+    fact: 'Floatter keeps a favorite pebble in its pocket.',
     colors: { main: C.ochre, accent: C.brownRed, belly: C.sand },
     look: { body: 'tall', eyes: 'round', mouth: 'cat', top: 'round', tail: 'long', feet: 'flippers', arms: 'nubs', pattern: 'none', belly: true },
   },
@@ -510,9 +510,9 @@ const LIST: MonsterData[] = [
     look: { body: 'square', eyes: 'round', mouth: 'smile', top: 'none', tail: 'none', feet: 'flippers', arms: 'flippers', pattern: 'patches' },
   },
   {
-    id: 'scoopy', name: 'Scoopy', habitat: 'beach', type: 'Splash', rarity: 'common', size: 'medium',
+    id: 'scoopy', name: 'Pouchbill', habitat: 'beach', type: 'Splash', rarity: 'common', size: 'medium',
     ability: { name: 'Big Scoop', description: 'Scoops up water to share with thirsty friends!' },
-    fact: "Scoopy's beak can hold a whole bucket of water.",
+    fact: "Pouchbill's beak can hold a whole bucket of water.",
     colors: { main: C.sand, accent: C.gold, belly: C.white, feet: C.orange },
     look: { body: 'pear', eyes: 'dot', mouth: 'beak', top: 'tuft', tail: 'none', feet: 'stubs', arms: 'bird', pattern: 'none', belly: true },
   },
@@ -537,7 +537,7 @@ const LIST: MonsterData[] = [
     ability: { name: 'Lily Leap', description: 'Leaps from lily pad to lily pad!' },
     fact: 'Hoppadoo sings loudest when it rains.',
     colors: { main: C.greenBright, accent: C.green, belly: C.limeLight },
-    look: { body: 'round', eyes: 'stalks', mouth: 'grin', top: 'none', tail: 'none', feet: 'flippers', arms: 'none', pattern: 'spots', belly: true },
+    look: { body: 'beast', eyes: 'stalks', mouth: 'grin', top: 'none', tail: 'none', feet: 'flippers', arms: 'none', pattern: 'spots', belly: true },
   },
   {
     id: 'mudsy', name: 'Mudsy', habitat: 'swamp', type: 'Splash', rarity: 'common', size: 'medium',
@@ -572,7 +572,7 @@ const LIST: MonsterData[] = [
     ability: { name: 'Pond Paddle', description: 'Paddles in circles to make little whirlpools!' },
     fact: 'Padwaddle wears a lily pad like a hat.',
     colors: { main: C.yellowLight, accent: C.green, belly: C.white, feet: C.orange },
-    look: { body: 'round', eyes: 'round', mouth: 'beak', top: 'leaf', tail: 'none', feet: 'flippers', arms: 'flippers', pattern: 'none', belly: true },
+    look: { body: 'bird', eyes: 'round', mouth: 'beak', top: 'leaf', tail: 'none', feet: 'flippers', arms: 'flippers', pattern: 'none', belly: true },
   },
   {
     id: 'snoozle', name: 'Snoozle', habitat: 'swamp', type: 'Leaf', rarity: 'common', size: 'tiny',
@@ -614,7 +614,7 @@ const LIST: MonsterData[] = [
     ability: { name: 'Glow Croak', description: 'Croaks and all its spots light up!' },
     fact: 'Lumitoad lights up the whole swamp at night.',
     colors: { main: C.purple, accent: C.lime, belly: C.lavender, eye: C.gold },
-    look: { body: 'round', eyes: 'big', mouth: 'grin', top: 'none', tail: 'none', feet: 'flippers', arms: 'none', pattern: 'glow', belly: true },
+    look: { body: 'beast', eyes: 'big', mouth: 'grin', top: 'none', tail: 'none', feet: 'flippers', arms: 'none', pattern: 'glow', belly: true },
   },
 
   // ───────────── VOLCANO ─────────────
@@ -623,7 +623,7 @@ const LIST: MonsterData[] = [
     ability: { name: 'Warm Snuggle', description: 'Glows warm to keep friends cozy!' },
     fact: "Emberpup's tail flickers when it's happy.",
     colors: { main: C.redBright, accent: C.gold, belly: C.orangeLight },
-    look: { body: 'round', eyes: 'round', mouth: 'smile', top: 'flame', tail: 'flame', feet: 'paws', arms: 'none', pattern: 'none', belly: true },
+    look: { body: 'beast', eyes: 'round', mouth: 'smile', top: 'flame', tail: 'flame', feet: 'paws', arms: 'none', pattern: 'none', belly: true },
   },
   {
     id: 'lavalump', name: 'Lavalump', habitat: 'volcano', type: 'Ember', rarity: 'common', size: 'medium',
@@ -700,7 +700,7 @@ const LIST: MonsterData[] = [
     ability: { name: 'Coal Glow', description: "Glows orange when it's nice and toasty!" },
     fact: 'Coalcub sleeps curled up on warm rocks.',
     colors: { main: C.brownDark, accent: C.orange, belly: C.brownRed },
-    look: { body: 'round', eyes: 'round', mouth: 'smile', top: 'round', tail: 'none', feet: 'paws', arms: 'none', pattern: 'glow' },
+    look: { body: 'beast', eyes: 'round', mouth: 'smile', top: 'round', tail: 'none', feet: 'paws', arms: 'none', pattern: 'glow' },
   },
 
   // ───────────── CAVE (big eyes, glow spots) ─────────────
@@ -723,7 +723,7 @@ const LIST: MonsterData[] = [
     ability: { name: 'Tunnel Time', description: 'Digs tunnels as fast as a train!' },
     fact: "Digsby's nose can smell a worm from far away.",
     colors: { main: C.plum, accent: C.pinkLight, belly: C.lavender, eye: C.pinkLight },
-    look: { body: 'round', eyes: 'big', mouth: 'fang', top: 'none', tail: 'none', feet: 'paws', arms: 'nubs', pattern: 'glow', belly: true },
+    look: { body: 'long', eyes: 'big', mouth: 'fang', top: 'none', tail: 'none', feet: 'paws', arms: 'nubs', pattern: 'glow', belly: true },
   },
   {
     id: 'shimmershell', name: 'Shimmershell', habitat: 'cave', type: 'Stone', rarity: 'uncommon', size: 'small',

@@ -1,15 +1,18 @@
 import './parent.css';
 import { MONSTERS } from '../monsters/worlds';
-import { isPrintReady, preparePrint, printColoringPages } from '../print/printer';
 import { type AutoSave } from '../save/autosave';
 import { backupSave, clearSave, currentSaveText, readBackup, type SaveData, writeSave } from '../save/save';
 import { downloadSave, downloadText, readSaveFile } from '../save/transfer';
+import { WORLD_LIST } from '../worlds';
+import { worldProgress } from '../worlds/progress';
+import { PrintPicker } from './printPicker';
 
 /**
  * The grown-ups area, hidden behind a gear you must HOLD for 3 seconds
  * (a quick tap does nothing, so little fingers won't open it by accident).
  *   - download the save as a file / load a save file (to move between devices)
  *   - reset the game (asks first, and keeps a backup copy)
+ *   - print coloring pages of a whole world or one realm (see printPicker.ts)
  */
 const HOLD_SECONDS = 3;
 const GEAR_ICON =
@@ -29,8 +32,7 @@ export class ParentArea {
   private holdStart: number | null = null;
   private pendingImport: SaveData | null = null;
   private message = '';
-  /** "Print all": idle → getting pages ready → ready to print (a second tap opens the print dialog). */
-  private printing: 'idle' | 'preparing' = 'idle';
+  private prints: PrintPicker;
   isOpen = false;
 
   constructor(
@@ -42,6 +44,9 @@ export class ParentArea {
     /** Opens the picture "how to play" again. */
     private showHowToPlay: () => void,
   ) {
+    this.prints = new PrintPicker(save, () => {
+      if (this.isOpen) this.render('main');
+    });
     this.gear = document.createElement('button');
     this.gear.className = 'gear-button nes-box';
     this.gear.setAttribute('aria-label', 'Grown-ups: hold for 3 seconds');
@@ -92,6 +97,7 @@ export class ParentArea {
     this.isOpen = true;
     this.root.hidden = false;
     this.message = '';
+    this.prints.showLastWorld();
     this.render('main');
   }
 
@@ -130,7 +136,10 @@ export class ParentArea {
       <header><h2>Grown-ups</h2><button data-act="close" aria-label="Close">✕</button></header>
       ${this.recovered ? `<p class="parent__note">A damaged save was found when the game started, so a new game began. A copy of the damaged save was kept (download it below).</p>` : ''}
       ${this.message ? `<p class="parent__note">${this.message}</p>` : ''}
-      <p>Monsters found: <b>${found} / ${MONSTERS.length}</b></p>
+      <p>Monsters found: <b>${found} / ${MONSTERS.length}</b> (${WORLD_LIST.map((w) => {
+        const p = worldProgress(w, this.save.collection);
+        return `${w.name} ${p.found}/${p.total}`;
+      }).join(' · ')})</p>
 
       <h3>Move progress between devices</h3>
       <p>Download a save file here, then load it on the other device (tablet ↔ computer). Nothing is sent over the internet.</p>
@@ -143,9 +152,9 @@ export class ParentArea {
       <div class="parent__row"><button data-act="howto">Show the how-to-play pictures again</button></div>
 
       <h3>Coloring pages</h3>
-      <p>One page per monster found, ready to print on US Letter paper.</p>
+      <p>One page per monster found, ready to print on US Letter paper. Pick a world, then print all of it or just one realm.</p>
       ${isIosHomeScreenApp() ? `<p class="parent__note">On iPad, printing doesn't always work from the Home Screen app. If nothing happens, open the game in Safari and print from there.</p>` : ''}
-      <div class="parent__row">${this.printButton()}</div>
+      ${this.prints.html()}
 
       <h3>Start over</h3>
       <div class="parent__row"><button data-act="reset" class="danger">Reset game…</button></div>
@@ -154,44 +163,14 @@ export class ParentArea {
         <div class="parent__row"><button data-act="download-backup">Download backup</button></div>` : ''}`;
   }
 
-  /** Monsters Layne has found, in book order. */
-  private caught() {
-    return MONSTERS.filter((m) => this.save.collection[m.id]);
-  }
-
-  private printButton(): string {
-    const n = this.caught().length;
-    const pages = `${n} ${n === 1 ? 'page' : 'pages'}`;
-    if (n === 0) return `<button disabled>Print all caught monsters (none found yet)</button>`;
-    if (this.printing === 'preparing') return `<button disabled>Getting ${pages} ready…</button>`;
-    if (isPrintReady(this.caught())) return `<button data-act="print-all">Ready! Print ${pages}</button>`;
-    return `<button data-act="print-all">Print all caught monsters (${pages})</button>`;
-  }
-
-  private async printAll(): Promise<void> {
-    const list = this.caught();
-    if (isPrintReady(list)) {
-      printColoringPages(list); // straight from the tap, so tablets allow the print dialog
-      return;
-    }
-    // First tap: build the pages (can take a moment), then ask for a second tap to print.
-    this.printing = 'preparing';
-    this.render('main');
-    await preparePrint(list);
-    this.printing = 'idle';
-    if (this.isOpen) this.render('main');
-  }
-
   private onClick(e: MouseEvent): void {
+    if (this.prints.onClick(e.target as HTMLElement)) return;
     const act = (e.target as HTMLElement).closest<HTMLElement>('[data-act]')?.dataset.act;
     switch (act) {
       case 'close':
         return this.close();
       case 'back':
         return this.render('main');
-      case 'print-all':
-        void this.printAll();
-        return;
       case 'howto':
         this.close();
         this.showHowToPlay();

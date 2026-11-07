@@ -25,6 +25,10 @@ These rules apply to every task in this project.
 
 - The game has several worlds (registry in `src/worlds/`, monsters in `src/monsters/worlds/`).
 - Every world has exactly 9 realms and 108 monsters: 12 per realm, exactly 2 rare per realm (the island, made first, may have fewer).
+- In every world, every realm: at most 4 round/blob bodies, and no two monsters with the same body AND the same main color.
+- Names: one word, 2-4 syllables, easy to say, no "-mon" ending, not one letter away from another monster's name, and nothing that sounds like a brand, product or famous character.
+- Friendly art only: round eyes, rounded teeth, soft shapes.
+- To add a world, follow docs/ADDING-A-WORLD.md.
 - Worlds may be inspired by real places, but use original names, and no real logos, mascots, brand colors used as a logo, or menu item names.
 - Monster ids and names are unique across ALL worlds. World ids, monster ids and map ids are saved: never change them once shipped. New worlds' map ids are `<worldId>/<mapName>`.
 - Indoor / real-place worlds use the building engine (`src/worlds/building/`): draw the maps as ASCII templates, list tiles, decorations and realms. Every walkable square must be reachable from the start (checked on `/gallery`).
