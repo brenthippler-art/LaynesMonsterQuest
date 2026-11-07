@@ -38,7 +38,7 @@ Developer pages (only while `npm run dev` is running, never part of the real gam
 
 | Address | What it is |
 |---|---|
-| `/gallery` | Every monster of every world, in color and as coloring pages, with data checks per world |
+| `/gallery` | Every monster of every world, in color and as coloring pages, with data checks per world. The **Parts** tab (`/gallery#parts`) shows every body and part at all 4 sizes, plus 6 gallery-only test monsters with a coloring-page print check |
 | `/devices` | The game at iPad and phone sizes, portrait and landscape, side by side |
 
 In the browser console during `npm run dev`, `__lmq` lets you peek at the game
@@ -184,7 +184,7 @@ There's no cloud sync, on purpose.
 |---|---|
 | Worlds and their 9 realms (labels, icons, music) | `src/worlds/` (the island is `src/worlds/island/`) |
 | Monster names, abilities, facts, colors, looks | `src/monsters/worlds/` (one file per world, e.g. `island.ts`) |
-| Monster body parts (ears, tails, eyes…) | `src/monsters/art/` |
+| Monster body parts (ears, tails, eyes…) | `src/monsters/art/` (one file per group: `bodies.ts`, `creatureBodies.ts`, `objectBodies.ts`, `tops.ts`, `creatureTops.ts`, `hats.ts`, `limbs.ts`, `creatureLimbs.ts`, `wings.ts`, `creatureTails.ts`, `face.ts`, `patterns.ts`, `heads.ts`) |
 | Layne's pixel art | `src/render/layneSprites.ts` |
 | Trees, cacti and other decorations | `src/render/decorSprites.ts` |
 | The music (written as text!) | `src/audio/tracks.ts` |

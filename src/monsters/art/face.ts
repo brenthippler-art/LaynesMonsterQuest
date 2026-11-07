@@ -11,7 +11,8 @@ export type EyeStyle =
   | 'cyclops' // one big eye
   | 'stalks'; // eyes on stalks (snails, crabs, frogs)
 
-export type MouthStyle = 'smile' | 'open' | 'fang' | 'beak' | 'cat' | 'o' | 'grin';
+/** 'snout' = a dragon/horse muzzle with two nostril dots and a smile. */
+export type MouthStyle = 'smile' | 'open' | 'fang' | 'beak' | 'cat' | 'o' | 'grin' | 'snout';
 
 export interface Face {
   eyeY: number;
@@ -26,6 +27,7 @@ const TONGUE = '#F87858';
 const FLAT = { shade: false };
 
 export function faceLayout(b: Body): Face {
+  if (b.face) return b.face; // a body that puts its face somewhere special (a toilet, a toaster)
   const eyeY = b.cy - b.ry * 0.15;
   return { eyeY, eyeDX: Math.min(24, Math.max(15, b.rx * 0.38)), mouthY: eyeY + Math.max(19, b.ry * 0.4) };
 }
@@ -114,6 +116,13 @@ export function drawMouth(pen: Pen, f: Face, style: MouthStyle, c: Palette): str
       return line(pen, `M${n(x - 10)} ${n(y - 2)} Q${n(x - 5)} ${n(y + 6)} ${n(x)} ${n(y - 1)} Q${n(x + 5)} ${n(y + 6)} ${n(x + 10)} ${n(y - 2)}`);
     case 'o':
       return ellipse(pen, x, y + 4, 5.5, 7, MOUTH, 0, FLAT);
+    case 'snout':
+      return (
+        ellipse(pen, x, y + 1, 20, 13, c.belly) +
+        inkDot(pen, x - 6.5, y - 3, 2.6, 2.2) +
+        inkDot(pen, x + 6.5, y - 3, 2.6, 2.2) +
+        line(pen, `M${n(x - 9)} ${n(y + 4)} Q${n(x)} ${n(y + 11)} ${n(x + 9)} ${n(y + 4)}`)
+      );
   }
 }
 

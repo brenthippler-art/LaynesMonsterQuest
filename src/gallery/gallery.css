@@ -123,3 +123,57 @@ figcaption {
 p {
   margin: 6px 0;
 }
+
+/* ---------- Tabs: Monsters | Parts ---------- */
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.tabs a {
+  padding: 8px 18px;
+  border-radius: 8px 8px 0 0;
+  background: #ddd;
+  color: #222;
+  text-decoration: none;
+  font-weight: 700;
+}
+.tabs a.on {
+  background: #222;
+  color: #fff;
+}
+
+/* ---------- Parts tab ---------- */
+.grid.wide {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 560px), 1fr));
+}
+.card h3 small {
+  font-weight: normal;
+  color: #777;
+}
+.sizes {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+  margin-top: 6px;
+}
+.test__row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  align-items: start;
+}
+.check {
+  font-weight: 600;
+}
+/* A whole US Letter coloring page, shrunk to fit the card (the page is 7.3 x 9.85 in). */
+.cp-preview {
+  width: calc(7.3in * 0.17);
+  height: calc(9.85in * 0.17);
+  overflow: hidden;
+  margin: 4px auto;
+}
+.cp-preview .cp-page {
+  transform: scale(0.17);
+  transform-origin: 0 0;
+}

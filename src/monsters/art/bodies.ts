@@ -1,11 +1,20 @@
-import { n } from './pen';
+import { BASE_RX, BASE_RY, type Body, CENTER_X, densify, GROUND_Y, type Pt, ring, sharpPath, smoothPath, TAU } from './bodyKit';
+import { type CreatureShape, makeCreatureBody } from './creatureBodies';
+import { makeObjectBody, type ObjectShape } from './objectBodies';
+
+export { type Body, CENTER_X, GROUND_Y } from './bodyKit';
 
 /**
  * Body shapes. Every body is built from points around an ellipse (center
  * cx/cy, half-width rx, half-height ry), bent into a shape. The points also
  * tell the other parts where to attach: "how high is the head at this x?"
+ *
+ * The animal bodies with separate heads live in creatureBodies.ts, and the
+ * "living object" bodies in objectBodies.ts.
  */
-export type BodyShape =
+export type BodyShape = RoundishShape | CreatureShape | ObjectShape;
+
+type RoundishShape =
   | 'round' // a ball
   | 'pear' // narrow top, wide bottom
   | 'tall' // a standing bean
@@ -17,45 +26,10 @@ export type BodyShape =
   | 'blob' // wobbly drippy bottom (swamp slime)
   | 'crystal'; // a gem with flat sides (ice, caves)
 
-interface Pt {
-  x: number;
-  y: number;
-}
-
-export interface Body {
-  d: string;
-  cx: number;
-  cy: number;
-  rx: number;
-  ry: number;
-  top: number;
-  bottom: number;
-  left: number;
-  right: number;
-  /** y of the body's top edge at this x (where ears and horns attach). */
-  topYAt(x: number): number;
-  /** x of the body's left (-1) or right (1) edge at this y (where arms and tails attach). */
-  sideXAt(y: number, side: 1 | -1): number;
-}
-
-/** Everything stands on this line; the picture is 250 wide x 210 tall. */
-export const CENTER_X = 100;
-export const GROUND_Y = 166;
-const BASE_RX = 54;
-const BASE_RY = 48;
-const TAU = Math.PI * 2;
-
 /** sign-preserving power: rounds an ellipse into a soft box (e < 1) */
 const spow = (v: number, e: number) => Math.sign(v) * Math.abs(v) ** e;
 
-/** N points around the shape, starting at the top and going clockwise. */
-function ring(count: number, at: (t: number) => Pt): Pt[] {
-  const out: Pt[] = [];
-  for (let i = 0; i < count; i++) out.push(at(-Math.PI / 2 + (i / count) * TAU));
-  return out;
-}
-
-function outline(shape: BodyShape, cx: number, cy: number, rx: number, ry: number): { points: Pt[]; sharp: boolean } {
+function outline(shape: RoundishShape, cx: number, cy: number, rx: number, ry: number): { points: Pt[]; sharp: boolean } {
   const oval = (t: number, kx = 1, ky = 1): Pt => ({ x: cx + rx * Math.cos(t) * kx, y: cy + ry * Math.sin(t) * ky });
   switch (shape) {
     case 'round':
@@ -117,36 +91,16 @@ function outline(shape: BodyShape, cx: number, cy: number, rx: number, ry: numbe
   }
 }
 
-/** Straight lines between points (spikes, gems). */
-function sharpPath(p: Pt[]): string {
-  return p.map((q, i) => `${i ? 'L' : 'M'}${n(q.x)} ${n(q.y)}`).join(' ') + ' Z';
-}
-
-/** A smooth curve through all the points (Catmull-Rom turned into Bézier curves). */
-function smoothPath(p: Pt[]): string {
-  const len = p.length;
-  let d = `M${n(p[0].x)} ${n(p[0].y)}`;
-  for (let i = 0; i < len; i++) {
-    const p0 = p[(i - 1 + len) % len];
-    const p1 = p[i];
-    const p2 = p[(i + 1) % len];
-    const p3 = p[(i + 2) % len];
-    d += ` C${n(p1.x + (p2.x - p0.x) / 6)} ${n(p1.y + (p2.y - p0.y) / 6)} ${n(p2.x - (p3.x - p1.x) / 6)} ${n(p2.y - (p3.y - p1.y) / 6)} ${n(p2.x)} ${n(p2.y)}`;
-  }
-  return d + ' Z';
-}
-
-/** Extra in-between points, so "where's the edge here?" has a close answer even for a 6-sided gem. */
-function densify(p: Pt[], steps: number): Pt[] {
-  const out: Pt[] = [];
-  p.forEach((a, i) => {
-    const b = p[(i + 1) % p.length];
-    for (let s = 0; s < steps; s++) out.push({ x: a.x + ((b.x - a.x) * s) / steps, y: a.y + ((b.y - a.y) * s) / steps });
-  });
-  return out;
-}
+const CREATURES: readonly string[] = ['dragon', 'serpent', 'beast', 'bird'] satisfies CreatureShape[];
+const OBJECTS: readonly string[] = ['bowl', 'appliance', 'cart'] satisfies ObjectShape[];
 
 export function makeBody(shape: BodyShape, scale: number): Body {
+  if (CREATURES.includes(shape)) return makeCreatureBody(shape as CreatureShape, scale);
+  if (OBJECTS.includes(shape)) return makeObjectBody(shape as ObjectShape, scale);
+  return makeRoundishBody(shape as RoundishShape, scale);
+}
+
+function makeRoundishBody(shape: RoundishShape, scale: number): Body {
   let rx = BASE_RX * scale;
   let ry = BASE_RY * scale;
   if (shape === 'tall') {

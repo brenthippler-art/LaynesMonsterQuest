@@ -3,10 +3,15 @@ import { type Body, CENTER_X } from './bodies';
 import { drawFlame } from './tops';
 import { circle, ellipse, line, n, type Pen, pts, shape, tube } from './pen';
 
-export type FeetStyle = 'none' | 'stubs' | 'paws' | 'four' | 'flippers' | 'tentacles';
+import { type CreatureFeet, drawCreatureFeet, drawClawArm } from './creatureLimbs';
+import { type CreatureTail, drawCreatureTail } from './creatureTails';
+import { drawBigWing } from './wings';
+
+/** (The newer feet and claw arms are in creatureLimbs.ts, big wings in wings.ts, newer tails in creatureTails.ts.) */
+export type FeetStyle = 'none' | 'stubs' | 'paws' | 'four' | 'flippers' | 'tentacles' | CreatureFeet;
 /** 'wings' = bat wings, 'bird' = feathered wings, 'insect' = two rounded bug wings each side. */
-export type ArmStyle = 'none' | 'nubs' | 'wings' | 'bird' | 'insect' | 'pincers' | 'leaves' | 'flippers';
-export type TailStyle = 'none' | 'puff' | 'curl' | 'leaf' | 'flame' | 'fish' | 'zigzag' | 'long' | 'spiky' | 'fluffy';
+export type ArmStyle = 'none' | 'nubs' | 'wings' | 'bird' | 'insect' | 'pincers' | 'leaves' | 'flippers' | 'dragonwings' | 'feathers' | 'claws';
+export type TailStyle = 'none' | 'puff' | 'curl' | 'leaf' | 'flame' | 'fish' | 'zigzag' | 'long' | 'spiky' | 'fluffy' | CreatureTail;
 
 const SIDES = [-1, 1] as const;
 
@@ -39,6 +44,8 @@ export function drawFeet(pen: Pen, b: Body, style: FeetStyle, c: Palette): strin
           return tube(pen, `M${n(x)} ${n(y - 14)} C${n(x + wiggle)} ${n(y - 2)} ${n(x - wiggle)} ${n(y + 4)} ${n(x)} ${n(y + 12)}`, 9, color);
         })
         .join('');
+    default:
+      return drawCreatureFeet(pen, b, style, c);
   }
 }
 
@@ -95,6 +102,13 @@ export function drawArms(pen: Pen, b: Body, style: ArmStyle, c: Palette): { back
         front += shape(pen, `M${n(x)} ${n(ay)} C${n(x + s * 8)} ${n(ay - 10)} ${n(x + s * 26)} ${n(ay - 6)} ${n(x + s * 32)} ${n(ay + 6)} C${n(x + s * 20)} ${n(ay + 10)} ${n(x + s * 8)} ${n(ay + 8)} ${n(x)} ${n(ay)} Z`, c.accent);
         front += line(pen, `M${n(x + s * 2)} ${n(ay + 1)} L${n(x + s * 26)} ${n(ay + 4)}`);
         break;
+      case 'dragonwings':
+      case 'feathers':
+        back += drawBigWing(pen, b, style, s, wing);
+        break;
+      case 'claws':
+        front += drawClawArm(pen, x, ay, s, c);
+        break;
     }
   }
   return { back, front };
@@ -135,5 +149,7 @@ export function drawTail(pen: Pen, b: Body, style: TailStyle, c: Palette): strin
     }
     case 'fluffy':
       return ellipse(pen, tx + 16, ty - 24, 15, 30, c.main, 28) + ellipse(pen, tx + 28, ty - 46, 8, 10, c.belly, 28);
+    default:
+      return drawCreatureTail(pen, tx, ty, style, c);
   }
 }
