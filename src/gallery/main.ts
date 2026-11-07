@@ -6,13 +6,17 @@ import { monsterSvg } from '../monsters/pixel/monsterSprite';
 import { typeIconSvg } from '../monsters/typeIcons';
 import { WORLD_LIST } from '../worlds';
 import { type WorldDef } from '../worlds/types';
+import { renderPartsPage } from './partsPage';
 
 /**
  * DEV-ONLY review page: every monster as pixel art, in color and as a
  * coloring page, side by side, grouped by world and realm, with data problems
  * listed at the top of each world. Open it with `npm run dev`, then go to /gallery.
  */
-const root = document.getElementById('gallery')!;
+const gallery = document.getElementById('gallery')!;
+// Two tabs: the monsters (with the data checks) and the parts (#parts).
+gallery.innerHTML = `<div class="tabs"><a href="#monsters" data-tab="monsters">Monsters</a><a href="#parts" data-tab="parts">Parts</a></div><div id="page"></div>`;
+const root = document.getElementById('page')!;
 
 function esc(text: string): string {
   return text.replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[ch]!);
@@ -74,7 +78,8 @@ function renderPage(): void {
 /** Sprites take a moment each, so fill the pictures in one monster at a time. */
 async function fillPictures(): Promise<void> {
   for (const m of MONSTERS) {
-    const cardEl = document.getElementById(m.id)!;
+    const cardEl = document.getElementById(m.id);
+    if (!cardEl) return; // switched to the Parts tab
     for (const fig of cardEl.querySelectorAll<HTMLElement>('figure')) {
       const mode = fig.dataset.mode === 'outline' ? 'outline' : 'color';
       fig.querySelector('.pic')!.innerHTML = await monsterSvg(m, mode);
@@ -82,5 +87,19 @@ async function fillPictures(): Promise<void> {
   }
 }
 
-renderPage();
-void fillPictures();
+/** Show the tab the address asks for. In-page links (#island-forest, #parts-bodies) don't redraw the page. */
+let shown = '';
+function route(): void {
+  const tab = location.hash.startsWith('#parts') ? 'parts' : 'monsters';
+  if (tab === shown) return;
+  shown = tab;
+  for (const a of gallery.querySelectorAll<HTMLElement>('.tabs a')) a.classList.toggle('on', a.dataset.tab === tab);
+  if (tab === 'parts') {
+    renderPartsPage(root);
+  } else {
+    renderPage();
+    void fillPictures();
+  }
+}
+window.addEventListener('hashchange', route);
+route();

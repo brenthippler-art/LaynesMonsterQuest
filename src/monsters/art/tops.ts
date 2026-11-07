@@ -1,10 +1,14 @@
 ﻿import { type Palette } from '../monsterTypes';
 import { type Body, CENTER_X } from './bodies';
+import { type CreatureTop, drawCreatureTop } from './creatureTops';
 import { type Face } from './face';
+import { drawHat, type HatTop } from './hats';
 import { circle, ellipse, fluff, line, n, type Pen, pts, shape, tube } from './pen';
 
-/** What's on top of the head. */
+/** What's on top of the head. (The newer animal tops are in creatureTops.ts, the hats in hats.ts.) */
 export type TopStyle =
+  | CreatureTop
+  | HatTop
   | 'none'
   | 'cat' // pointy ears
   | 'bunny' // long ears
@@ -139,6 +143,12 @@ export function drawTop(pen: Pen, b: Body, f: Face, style: TopStyle, c: Palette)
       front += circle(pen, CENTER_X + w * 0.02, by - h * 0.7, 5.5, '#FFFFFF');
       break;
     }
+    case 'crown':
+    case 'chefhat':
+    case 'lid':
+      return drawHat(pen, b, style, c);
+    default:
+      back += drawCreatureTop(pen, b, style, c);
   }
   return { back, front };
 }

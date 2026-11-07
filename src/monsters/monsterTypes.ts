@@ -7,7 +7,14 @@ import { type TopStyle } from './art/tops';
 
 /** The shape of a monster's data. The monsters themselves live in worlds/ (one file per world). */
 
-export type MonsterType = 'Leaf' | 'Frost' | 'Sand' | 'Stone' | 'Splash' | 'Ember' | 'Shadow' | 'Zap' | 'Fluff';
+export type MonsterType =
+  | 'Leaf' | 'Frost' | 'Sand' | 'Stone' | 'Splash' | 'Ember' | 'Shadow' | 'Zap' | 'Fluff'
+  // Added for the newer worlds:
+  | 'Snack' // food
+  | 'Bubble' // soap, water, cleaning
+  | 'Toy' // toys, games, rides
+  | 'Sparkle' // glitter, lights, magic
+  | 'Gear'; // machines, tools, vehicles
 export type Rarity = 'common' | 'uncommon' | 'rare';
 export type Size = 'tiny' | 'small' | 'medium' | 'large';
 
@@ -40,6 +47,10 @@ export interface Look {
   belly?: boolean;
   /** Pink blush (color mode only). */
   cheeks?: boolean;
+  /** A second top, drawn behind `top` (a unicorn's mane behind its horn). Only on bodies with a separate head or extra heads. */
+  extraTop?: TopStyle;
+  /** How many heads (default 1). 2 or 3 adds smaller copies of the head on short necks: hydras, chimeras. */
+  heads?: 1 | 2 | 3;
 }
 
 export interface Monster {
