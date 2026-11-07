@@ -68,6 +68,8 @@ export interface Monster {
   fact: string;
   colors: Palette;
   look: Look;
+  /** Shows up this many times more often than others of the same rarity (default 1). */
+  spawnBoost?: number;
 }
 
 /** A monster as written in a world's file: the same, minus `world` (worldMonsters() adds it). */

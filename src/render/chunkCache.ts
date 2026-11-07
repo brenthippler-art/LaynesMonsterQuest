@@ -100,8 +100,15 @@ function paintStep(b: Build): void {
   const y = b.cy * CHUNK_TILES + ty;
   for (let tx = 0; tx < CHUNK_TILES; tx++) {
     const x = b.cx * CHUNK_TILES + tx;
-    if (!decorPass) drawTile(b.buf, b.map, x, y, tx * TILE_PIXELS, ty * TILE_PIXELS);
-    else if (inBounds(b.map, x, y)) drawDecor(b.buf, b.map.decor[y * b.map.width + x] as Decor, x, y, tx * TILE_PIXELS, ty * TILE_PIXELS);
+    const look = b.map.look; // building worlds draw their own tiles and furniture
+    if (!decorPass) {
+      if (look) look.drawTile(b.buf, b.map, x, y, tx * TILE_PIXELS, ty * TILE_PIXELS);
+      else drawTile(b.buf, b.map, x, y, tx * TILE_PIXELS, ty * TILE_PIXELS);
+    } else if (inBounds(b.map, x, y)) {
+      const d = b.map.decor[y * b.map.width + x];
+      if (look) look.drawDecor(b.buf, d, x, y, tx * TILE_PIXELS, ty * TILE_PIXELS);
+      else drawDecor(b.buf, d as Decor, x, y, tx * TILE_PIXELS, ty * TILE_PIXELS);
+    }
   }
   b.step++;
 }

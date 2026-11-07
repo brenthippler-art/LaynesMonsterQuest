@@ -98,3 +98,40 @@
   border-radius: 8px;
   background: #fff4cc;
 }
+
+/* Coloring pages: a picture button per world, then a button per realm. */
+.parent__worlds,
+.parent__realms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0;
+}
+.parent__world {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 112px;
+  min-height: 64px;
+  border: 3px solid #ccc;
+}
+.parent__world.on {
+  border-color: #0058f8;
+  background: #e6efff;
+}
+.parent__world svg {
+  width: 96px;
+  height: auto;
+  background: #3cbcfc;
+}
+.parent__realms button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.parent__icon svg {
+  width: 24px;
+  height: 24px;
+  display: block;
+}

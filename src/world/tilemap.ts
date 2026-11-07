@@ -1,3 +1,4 @@
+import { type PixelBuffer } from '../render/pixels';
 import { Tile, isWalkableTile } from './tiles';
 
 /** A doorway: step on (x, y) and you appear at (toX, toY) on another map. */
@@ -9,10 +10,30 @@ export interface Door {
   toY: number;
 }
 
-/** One playable map: the overworld, or a single cave. */
+/**
+ * How a map that brings its OWN tiles and decorations (a building world) draws and
+ * walks. Island maps don't have one: they use the island tiles in tiles.ts.
+ */
+export interface MapLook {
+  /** Can Layne walk on this kind of tile? */
+  walkable(t: number): boolean;
+  /** The tile's main color (off the edge of the map, and on the corner map). */
+  color(t: number): string;
+  drawTile(buf: PixelBuffer, map: TileMap, x: number, y: number, ox: number, oy: number): void;
+  drawDecor(buf: PixelBuffer, d: number, x: number, y: number, ox: number, oy: number): void;
+}
+
+/** A little picture on the corner map (a room's realm icon). */
+export interface MapLabel {
+  x: number;
+  y: number;
+  icon: readonly string[];
+}
+
+/** One playable map: the overworld, a single cave, or the inside of a building. */
 export interface TileMap {
   id: string;
-  kind: 'overworld' | 'cave';
+  kind: 'overworld' | 'cave' | 'indoor';
   width: number;
   height: number;
   /** Ground tile for each square (index = y * width + x). */
@@ -25,6 +46,12 @@ export interface TileMap {
   doors: Map<number, Door>;
   /** What's "outside" the edges (ocean for the overworld, rock for caves). */
   outside: Tile;
+  /** Building worlds: their own tiles and decorations (see worlds/building/). */
+  look?: MapLook;
+  /** Building worlds: 1 = furniture stands here and blocks walking. */
+  solid?: Uint8Array;
+  /** Building worlds: realm icons for the corner map, one per room. */
+  labels?: MapLabel[];
 }
 
 export function createMap(
@@ -61,7 +88,10 @@ export function tileAt(map: TileMap, x: number, y: number): Tile {
 }
 
 export function isWalkable(map: TileMap, x: number, y: number): boolean {
-  return isWalkableTile(tileAt(map, x, y));
+  const t = tileAt(map, x, y);
+  if (!(map.look ? map.look.walkable(t) : isWalkableTile(t))) return false;
+  // Furniture (building worlds only) blocks the square it stands on.
+  return !(map.solid && inBounds(map, x, y) && map.solid[indexOf(map, x, y)]);
 }
 
 export function doorAt(map: TileMap, x: number, y: number): Door | undefined {

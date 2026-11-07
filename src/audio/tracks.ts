@@ -28,7 +28,7 @@ export interface Song {
   parts: Part[];
 }
 
-export type SongName = 'title' | 'explore' | 'cave' | 'catch';
+export type SongName = 'title' | 'explore' | 'cave' | 'catch' | 'home';
 
 export const SONGS: Record<SongName, Song> = {
   // The title screen: bright and bouncy, "let's go on an adventure!". F major, 8 bars of eighth notes.
@@ -79,6 +79,39 @@ export const SONGS: Record<SongName, Song> = {
         volume: 0.05,
         notes: `k h s h k h s h | k h s h k h s h | k h s h k h s h | k h s h k h s h
                 k h s h k h s h | k h s h k h s h | k h s h k h s h | k h s h k - - -`,
+      },
+    ],
+  },
+
+  // Home Sweet Home: warm and gentle, like a sunny Saturday morning at home. G major, 8 bars.
+  home: {
+    bpm: 104,
+    stepsPerBeat: 2,
+    parts: [
+      {
+        voice: 'triangle',
+        volume: 0.2,
+        notes: `G5 . B5 . D6 . B5 . | C6 . B5 . A5 . G5 . | A5 . . B5 C6 . A5 . | B5 . . . G5 . . .
+                E5 . G5 . C6 . B5 . | A5 . G5 . F#5 . A5 . | G5 . B5 . A5 . F#5 . | G5 . . . - - - -`,
+      },
+      {
+        voice: 'triangle',
+        volume: 0.18,
+        notes: `G2 . D3 . G2 . D3 . | C3 . G3 . C3 . G3 . | D3 . A3 . D3 . A3 . | G2 . D3 . G2 . D3 .
+                C3 . G3 . C3 . G3 . | D3 . A3 . D3 . F#3 . | G2 . D3 . D3 . A3 . | G2 . D3 . G2 . - -`,
+      },
+      {
+        // A soft music-box sparkle on top.
+        voice: 'pulse',
+        volume: 0.05,
+        notes: `- - - - - - G6 - | - - - - - - E6 - | - - - - - - F#6 - | - - - - - - D6 -
+                - - - - - - E6 - | - - - - - - D6 - | - - - - - - B5 - | - - - - - - - -`,
+      },
+      {
+        voice: 'drums',
+        volume: 0.035,
+        notes: `k - h - s - h - | k - h - s - h - | k - h - s - h - | k - h - s - h -
+                k - h - s - h - | k - h - s - h - | k - h - s - h - | k - h - s - - -`,
       },
     ],
   },

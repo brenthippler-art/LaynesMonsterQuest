@@ -1,6 +1,6 @@
 /* ---------- Encounter screen: an NES-style box over the dimmed world ----------
    The background below is the 'dim' style (data-bg="dim"), used by every island realm.
-   New styles from worlds/types.ts (EncounterBg) go here as .encounter[data-bg='name'] { ... } */
+   Building worlds show a pixel picture of the room instead (data-bg="scene", see .encounter__scene). */
 .encounter {
   position: absolute;
   inset: 0;
@@ -18,6 +18,26 @@
 }
 .encounter[hidden] {
   display: none;
+}
+/* The room picture: stretched to cover the whole screen with crisp pixels, a little darker so the box stands out. */
+.encounter__scene {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  filter: brightness(0.75);
+}
+.encounter__scene[hidden] {
+  display: none;
+}
+.encounter__scene canvas {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  image-rendering: pixelated;
+  display: block;
+}
+.encounter[data-bg='scene'] {
+  isolation: isolate; /* keeps the picture's z-index: -1 inside this screen */
 }
 
 .encounter__box {

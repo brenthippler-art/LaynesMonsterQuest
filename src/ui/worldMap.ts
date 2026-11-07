@@ -1,12 +1,15 @@
 import { NES } from '../render/nesPalette';
 import { PixelBuffer, rgba } from '../render/pixels';
 import { Tile, TILE_INFO } from '../world/tiles';
-import { type TileMap } from '../world/tilemap';
+import { type MapLabel, type TileMap } from '../world/tilemap';
+import { realmIconColor } from './pixelIcon';
 
 /**
  * The little map in the top-right corner, NES style: a black box with a
  * white border, one map pixel per patch of ground, black dots for cave
  * doors, and a blinking dot for Layne. In a cave it shows that cave.
+ * In a building world the walls outline the rooms, and each room shows its
+ * realm icon (at half size).
  */
 const FRAME = 3; // black edge + white line + black gap
 const SIZE_OF_SCREEN = 0.26; // the map is about this fraction of the screen's short side
@@ -82,20 +85,39 @@ export class WorldMap {
     buf.fill(1, 1, 1, buf.height - 2, white);
     buf.fill(buf.width - 2, 1, 1, buf.height - 2, white);
 
+    const colorOf = (t: Tile) => (map.look ? map.look.color(t) : (MAP_COLORS[t] ?? TILE_INFO[t].color));
     for (let my = 0; my < h; my++) {
       for (let mx = 0; mx < w; mx++) {
         const t = map.tiles[my * step * map.width + mx * step] as Tile;
-        buf.set(FRAME + mx, FRAME + my, rgba(MAP_COLORS[t] ?? TILE_INFO[t].color));
+        buf.set(FRAME + mx, FRAME + my, rgba(colorOf(t)));
       }
     }
+    for (const label of map.labels ?? []) drawLabel(buf, label, step);
     // Doors are drawn on top (and bigger), so a door is never skipped when shrinking the map.
     for (const door of map.doors.values()) {
       const t = map.tiles[door.y * map.width + door.x] as Tile;
-      buf.fill(FRAME + Math.floor(door.x / step), FRAME + Math.floor(door.y / step), 2, 2, rgba(MAP_COLORS[t] ?? NES.black));
+      const color = map.look ? NES.gold : (MAP_COLORS[t] ?? NES.black); // stairs and ladders: gold dots
+      buf.fill(FRAME + Math.floor(door.x / step), FRAME + Math.floor(door.y / step), 2, 2, rgba(color));
     }
 
     picture = buf.toCanvas();
     this.pictures.set(map.id, picture);
     return picture;
+  }
+}
+
+/** A room's realm icon at half size (every other pixel), centered on the label's spot. */
+function drawLabel(buf: PixelBuffer, label: MapLabel, step: number): void {
+  const rows = label.icon;
+  const w = Math.ceil(rows[0].length / 2);
+  const h = Math.ceil(rows.length / 2);
+  const left = FRAME + Math.floor(label.x / step) - Math.floor(w / 2);
+  const top = FRAME + Math.floor(label.y / step) - Math.floor(h / 2);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      // Of each 2x2 block, use the first pixel that isn't see-through.
+      const ch = [rows[y * 2]?.[x * 2], rows[y * 2]?.[x * 2 + 1], rows[y * 2 + 1]?.[x * 2], rows[y * 2 + 1]?.[x * 2 + 1]].find((c) => c && c !== '.');
+      if (ch) buf.set(left + x, top + y, rgba(realmIconColor(ch)));
+    }
   }
 }

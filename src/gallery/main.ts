@@ -30,7 +30,7 @@ function status(problems: string[], allGood: string): string {
 
 function card(m: Monster, index: number): string {
   return `
-    <article class="card" id="${m.id}">
+    <article class="card" id="${m.id}" data-rarity="${m.rarity}">
       <header>
         <span class="num">#${String(index + 1).padStart(3, '0')}</span>
         <h3>${esc(m.name)}</h3>
@@ -55,24 +55,47 @@ function worldSection(world: WorldDef, problems: string[]): string {
     .map((r) => {
       const list = monstersIn(world.id, r.id);
       const cards = list.map((m) => card(m, index++)).join('');
-      return `<section id="${world.id}-${r.id}"><h2>${r.label} <small>(${list.length})</small></h2><div class="grid">${cards}</div></section>`;
+      return `<section class="realm-section" id="${world.id}-${r.id}"><h2>${r.label} <small>(${list.length})</small></h2><div class="grid">${cards}</div></section>`;
     })
     .join('');
-  return `
+  return `<div class="world-block" data-world="${world.id}">
     <h1 id="world-${world.id}">${esc(world.name)} <small>${world.id} · ${count} monsters · ${world.realms.length} realms</small></h1>
-    ${status(problems, `All ${esc(world.name)} checks passed: 9 realms, 12 monsters each, rare rule, unique abilities, short facts.`)}
+    ${status(problems, `All ${esc(world.name)} checks passed (monster data${world.id === 'island' ? '' : ', creature mix, text lengths'} and maps).`)}
     <nav>${nav}</nav>
-    ${sections}`;
+    ${sections}</div>`;
+}
+
+/** Build the world's maps and report what the builder found (e.g. squares Layne could never reach). */
+function mapProblems(world: WorldDef): string[] {
+  try {
+    return world.build(world.seed).problems ?? [];
+  } catch (e) {
+    return [`The maps couldn't be built: ${(e as Error).message}`];
+  }
 }
 
 function renderPage(): void {
   const report = checkAllWorlds(WORLD_LIST, MONSTERS);
   const worldNav = WORLD_LIST.map((w) => `<a href="#world-${w.id}">${esc(w.name)}</a>`).join('');
+  const worldOptions = WORLD_LIST.map((w) => `<option value="${w.id}">${esc(w.name)}</option>`).join('');
   root.innerHTML = `
     <h1>Monster Gallery <small>dev only · ${WORLD_LIST.length} world(s) · ${MONSTERS.length} monsters · pixel art</small></h1>
     ${status(report.across, `Across all worlds: ${MONSTERS.length} monsters, every id and name unique.`)}
+    <div class="filters">
+      <label>World <select id="filter-world"><option value="">All worlds</option>${worldOptions}</select></label>
+      <label><input type="checkbox" id="filter-rare" /> Rares only</label>
+    </div>
     <nav>${worldNav}</nav>
-    ${report.perWorld.map((r) => worldSection(r.world, r.problems)).join('')}`;
+    ${report.perWorld.map((r) => worldSection(r.world, [...r.problems, ...mapProblems(r.world)])).join('')}`;
+}
+
+/** Show only the chosen world and/or only rare monsters (realms with nothing left to show are hidden too). */
+function applyFilters(): void {
+  const world = (document.getElementById('filter-world') as HTMLSelectElement).value;
+  const raresOnly = (document.getElementById('filter-rare') as HTMLInputElement).checked;
+  for (const block of root.querySelectorAll<HTMLElement>('.world-block')) block.hidden = !!world && block.dataset.world !== world;
+  for (const c of root.querySelectorAll<HTMLElement>('.card')) c.hidden = raresOnly && c.dataset.rarity !== 'rare';
+  for (const s of root.querySelectorAll<HTMLElement>('.realm-section')) s.hidden = ![...s.querySelectorAll<HTMLElement>('.card')].some((c) => !c.hidden);
 }
 
 /** Sprites take a moment each, so fill the pictures in one monster at a time. */
@@ -98,6 +121,7 @@ function route(): void {
     renderPartsPage(root);
   } else {
     renderPage();
+    for (const id of ['filter-world', 'filter-rare']) document.getElementById(id)!.addEventListener('change', applyFilters);
     void fillPictures();
   }
 }

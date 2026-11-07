@@ -1,11 +1,15 @@
 import { type WorldDef } from '../worlds/types';
 import { type WorldId } from '../worlds/worldIds';
 import { type Monster } from './monsterTypes';
+import { checkMonsterText, checkRealmLooks, checkRealmMix } from './newWorldRules';
 
 const REALMS_PER_WORLD = 9;
 const PER_REALM = 12;
 const RARE_PER_REALM = 2;
-/** Worlds made before the "exactly 2 rare" rule: they may have FEWER than 2 rare per realm. */
+/**
+ * Worlds made before the newer rules: they may have FEWER than 2 rare per realm, and skip
+ * the extra rules in newWorldRules.ts (creature mix, name and text lengths).
+ */
 const AT_MOST_RARE: WorldId[] = ['island'];
 const MAX_ABILITY_WORDS = 12;
 
@@ -51,10 +55,12 @@ function checkWorld(world: WorldDef, list: Monster[]): string[] {
     const here = list.filter((m) => m.habitat === r.id);
     const rare = here.filter((m) => m.rarity === 'rare').length;
     if (here.length !== PER_REALM) problems.push(`${r.label} has ${here.length} monsters (should be ${PER_REALM}).`);
+    problems.push(...checkRealmLooks(r.label, here));
     if (AT_MOST_RARE.includes(world.id)) {
       if (rare > RARE_PER_REALM) problems.push(`${r.label} has ${rare} rare monsters (max ${RARE_PER_REALM}).`);
-    } else if (rare !== RARE_PER_REALM) {
-      problems.push(`${r.label} has ${rare} rare monsters (should be exactly ${RARE_PER_REALM}).`);
+    } else {
+      if (rare !== RARE_PER_REALM) problems.push(`${r.label} has ${rare} rare monsters (should be exactly ${RARE_PER_REALM}).`);
+      problems.push(...checkRealmMix(r.label, here));
     }
   }
 
@@ -65,6 +71,7 @@ function checkWorld(world: WorldDef, list: Monster[]): string[] {
     if (abilities.has(ability)) problems.push(`Two monsters have the ability "${m.ability.name}".`);
     abilities.add(ability);
     if (sentences(m.fact) > 1) problems.push(`${m.name}: the fact should be one sentence.`);
+    if (!AT_MOST_RARE.includes(world.id)) problems.push(...checkMonsterText(m));
     const d = m.ability.description;
     if (sentences(d) > 1 || d.split(/\s+/).length > MAX_ABILITY_WORDS) {
       problems.push(`${m.name}: the ability description should be one short sentence (${MAX_ABILITY_WORDS} words max).`);

@@ -25,6 +25,19 @@ export const SPRITE_COLORS: Record<string, string> = {
   U: NES.skyLight,
   p: NES.pinkLight,
   P: NES.pink,
+  // Added for building worlds (furniture needs more colors):
+  v: NES.purple,
+  L: NES.lavender,
+  y: NES.yellowLight,
+  o: NES.orangeLight,
+  d: NES.ochre,
+  t: NES.teal,
+  R: NES.red,
+  B: NES.blueDark,
+  i: NES.periwinkle,
+  h: NES.skin,
+  m: NES.mint,
+  e: NES.rose,
 };
 const FLOWER_COLORS = [NES.pink, NES.gold, NES.lavender, NES.redBright, NES.white];
 const CRYSTAL_COLORS = [NES.skyLight, NES.lavender, NES.pinkLight];

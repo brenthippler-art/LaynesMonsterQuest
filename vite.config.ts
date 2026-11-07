@@ -100,13 +100,17 @@ self.addEventListener('fetch', (event) => {
           }
           return response;
         })
-        .catch(() => caches.match('/')),
+        .catch(() => caches.match('/', { ignoreVary: true })),
     );
     return;
   }
   // Everything else (scripts, styles, icons): saved copy first, network if we don't have it.
+  // ignoreVary: the page asks for its script and styles with an "Origin" note (they're marked
+  // crossorigin), but the saved copies were stored without one. Servers that answer
+  // "Vary: Origin" would make those look like different files, and offline the game would
+  // load as a blank page. These are our own fixed files, so the note doesn't matter.
   event.respondWith(
-    caches.match(request).then((hit) => hit || fetch(request).then((response) => {
+    caches.match(request, { ignoreVary: true }).then((hit) => hit || fetch(request).then((response) => {
       if (response.ok) {
         const copy = response.clone();
         caches.open(CACHE).then((c) => c.put(request, copy));

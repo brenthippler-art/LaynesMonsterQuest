@@ -57,6 +57,7 @@ export class EncounterScreen {
     this.root.className = 'encounter';
     this.root.hidden = true;
     this.root.innerHTML = `
+      <div class="encounter__scene" hidden></div>
       <div class="encounter__box nes-box" role="dialog" aria-modal="true">
         <div class="encounter__title"><span class="encounter__type"></span><h2></h2></div>
         <div class="catch-stage">
@@ -153,7 +154,11 @@ export class EncounterScreen {
     this.el.back.hidden = false;
     this.el.ok.hidden = true;
     this.root.className = `encounter rarity-${m.rarity}`;
-    this.root.dataset.bg = bg;
+    this.root.dataset.bg = bg === 'dim' ? 'dim' : 'scene';
+    // A room picture behind the box (building worlds). The same canvas is reused every time.
+    const sceneEl = this.root.querySelector<HTMLElement>('.encounter__scene')!;
+    sceneEl.hidden = bg === 'dim';
+    if (bg !== 'dim') sceneEl.replaceChildren(bg.scene());
     this.root.hidden = false;
     sfx.appear();
   }

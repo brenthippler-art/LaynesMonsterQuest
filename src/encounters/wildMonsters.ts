@@ -40,11 +40,14 @@ export interface WildMonster {
   sprite: HTMLCanvasElement | null;
 }
 
+/** How likely a monster is to be picked: its rarity, times its spawn boost (a few favorites show up extra often). */
+const weight = (m: Monster) => RARITY_WEIGHT[m.rarity] * (m.spawnBoost ?? 1);
+
 function pickMonster(list: Monster[]): Monster | null {
-  const total = list.reduce((sum, m) => sum + RARITY_WEIGHT[m.rarity], 0);
+  const total = list.reduce((sum, m) => sum + weight(m), 0);
   let roll = Math.random() * total;
   for (const m of list) {
-    roll -= RARITY_WEIGHT[m.rarity];
+    roll -= weight(m);
     if (roll < 0) return m;
   }
   return list[0] ?? null;
