@@ -1,275 +1,733 @@
-/* ---------- World picker: fills the screen (the sound button and the gear stay on top) ---------- */
+
+/* =========================================
+   LAYNE'S MONSTER QUEST
+   WORLD PICKER — RESPONSIVE CAROUSEL
+   ========================================= */
+
+/* ---------- Main picker screen ---------- */
+
 .picker {
   position: absolute;
   inset: 0;
+
   display: flex;
   flex-direction: column;
+
+  min-width: 0;
+  min-height: 0;
+
   background: #0058f8;
   pointer-events: auto;
+
+  overflow: hidden;
 }
+
 .picker[hidden] {
   display: none;
 }
+
+/* ---------- Top navigation ---------- */
+
 .picker__top {
-  padding: calc(16px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) 0 calc(16px + env(safe-area-inset-left));
+  position: relative;
+  z-index: 5;
+  flex: 0 0 auto;
+
+  padding:
+    calc(16px + env(safe-area-inset-top))
+    calc(16px + env(safe-area-inset-right))
+    0
+    calc(16px + env(safe-area-inset-left));
 }
 
-/* Landscape: one row of cards that you swipe sideways (snapping to each card). */
-.picker__cards {
-  flex: 1;
-  min-height: 0;
-  display: flex;
+/* ---------- World browser layout ---------- */
+
+/*
+  Three permanent columns:
+
+  LEFT ARROW | WORLD CARDS | RIGHT ARROW
+
+  Grid keeps the arrows beside the cards
+  regardless of screen size or orientation.
+*/
+
+.picker__browser {
+  position: relative;
+
+  display: grid;
+  grid-template-columns:
+    48px
+    minmax(0, 1fr)
+    48px;
+
   align-items: center;
-  gap: 32px;
-  /* Bottom room so the sound button and gear never cover a card. */
-  padding: 40px max(32px, calc(50% - 210px)) 104px;
+  column-gap: 12px;
+
+  flex: 1 1 auto;
+
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 0;
+
+  padding:
+    12px
+    calc(16px + env(safe-area-inset-right))
+    88px
+    calc(16px + env(safe-area-inset-left));
+
+  margin: 0 auto;
+
+  box-sizing: border-box;
+  isolation: isolate;
+}
+
+/* ---------- Horizontal card carousel ---------- */
+
+.picker__cards {
+  grid-column: 2;
+  grid-row: 1;
+
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+
+  align-items: center;
+
+  gap: 24px;
+
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  max-width: 100%;
+
+  padding: 48px 0 16px;
+  margin: 0;
+
   overflow-x: auto;
   overflow-y: hidden;
+
   scroll-snap-type: x mandatory;
-  touch-action: pan-x; /* fingers scroll the row (the rest of the game blocks scrolling) */
-  overscroll-behavior: contain;
+  scroll-padding-inline: 0;
+  scroll-behavior: smooth;
+
+  touch-action: pan-x;
+  overscroll-behavior-x: contain;
+
+  box-sizing: border-box;
+
+  /* Hide scrollbar — Firefox */
+  scrollbar-width: none;
+
+  /* Hide scrollbar — older Edge */
+  -ms-overflow-style: none;
 }
+
+/* Hide scrollbar — Chrome, Safari, Edge */
+.picker__cards::-webkit-scrollbar {
+  display: none;
+}
+
+/* ---------- Navigation arrows ---------- */
+
+.picker__arrow {
+  position: static;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 48px;
+  height: 64px;
+
+  padding: 0;
+  margin: 0;
+
+  background: #0058f8;
+  color: #fcfcfc;
+
+  border: 4px solid #fcfcfc;
+  border-radius: 4px;
+
+  box-shadow: 4px 4px 0 #000;
+
+  font-family: monospace;
+  font-size: 30px;
+  font-weight: bold;
+  line-height: 1;
+
+  cursor: pointer;
+  touch-action: manipulation;
+
+  box-sizing: border-box;
+  z-index: 2;
+
+  transform: none;
+}
+
+/* Left arrow always occupies column 1 */
+.picker__arrow--left {
+  grid-column: 1;
+  grid-row: 1;
+
+  justify-self: center;
+}
+
+/* Right arrow always occupies column 3 */
+.picker__arrow--right {
+  grid-column: 3;
+  grid-row: 1;
+
+  justify-self: center;
+}
+
+/* Arrow interactions */
+
+.picker__arrow:hover {
+  background: #3cbcfc;
+}
+
+.picker__arrow:active {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0 #000;
+}
+
+.picker__arrow:focus-visible {
+  outline: 3px solid #f8b800;
+  outline-offset: 4px;
+}
+
+/* ---------- World cards ---------- */
 
 .world-card {
   position: relative;
-  flex: none;
-  width: min(80vw, 420px);
+
+  /*
+    One card per carousel viewport.
+    Card width remains capped at 420px.
+  */
+
+  flex: 0 0 100%;
+
+  width: 100%;
+  max-width: 420px;
+  min-width: 0;
   min-height: 64px;
+
   display: flex;
   flex-direction: column;
   align-items: center;
+
   gap: 12px;
   padding: 16px;
+
   box-sizing: border-box;
+
   background: #000;
   border: 4px solid #fcfcfc;
-  box-shadow: 0 0 0 4px #000, 0 8px 0 4px #000;
+
+  box-shadow:
+    0 0 0 4px #000,
+    0 8px 0 4px #000;
+
   scroll-snap-align: center;
+  scroll-snap-stop: always;
+
   cursor: pointer;
+
   font: inherit;
   color: inherit;
 }
+
+/* Keep cards centered in the carousel */
+.picker__cards .world-card {
+  flex: 0 0 min(100%, 420px);
+}
+
+/*
+  Center the first and last cards when the
+  carousel is wider than an individual card.
+*/
+.picker__cards::before,
+.picker__cards::after {
+  content: "";
+  flex: 0 0 max(0px, calc((100% - 420px) / 2 - 12px));
+  pointer-events: none;
+}
+
+/* Card interactions */
+
 .world-card:active {
   transform: translateY(6px);
-  box-shadow: 0 0 0 4px #000;
+
+  box-shadow:
+    0 0 0 4px #000;
 }
+
 .world-card:focus-visible {
   outline: 6px solid #f8b800;
   outline-offset: 6px;
 }
+
+/* Completed world */
 .world-card.complete {
   border-color: #f8b800;
 }
+
+/* Pixel-art SVG rendering */
 .world-card svg {
   display: block;
 }
 
+/* ---------- World scene preview ---------- */
+
 .world-card__scene {
   width: 100%;
-  background: #3cbcfc; /* sky */
+
+  background: #3cbcfc;
+
   border: 3px solid #fcfcfc;
+  box-sizing: border-box;
 }
+
 .world-card__scene svg {
+  display: block;
+
   width: 100%;
   height: auto;
 }
-/* Long names (HOME SWEET HOME) shrink to fit the card instead of spilling over its edges. */
+
+/* ---------- World name ---------- */
+
+/*
+  Long names such as HOME SWEET HOME
+  shrink to fit the card.
+*/
+
 .world-card__name {
   display: flex;
   justify-content: center;
+
   width: 100%;
+  min-width: 0;
 }
+
 .world-card__name svg {
+  display: block;
+
   height: clamp(36px, 7vmin, 52px);
   width: auto;
+
   max-width: 100%;
 }
+
+/* ---------- Realm icons ---------- */
+
 .world-card__realms {
   display: grid;
-  grid-template-columns: repeat(9, 1fr);
+
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+
   gap: 4px;
   width: 100%;
+  min-width: 0;
 }
+
+.world-card__realm {
+  min-width: 0;
+}
+
 .world-card__realm svg {
+  display: block;
+
   width: 100%;
   height: auto;
+
   aspect-ratio: 1;
 }
+
+/* ---------- Monster count ---------- */
+
 .world-card__count {
   display: flex;
   align-items: center;
+  justify-content: center;
+
   gap: 10px;
 }
+
 .world-card__count svg {
   height: 32px;
   width: auto;
 }
+
+/* ---------- Completion crown ---------- */
+
 .world-card__crown {
   position: absolute;
+
   top: -40px;
   left: 50%;
+
   width: 88px;
+
   transform: translateX(-50%);
+  pointer-events: none;
 }
+
 .world-card__crown svg {
+  display: block;
+
   width: 100%;
   height: auto;
 }
 
-/* Portrait: cards stacked, scroll up and down. */
-@media (orientation: portrait) {
-  .picker__cards {
-    flex-direction: column;
-    align-items: center;
-    padding: 48px 16px 104px;
-    overflow-x: hidden;
-    overflow-y: auto;
-    scroll-snap-type: y proximity;
-    touch-action: pan-y;
+/* =========================================
+   TABLETS AND SMALLER SCREENS
+   ========================================= */
+
+@media (max-width: 768px) {
+
+  .picker__browser {
+    grid-template-columns:
+      40px
+      minmax(0, 1fr)
+      40px;
+
+    column-gap: 8px;
+
+    padding-left:
+      calc(10px + env(safe-area-inset-left));
+
+    padding-right:
+      calc(10px + env(safe-area-inset-right));
   }
+
+  .picker__arrow {
+    width: 40px;
+    height: 56px;
+
+    font-size: 26px;
+  }
+
+  .picker__cards {
+    gap: 16px;
+  }
+
   .world-card {
-    width: min(100%, 520px);
+    gap: 10px;
+    padding: 12px;
   }
 }
-
-/* Short landscape screens (phones turned sideways): smaller cards, and the back button floats
-   in the corner instead of taking a row, so a whole card (crown included) fits the height. */
-@media (orientation: landscape) and (max-height: 540px) {
-  .picker__top {
-    position: absolute;
-    z-index: 1;
-  }
-  .picker__cards {
-    padding: 44px max(120px, calc(50% - 150px)) 12px;
-  }
-  .world-card {
-    width: min(60vw, (100vh - 210px) * 1.4);
-    width: min(60vw, (100dvh - 210px) * 1.4);
-    gap: 8px;
-    padding: 10px;
-  }
-  .world-card__name svg {
-    height: 28px;
-  }
-  .world-card__count svg {
-    height: 24px;
-  }
-}
-
-
 
 /* =========================================
-   WORLD PICKER — PORTRAIT FIX
+   PORTRAIT MODE
    ========================================= */
 
 @media (orientation: portrait) {
 
-  /* Keep the browser below the top controls */
+  /*
+    Cards remain horizontal.
+    Arrows remain in their grid columns.
+    Only one world card is shown at a time.
+  */
+
   .picker__browser {
-    position: relative;
-    display: flex;
+    grid-template-columns:
+      40px
+      minmax(0, 1fr)
+      40px;
+
     align-items: center;
-    width: 100%;
-    min-width: 0;
-    max-width: 100%;
-    box-sizing: border-box;
-    padding: 0 46px;
-    isolation: isolate;
+
+    column-gap: 8px;
+
+    padding-top: 8px;
+    padding-bottom: 88px;
   }
 
-  /* Force horizontal scrolling in portrait */
-  .picker__browser .picker__cards {
-    display: flex !important;
-    flex-direction: row !important;
-    flex-wrap: nowrap !important;
-    align-items: stretch;
+  .picker__cards {
+    flex-direction: row;
+    flex-wrap: nowrap;
+
+    align-items: center;
+
     gap: 12px;
 
-    width: 100%;
-    min-width: 0;
-    max-width: 100%;
+    padding: 48px 0 16px;
 
-    padding: 8px 0 16px;
-    margin: 0;
-
-    overflow-x: auto !important;
-    overflow-y: hidden !important;
+    overflow-x: auto;
+    overflow-y: hidden;
 
     scroll-snap-type: x mandatory;
-    scroll-behavior: smooth;
-    overscroll-behavior-x: contain;
-    -webkit-overflow-scrolling: touch;
-
-    box-sizing: border-box;
+    touch-action: pan-x;
   }
 
-  /* Each world occupies one browser viewport */
-  .picker__browser .picker__cards > * {
-    flex: 0 0 100% !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    min-width: 0;
+  /* Full-width cards in portrait */
+  .picker__cards .world-card {
+    flex: 0 0 100%;
 
-    scroll-snap-align: center;
-    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
   }
 
-  /* Put arrows in reserved side gutters */
+  /* No spacers needed for full-width cards */
+  .picker__cards::before,
+  .picker__cards::after {
+    display: none;
+  }
+
   .picker__arrow {
-    position: absolute;
-    top: 50%;
-    z-index: 20;
+    width: 40px;
+    height: 56px;
 
-    width: 36px;
-    height: 52px;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    padding: 0;
-    font-size: 24px;
-
-    transform: translateY(-50%);
-  }
-
-  .picker__arrow--left {
-    left: 4px;
-    right: auto;
-  }
-
-  .picker__arrow--right {
-    right: 4px;
-    left: auto;
+    font-size: 26px;
   }
 }
 
-/* Small phones */
-@media (orientation: portrait) and (max-width: 420px) {
+/* =========================================
+   SMALL PHONES
+   ========================================= */
+
+@media (max-width: 480px) {
+
   .picker__browser {
-    padding-left: 38px;
-    padding-right: 38px;
+    grid-template-columns:
+      32px
+      minmax(0, 1fr)
+      32px;
+
+    column-gap: 6px;
+
+    padding-left:
+      calc(6px + env(safe-area-inset-left));
+
+    padding-right:
+      calc(6px + env(safe-area-inset-right));
+
+    padding-bottom: 80px;
   }
 
   .picker__arrow {
-    width: 30px;
-    height: 46px;
+    width: 32px;
+    height: 48px;
+
+    border-width: 3px;
+
+    font-size: 20px;
+
+    box-shadow: 2px 2px 0 #000;
+  }
+
+  .picker__cards {
+    gap: 10px;
+
+    padding-top: 44px;
+    padding-bottom: 12px;
+  }
+
+  .world-card {
+    gap: 8px;
+    padding: 10px;
+
+    border-width: 3px;
+  }
+
+  .world-card__name svg {
+    height: clamp(26px, 7vw, 38px);
+  }
+
+  .world-card__count svg {
+    height: 26px;
+  }
+
+  .world-card__crown {
+    top: -32px;
+    width: 68px;
+  }
+
+  .world-card__realms {
+    gap: 2px;
+  }
+}
+
+/* =========================================
+   SHORT LANDSCAPE SCREENS
+   Phones rotated sideways
+   ========================================= */
+
+@media (orientation: landscape) and (max-height: 540px) {
+
+  /*
+    Float the back button so it does not
+    consume vertical space.
+  */
+
+  .picker__top {
+    position: absolute;
+
+    top: 0;
+    left: 0;
+
+    z-index: 5;
+  }
+
+  .picker__browser {
+    grid-template-columns:
+      40px
+      minmax(0, 1fr)
+      40px;
+
+    column-gap: 10px;
+
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+
+  .picker__cards {
+    gap: 16px;
+
+    padding-top: 36px;
+    padding-bottom: 12px;
+  }
+
+  /*
+    Shrink cards to fit shorter displays.
+  */
+
+  .picker__cards .world-card {
+    flex: 0 0 min(
+      60vw,
+      max(150px, (100dvh - 130px) * 1.4)
+    );
+
+    width: min(
+      60vw,
+      max(150px, (100dvh - 130px) * 1.4)
+    );
+
+    max-width: 420px;
+
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .picker__cards::before,
+  .picker__cards::after {
+    flex-basis: max(
+      0px,
+      calc(
+        (100% - min(
+          60vw,
+          max(150px, (100dvh - 130px) * 1.4)
+        )) / 2 - 8px
+      )
+    );
+  }
+
+  .world-card__name svg {
+    height: 28px;
+  }
+
+  .world-card__count svg {
+    height: 24px;
+  }
+
+  .world-card__crown {
+    top: -28px;
+    width: 60px;
+  }
+
+  .picker__arrow {
+    width: 40px;
+    height: 52px;
+
+    font-size: 24px;
+  }
+}
+
+/* =========================================
+   VERY SHORT LANDSCAPE SCREENS
+   ========================================= */
+
+@media (orientation: landscape) and (max-height: 380px) {
+
+  .picker__browser {
+    padding-top: 0;
+    padding-bottom: 4px;
+  }
+
+  .picker__cards {
+    padding-top: 26px;
+    padding-bottom: 4px;
+  }
+
+  .picker__cards .world-card {
+    flex-basis: min(
+      55vw,
+      max(130px, (100dvh - 105px) * 1.4)
+    );
+
+    width: min(
+      55vw,
+      max(130px, (100dvh - 105px) * 1.4)
+    );
+
+    gap: 5px;
+    padding: 6px;
+  }
+
+  .picker__cards::before,
+  .picker__cards::after {
+    flex-basis: max(
+      0px,
+      calc(
+        (100% - min(
+          55vw,
+          max(130px, (100dvh - 105px) * 1.4)
+        )) / 2 - 8px
+      )
+    );
+  }
+
+  .world-card__name svg {
+    height: 22px;
+  }
+
+  .world-card__count svg {
+    height: 20px;
+  }
+
+  .world-card__crown {
+    top: -22px;
+    width: 48px;
+  }
+
+  .world-card__realms {
+    gap: 2px;
+  }
+
+  .picker__arrow {
+    width: 36px;
+    height: 44px;
+
     font-size: 20px;
   }
 }
 
+/* =========================================
+   ACCESSIBILITY
+   ========================================= */
 
-/* Hide scrollbar but keep scrolling functional */
-.picker__browser .picker__cards {
-  /* Firefox */
-  scrollbar-width: none;
+/* Reduce animation for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
 
-  /* Internet Explorer / old Edge */
-  -ms-overflow-style: none;
+  .picker__cards {
+    scroll-behavior: auto;
+  }
+
+  .world-card,
+  .picker__arrow {
+    transition: none;
+  }
 }
-
-/* Chrome, Safari, and modern Edge */
-.picker__browser .picker__cards::-webkit-scrollbar {
-  display: none;
-}
-
