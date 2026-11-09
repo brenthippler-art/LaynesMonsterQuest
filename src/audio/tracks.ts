@@ -28,7 +28,7 @@ export interface Song {
   parts: Part[];
 }
 
-export type SongName = 'title' | 'explore' | 'cave' | 'catch' | 'home';
+export type SongName = 'title' | 'explore' | 'cave' | 'catch' | 'home' | 'buntown';
 
 export const SONGS: Record<SongName, Song> = {
   // The title screen: bright and bouncy, "let's go on an adventure!". F major, 8 bars of eighth notes.
@@ -112,6 +112,40 @@ export const SONGS: Record<SongName, Song> = {
         volume: 0.035,
         notes: `k - h - s - h - | k - h - s - h - | k - h - s - h - | k - h - s - h -
                 k - h - s - h - | k - h - s - h - | k - h - s - h - | k - h - s - - -`,
+      },
+    ],
+  },
+
+  // Bun Town Burgers: a bouncy diner tune, like a jukebox in a burger place. C major, 8 bars.
+  buntown: {
+    bpm: 144,
+    stepsPerBeat: 2,
+    parts: [
+      {
+        voice: 'pulse',
+        volume: 0.13,
+        notes: `C5 . E5 . G5 . A5 G5 | E5 . C5 . A4 . C5 . | F5 . A5 . C6 . A5 . | G5 . . F5 E5 . D5 .
+                C5 E5 G5 . C6 . G5 . | A5 . G5 . E5 . C5 . | F5 . A5 . G5 . B5 . | C6 . . . - - - -`,
+      },
+      {
+        // Little "chop" chords on the off-beats, like a diner piano.
+        voice: 'square',
+        volume: 0.05,
+        notes: `- E4 - E4 - G4 - G4 | - C4 - C4 - E4 - E4 | - A4 - A4 - C5 - C5 | - B4 - B4 - D5 - D5
+                - E4 - E4 - G4 - G4 | - C4 - C4 - E4 - E4 | - A4 - A4 - B4 - B4 | - E4 - E4 - - - -`,
+      },
+      {
+        // A walking boogie bass.
+        voice: 'triangle',
+        volume: 0.22,
+        notes: `C3 . E3 . G3 . A3 . | A2 . C3 . E3 . G3 . | F2 . A2 . C3 . D3 . | G2 . B2 . D3 . F3 .
+                C3 . E3 . G3 . A3 . | A2 . C3 . E3 . G3 . | F2 . A2 . G2 . B2 . | C3 . G2 . C3 . - -`,
+      },
+      {
+        voice: 'drums',
+        volume: 0.05,
+        notes: `k h s h k k s h | k h s h k k s h | k h s h k k s h | k h s h k k s h
+                k h s h k k s h | k h s h k k s h | k h s h k k s h | k h s h s s s -`,
       },
     ],
   },
