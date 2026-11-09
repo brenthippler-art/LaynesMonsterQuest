@@ -37,6 +37,10 @@ export class MonsterBook {
   private gridScroll = 0;
   /** The world whose page is showing. */
   private world: WorldDef;
+  /** Draws a slot's picture when it scrolls into view (so opening the book is instant, even with hundreds of slots). */
+  private watcher: IntersectionObserver;
+  /** Finished slot pictures ("id:known" or "id:mystery" → SVG), kept for the whole visit. */
+  private art = new Map<string, string>();
   isOpen = false;
 
   constructor(
@@ -60,6 +64,7 @@ export class MonsterBook {
     this.body = this.root.querySelector('.book__body')!;
     parent.append(this.root);
 
+    this.watcher = new IntersectionObserver((seen) => this.onSlotsVisible(seen), { root: this.body, rootMargin: '200px 0px' });
     this.root.addEventListener('click', (e) => this.onClick(e));
     window.addEventListener('keydown', (e) => {
       if (this.isOpen && e.code === 'Escape') this.close();
@@ -79,6 +84,7 @@ export class MonsterBook {
 
   close(): void {
     sfx.click();
+    this.watcher.disconnect();
     this.isOpen = false;
     this.root.hidden = true;
   }
@@ -170,24 +176,40 @@ export class MonsterBook {
       </div>
       ${sections}`;
     this.body.scrollTop = this.gridScroll;
-    void this.fillArt();
+    // Only slots on (or near) the screen get their pictures; the rest wait until you scroll to them.
+    this.watcher.disconnect();
+    for (const slot of this.body.querySelectorAll('.slot')) this.watcher.observe(slot);
   }
 
-  /** Pictures take a moment to build, so fill them in one by one (they're cached after the first time). */
-  private async fillArt(): Promise<void> {
-    for (const m of monstersOf(this.world.id)) {
-      const sprite = await monsterSprite(m, 'small');
-      const slot = this.body.querySelector<HTMLElement>(`.slot[data-id="${m.id}"] .slot__art`);
-      if (!slot) return; // the book was closed or changed page
-      const known = !!this.found(m);
-      const pixels = known ? sprite.color : sprite.color.map((c) => (c ? SILHOUETTE : null));
-      slot.innerHTML = pixelsToSvg(pixels, sprite.width, sprite.height, known ? m.name : 'Mystery monster');
+  private onSlotsVisible(seen: IntersectionObserverEntry[]): void {
+    for (const entry of seen) {
+      if (!entry.isIntersecting) continue;
+      this.watcher.unobserve(entry.target);
+      void this.drawSlot(entry.target as HTMLElement);
     }
+  }
+
+  /** One slot's picture: in color if found, a dark silhouette if not. Made once, then reused. */
+  private async drawSlot(slot: HTMLElement): Promise<void> {
+    const m = MONSTERS.find((x) => x.id === slot.dataset.id);
+    if (!m) return;
+    const known = !!this.found(m);
+    const key = `${m.id}:${known ? 'known' : 'mystery'}`;
+    let svg = this.art.get(key);
+    if (!svg) {
+      const sprite = await monsterSprite(m, 'small');
+      const pixels = known ? sprite.color : sprite.color.map((c) => (c ? SILHOUETTE : null));
+      svg = pixelsToSvg(pixels, sprite.width, sprite.height, known ? m.name : 'Mystery monster');
+      this.art.set(key, svg);
+    }
+    const target = slot.querySelector('.slot__art');
+    if (target && slot.isConnected) target.innerHTML = svg;
   }
 
   // ---------- One monster's page ----------
 
   private showPage(m: Monster): void {
+    this.watcher.disconnect(); // the grid's slots are gone
     const rec = this.found(m)!;
     const realm = realmOf(m);
     const first = rec.firstFound

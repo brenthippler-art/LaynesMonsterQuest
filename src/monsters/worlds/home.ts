@@ -225,10 +225,10 @@ const LIST: MonsterData[] = [
     look: { body: 'drop', eyes: 'big', mouth: 'o', top: 'fins', tail: 'fish', feet: 'none', arms: 'flippers', pattern: 'stripes' },
   },
   {
-    id: 'spongo', name: 'Spongo', habitat: 'bath', type: 'Bubble', rarity: 'common', size: 'small',
+    id: 'spongo', name: 'Soakaroo', habitat: 'bath', type: 'Bubble', rarity: 'common', size: 'small',
     ability: { name: 'Big Squish', description: 'Squishes out a happy splash of soap!' },
-    fact: 'Spongo can soak up a whole puddle in one gulp.',
-    colors: { main: C.yellowLight, accent: C.ochre, belly: C.gold },
+    fact: 'Soakaroo can soak up a whole puddle in one gulp.',
+    colors: { main: C.pinkLight, accent: C.pink, belly: C.rose },
     look: { body: 'square', eyes: 'round', mouth: 'smile', top: 'none', tail: 'none', feet: 'stubs', arms: 'nubs', pattern: 'spots' },
   },
   {
@@ -490,9 +490,9 @@ const LIST: MonsterData[] = [
     look: { body: 'beast', eyes: 'round', mouth: 'cat', top: 'round', tail: 'long', feet: 'paws', arms: 'none', pattern: 'none', belly: true },
   },
   {
-    id: 'gizmoid', name: 'Gizmoid', habitat: 'garage', type: 'Gear', rarity: 'uncommon', size: 'medium',
+    id: 'gizmoid', name: 'Fixabot', habitat: 'garage', type: 'Gear', rarity: 'uncommon', size: 'medium',
     ability: { name: 'Beep Boop', description: 'Beeps and boops a cheerful robot song!' },
-    fact: 'Gizmoid was built from an old radio and a toaster.',
+    fact: 'Fixabot was built from an old radio and a toaster.',
     colors: { main: C.teal, accent: C.redBright, belly: C.mint },
     look: { body: 'appliance', eyes: 'cyclops', mouth: 'grin', top: 'antennae', tail: 'none', feet: 'wheels', arms: 'pincers', pattern: 'none' },
   },
@@ -627,10 +627,10 @@ const LIST: MonsterData[] = [
     look: { body: 'drop', eyes: 'round', mouth: 'smile', top: 'antennae', tail: 'none', feet: 'none', arms: 'insect', pattern: 'none' },
   },
   {
-    id: 'choochee', name: 'Choochee', habitat: 'basement', type: 'Toy', rarity: 'common', size: 'small',
+    id: 'choochee', name: 'Chugglet', habitat: 'basement', type: 'Toy', rarity: 'common', size: 'small',
     ability: { name: 'Track Ride', description: 'Chugs around its toy train track all day!' },
-    fact: 'Choochee says choo choo instead of hello.',
-    colors: { main: C.blueMid, accent: C.redBright, belly: C.gold },
+    fact: 'Chugglet says choo choo instead of hello.',
+    colors: { main: C.green, accent: C.gold, belly: C.yellowLight },
     look: { body: 'cart', eyes: 'happy', mouth: 'open', top: 'none', tail: 'none', feet: 'wheels', arms: 'none', pattern: 'none', cheeks: true },
   },
   {
@@ -662,9 +662,9 @@ const LIST: MonsterData[] = [
     look: { body: 'square', eyes: 'dot', mouth: 'grin', top: 'none', tail: 'none', feet: 'none', arms: 'none', pattern: 'spots' },
   },
   {
-    id: 'pingle', name: 'Pingle', habitat: 'basement', type: 'Toy', rarity: 'uncommon', size: 'tiny',
+    id: 'pingle', name: 'Pingabop', habitat: 'basement', type: 'Toy', rarity: 'uncommon', size: 'tiny',
     ability: { name: 'Ping Pong', description: 'Bounces back and forth across the table!' },
-    fact: 'Pingle has never lost a ping-pong rally.',
+    fact: 'Pingabop has never lost a ping-pong rally.',
     colors: { main: C.white, accent: C.orange, belly: C.orangeLight },
     look: { body: 'round', eyes: 'big', mouth: 'open', top: 'none', tail: 'none', feet: 'none', arms: 'none', pattern: 'none', cheeks: true },
   },

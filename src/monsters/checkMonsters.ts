@@ -1,7 +1,7 @@
 import { type WorldDef } from '../worlds/types';
 import { type WorldId } from '../worlds/worldIds';
 import { type Monster } from './monsterTypes';
-import { checkMonsterText, checkRealmMix } from './newWorldRules';
+import { checkMonsterText, checkRealmLooks, checkRealmMix } from './newWorldRules';
 
 const REALMS_PER_WORLD = 9;
 const PER_REALM = 12;
@@ -55,6 +55,7 @@ function checkWorld(world: WorldDef, list: Monster[]): string[] {
     const here = list.filter((m) => m.habitat === r.id);
     const rare = here.filter((m) => m.rarity === 'rare').length;
     if (here.length !== PER_REALM) problems.push(`${r.label} has ${here.length} monsters (should be ${PER_REALM}).`);
+    problems.push(...checkRealmLooks(r.label, here));
     if (AT_MOST_RARE.includes(world.id)) {
       if (rare > RARE_PER_REALM) problems.push(`${r.label} has ${rare} rare monsters (max ${RARE_PER_REALM}).`);
     } else {

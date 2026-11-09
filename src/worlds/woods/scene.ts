@@ -1,0 +1,21 @@
+/** 32x18 pixel preview for the world-picker card; same palette letters as Island. */
+export const WOODS_SCENE: readonly string[] = [
+  '................................',
+  '.....ggg........ggg......ggg....',
+  '....gGGGg......gGGGg....gGGGg...',
+  '...gGGGGGg....gGGGGGg..gGGGGGg..',
+  '..gGGgGGGGg..gGGgGGGGggGGgGGGGg.',
+  '..gGGGGGGGg..gGGGGGGGggGGGGGGGg.',
+  '...gGGGGGg....gGGGGGg..gGGGGGg..',
+  '....kNNNk......kNNNk....kNNNk...',
+  '.....NNN........NNN......NNN....',
+  '.gggggggggggggggggggggggggggggg.',
+  '.gGGgggGGggggGGggggGGggggGGggGg.',
+  '.gGGgggGGggggGGggggGGggggGGggGg.',
+  '.ggggssssssggggggggggssssssgggg.',
+  '.gggssYYssggggggggggssYYssggggg.',
+  '.ggggssssggggggggggggssssgggggg.',
+  '.gggggggggggggggggggggggggggggg.',
+  '................................',
+  '................................',
+];

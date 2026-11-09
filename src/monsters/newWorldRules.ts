@@ -8,7 +8,8 @@ import { type Monster } from './monsterTypes';
  * Per realm (12 monsters):
  *   - 2 rare, 4 uncommon, 6 common
  *   - not counting the rares: at least 4 CREATURES and at least 2 living OBJECTS
- *   - at most 4 round/blob bodies, and at least 5 different body shapes
+ *   - at least 5 different body shapes
+ * (Every world, the island too: at most 4 round/blob bodies, and no look-alikes. See checkRealmLooks.)
  * Per monster:
  *   - name: one word, a capital then lowercase letters, 2-4 syllables, no "-mon" ending
  *   - ability name 2-3 words; ability description under 12 words; fact one sentence under 15 words
@@ -42,12 +43,28 @@ export function checkRealmMix(label: string, here: Monster[]): string[] {
   const plain = here.filter((m) => m.rarity !== 'rare');
   const creatures = plain.filter(isCreature).length;
   const objects = plain.filter(isObject).length;
-  const blobs = here.filter((m) => BLOB_BODIES.includes(m.look.body)).length;
   const shapes = new Set(here.map((m) => m.look.body)).size;
   if (creatures < 4) problems.push(`${label}: needs at least 4 creatures besides the rares (has ${creatures}).`);
   if (objects < 2) problems.push(`${label}: needs at least 2 living objects besides the rares (has ${objects}).`);
-  if (blobs > 4) problems.push(`${label}: at most 4 round/blob bodies (has ${blobs}).`);
   if (shapes < 5) problems.push(`${label}: needs at least 5 different body shapes (has ${shapes}).`);
+  return problems;
+}
+
+/**
+ * Rules for EVERY world's realms (the island too): at most 4 round/blob bodies, and no two
+ * monsters a kid could mix up (the same body shape in the same main color).
+ */
+export function checkRealmLooks(label: string, here: Monster[]): string[] {
+  const problems: string[] = [];
+  const blobs = here.filter((m) => BLOB_BODIES.includes(m.look.body)).length;
+  if (blobs > 4) problems.push(`${label}: at most 4 round/blob bodies (has ${blobs}).`);
+  const seen = new Map<string, string>();
+  for (const m of here) {
+    const key = `${m.look.body} ${m.colors.main}`;
+    const other = seen.get(key);
+    if (other) problems.push(`${label}: ${other} and ${m.name} look alike (same body, same main color).`);
+    else seen.set(key, m.name);
+  }
   return problems;
 }
 

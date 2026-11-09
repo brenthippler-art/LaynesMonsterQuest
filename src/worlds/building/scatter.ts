@@ -41,15 +41,9 @@ export function scatterDecor(
         if (!fits(plan, map, x, y, kind.place ?? 'any', entries.get(map) ?? [], tileNames)) continue;
         const i = y * map.width + x;
         map.decor[i] = id;
-        if (kind.solid) {
-          const before = floodMap(map, entries.get(map) ?? []).count;
-          map.solid![i] = 1;
-          // The blocked square itself is the only one allowed to go missing.
-          if (floodMap(map, entries.get(map) ?? []).count !== before - 1) {
-            map.solid![i] = 0;
-            map.decor[i] = 0;
-            continue;
-          }
+        if (kind.solid && !staysConnected(map, x, y, entries.get(map) ?? [])) {
+          map.decor[i] = 0;
+          continue;
         }
         placed++;
       }
@@ -68,4 +62,37 @@ function fits(plan: BuildingPlan, map: TileMap, x: number, y: number, place: 'wa
   if (place === 'wall') return touchesWall;
   if (place === 'open') return !touchesWall;
   return true;
+}
+
+/** The 8 squares around (x, y), going round in a circle: N, NE, E, SE, S, SW, W, NW. */
+const RING: [number, number][] = [[0, -1], [1, -1], [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1]];
+
+/**
+ * Put furniture on (x, y) only if that can't wall anything off. Quick test first:
+ * if the open squares around it are still joined to each other going round it,
+ * nothing can get cut off. Only when that's not clear, flood-fill the whole map
+ * (that's slow, so it's rare). Leaves the square solid if it's fine, clear if not.
+ */
+function staysConnected(map: TileMap, x: number, y: number, starts: Point[]): boolean {
+  const i = y * map.width + x;
+  const open = RING.map(([dx, dy]) => isWalkable(map, x + dx, y + dy));
+  // Count the stretches of open squares around the ring that touch a side (not just a corner).
+  let stretches = 0;
+  for (let k = 0; k < 8; k++) {
+    if (!open[k] || open[(k + 7) % 8]) continue; // not the start of a stretch
+    let touchesSide = false;
+    for (let j = k; open[j % 8] && j < k + 8; j++) if (j % 2 === 0) touchesSide = true;
+    if (touchesSide) stretches++;
+  }
+  const allOpen = open.every(Boolean);
+  if (allOpen || stretches <= 1) {
+    map.solid![i] = 1;
+    return true;
+  }
+  const before = floodMap(map, starts).count;
+  map.solid![i] = 1;
+  // The blocked square itself is the only one allowed to go missing.
+  if (floodMap(map, starts).count === before - 1) return true;
+  map.solid![i] = 0;
+  return false;
 }

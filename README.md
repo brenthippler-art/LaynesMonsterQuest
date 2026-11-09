@@ -1,9 +1,8 @@
 # Layne's Monster Quest
 
-A gentle, NES-style pixel-art exploring game made for a 6-year-old. Layne walks
-around a big island (grassland, forest, desert, snow, mountains, beaches,
-swamps, a volcano and underground caves) and finds 108 original monsters that
-live in the places that suit them.
+A gentle, NES-style pixel-art exploring game made for a 6-year-old. Layne picks
+a world, walks around it, and finds original monsters that live in the places
+that suit them. Every world has 9 realms and 108 monsters (216 so far).
 
 - **No losing, ever.** A catch that doesn't work out just means the monster hops off to play; you can find it again.
 - **No reading needed.** Icons, pictures and a wordless how-to-play.
@@ -14,14 +13,41 @@ What's in it:
 
 | | |
 |---|---|
-| World | 200×200 tile island from a fixed seed (the same every time), 6 caves |
-| Monsters | 108 original monsters, 12 per habitat, drawn from parts as 16-bit pixel art |
+| Worlds | See the table below. Each world has 9 realms with 12 monsters each (2 rare) |
+| Monsters | 216 original monsters, drawn from parts as 16-bit pixel art |
 | Catching | Tap when the shrinking ring is in the green zone; 3 tries |
-| Monster Book | Every monster you've found, with silhouettes for the rest |
-| Coloring pages | Print any found monster as a line-art coloring page (US Letter) |
+| Monster Book | A tab per world, a section per realm (found / 12); silhouettes for the ones not found yet |
+| Coloring pages | Print any found monster as a line-art coloring page (US Letter), or a whole world or realm from the grown-ups area |
 | Music & sound | Chiptune music and sound effects, all generated in code |
 | Title & worlds | Title screen with a big PLAY button (carries on where Layne left off) and a world picker: one card per world with its progress |
-| Grown-ups area | Hold the gear for 3 seconds: export/import the save, reset, print all, how-to-play |
+| Grown-ups area | Hold the gear for 3 seconds: export/import the save, reset, print a world or a realm, how-to-play |
+
+### The worlds
+
+| World | id | Map | Realms | Monsters |
+|---|---|---|---|---|
+| Island | `island` | 200×200 island from a fixed seed, 6 caves | grass, forest, desert, snow, hills, beach, swamp, volcano, cave | 108 |
+| Home Sweet Home | `home` | 90×70 house and yard (drawn as ASCII), attic and basement | kitchen, living, bath, bedroom, laundry, garage, attic, basement, yard | 108 |
+
+New worlds are added with one checklist: see [docs/ADDING-A-WORLD.md](docs/ADDING-A-WORLD.md).
+
+### Monster art parts
+
+Every monster is built from parts (see `src/monsters/art/`):
+
+| Part | Choices |
+|---|---|
+| Body | round, pear, tall, square, long, drop, cloud, spiky, blob, crystal · **dragon, serpent, beast, bird** (separate head) · **bowl, appliance, cart** (living objects) |
+| Top | none, cat, bunny, round, horns, antennae, leaf, flame, crystals, tuft, spikes, fins, mushroom · **dragonhorns, unihorn, mane, frill, crown, chefhat, lid** (+ an optional `extraTop`) |
+| Arms | none, nubs, wings, bird, insect, pincers, leaves, flippers · **dragonwings, feathers, claws** |
+| Feet | none, stubs, paws, four, flippers, tentacles · **claws, hooves, wheels** |
+| Tail | none, puff, curl, leaf, flame, fish, zigzag, long, spiky, fluffy · **dragon, serpent, plume** |
+| Eyes / mouth | dot, round, big, happy, sleepy, cyclops, stalks / smile, open, fang, beak, cat, o, grin, **snout** |
+| Pattern | none, spots, stripes, glow, cracks, patches · **scales, checks, sprinkles** |
+| Heads | 1 (default), 2 or 3 |
+| Types | Leaf, Frost, Sand, Stone, Splash, Ember, Shadow, Zap, Fluff · **Snack, Bubble, Toy, Sparkle, Gear** |
+
+Bold = added for the newer worlds. `/gallery#parts` shows every one at all sizes.
 
 ---
 
@@ -38,7 +64,7 @@ Developer pages (only while `npm run dev` is running, never part of the real gam
 
 | Address | What it is |
 |---|---|
-| `/gallery` | Every monster of every world, in color and as coloring pages, with data checks per world. The **Parts** tab (`/gallery#parts`) shows every body and part at all 4 sizes, plus 6 gallery-only test monsters with a coloring-page print check |
+| `/gallery` | Every monster of every world, in color and as coloring pages, with data checks per world, and filters (one world, rares only). The **Parts** tab (`/gallery#parts`) shows every body and part at all 4 sizes, plus 6 gallery-only test monsters with a coloring-page print check |
 | `/devices` | The game at iPad and phone sizes, portrait and landscape, side by side |
 
 In the browser console during `npm run dev`, `__lmq` lets you peek at the game
@@ -93,6 +119,11 @@ Open the game's address in the tablet's browser, then:
 
 It then opens full-screen like an app, and after the first visit it works
 **offline**: a small service worker keeps copies of the game's own files.
+Every world is inside the one game file, so every world works offline.
+
+To check offline play on a computer: `npm run build`, `npm run preview`, open
+the address once and visit each world, then stop the preview server (Ctrl+C)
+or turn off Wi-Fi, reload, and play each world.
 
 **Known limitation:** on iPad/iPhone, printing coloring pages may not work from
 the Home Screen app (an iOS restriction). If nothing happens, open the game in

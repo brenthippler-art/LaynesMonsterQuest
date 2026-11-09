@@ -47,10 +47,75 @@ export class WorldPicker {
     this.root.className = 'picker';
     this.root.hidden = true;
     this.root.setAttribute('aria-label', 'Worlds');
-    this.root.innerHTML = `
-      <div class="picker__top"><button class="nes-button picker__back" aria-label="Back">${BACK_ICON}</button></div>
-      <div class="picker__cards"></div>`;
+    
+this.root.innerHTML = `
+  <div class="picker__top">
+    <button class="nes-button picker__back" aria-label="Back">
+      ${BACK_ICON}
+    </button>
+  </div>
+
+  <div class="picker__browser">
+    <button
+      class="picker__arrow picker__arrow--left"
+      aria-label="Previous world"
+      type="button"
+    >&#10094;</button>
+
+    <div class="picker__cards"></div>
+
+    <button
+      class="picker__arrow picker__arrow--right"
+      aria-label="Next world"
+      type="button"
+    >&#10095;</button>
+  </div>`;
+
     this.cards = this.root.querySelector('.picker__cards')!;
+    
+const leftArrow = this.root.querySelector<HTMLButtonElement>(
+  '.picker__arrow--left'
+)!;
+
+const rightArrow = this.root.querySelector<HTMLButtonElement>(
+  '.picker__arrow--right'
+)!;
+
+const scrollToWorld = (direction: number): void => {
+  const cards = this.cardEls();
+  if (!cards.length) return;
+
+  const center = this.cards.scrollLeft +
+    this.cards.clientWidth / 2;
+
+  const current = cards.reduce((best, card, index) => {
+    const cardCenter = card.offsetLeft +
+      card.offsetWidth / 2;
+
+    const bestCenter = cards[best].offsetLeft +
+      cards[best].offsetWidth / 2;
+
+    return Math.abs(cardCenter - center) <
+      Math.abs(bestCenter - center)
+      ? index
+      : best;
+  }, 0);
+
+  const next = Math.max(
+    0,
+    Math.min(cards.length - 1, current + direction)
+  );
+
+  cards[next].scrollIntoView({
+    behavior: 'smooth',
+    block: 'nearest',
+    inline: 'center',
+  });
+};
+
+leftArrow.addEventListener('click', () => scrollToWorld(-1));
+rightArrow.addEventListener('click', () => scrollToWorld(1));
+
     parent.append(this.root);
 
     this.root.querySelector('.picker__back')!.addEventListener('click', () => actions.onBack());
