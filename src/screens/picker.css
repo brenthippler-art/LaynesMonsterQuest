@@ -155,3 +155,121 @@
     height: 24px;
   }
 }
+
+
+
+/* =========================================
+   WORLD PICKER — PORTRAIT FIX
+   ========================================= */
+
+@media (orientation: portrait) {
+
+  /* Keep the browser below the top controls */
+  .picker__browser {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+    padding: 0 46px;
+    isolation: isolate;
+  }
+
+  /* Force horizontal scrolling in portrait */
+  .picker__browser .picker__cards {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: stretch;
+    gap: 12px;
+
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+
+    padding: 8px 0 16px;
+    margin: 0;
+
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+
+    box-sizing: border-box;
+  }
+
+  /* Each world occupies one browser viewport */
+  .picker__browser .picker__cards > * {
+    flex: 0 0 100% !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0;
+
+    scroll-snap-align: center;
+    box-sizing: border-box;
+  }
+
+  /* Put arrows in reserved side gutters */
+  .picker__arrow {
+    position: absolute;
+    top: 50%;
+    z-index: 20;
+
+    width: 36px;
+    height: 52px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 0;
+    font-size: 24px;
+
+    transform: translateY(-50%);
+  }
+
+  .picker__arrow--left {
+    left: 4px;
+    right: auto;
+  }
+
+  .picker__arrow--right {
+    right: 4px;
+    left: auto;
+  }
+}
+
+/* Small phones */
+@media (orientation: portrait) and (max-width: 420px) {
+  .picker__browser {
+    padding-left: 38px;
+    padding-right: 38px;
+  }
+
+  .picker__arrow {
+    width: 30px;
+    height: 46px;
+    font-size: 20px;
+  }
+}
+
+
+/* Hide scrollbar but keep scrolling functional */
+.picker__browser .picker__cards {
+  /* Firefox */
+  scrollbar-width: none;
+
+  /* Internet Explorer / old Edge */
+  -ms-overflow-style: none;
+}
+
+/* Chrome, Safari, and modern Edge */
+.picker__browser .picker__cards::-webkit-scrollbar {
+  display: none;
+}
+
