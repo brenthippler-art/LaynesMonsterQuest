@@ -90,6 +90,7 @@ export class Renderer {
     ring.sort((a, b) => ahead(b) - ahead(a));
     this.chunks.warmStep(map, ring);
 
+    if (map.rides) this.drawRides(map, camera, s.time);
     if (s.target) this.drawTarget(s.target, camera, s.time);
 
     // Layne and the monsters, back to front: whoever is lower on screen is in front.
@@ -105,6 +106,17 @@ export class Renderer {
       const step = Math.ceil(s.fade * 4) / 4;
       ctx.fillStyle = `rgba(0, 0, 0, ${step})`;
       ctx.fillRect(0, 0, camera.viewW, camera.viewH);
+    }
+  }
+
+  /** Rides and other moving things: only the ones on screen (each is a few small pictures, so this is cheap). */
+  private drawRides(map: TileMap, camera: Camera, time: number) {
+    const t = camera.tilePx;
+    for (const ride of map.rides!) {
+      const sx = camera.originX + ride.x * t;
+      const sy = camera.originY + ride.y * t;
+      if (sx >= camera.viewW || sy >= camera.viewH || sx + ride.w * t <= 0 || sy + ride.h * t <= 0) continue;
+      ride.draw(this.ctx, sx, sy, camera.pixelPx, time);
     }
   }
 

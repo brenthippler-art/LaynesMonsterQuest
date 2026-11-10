@@ -6,7 +6,7 @@
  * This file has no other imports on purpose: the save code needs it, and the
  * save code shouldn't have to load whole worlds just to check an id.
  */
-export const WORLD_IDS = ['island', 'home', 'woods', 'buntown', 'cherrymart', 'sunnyside', 'bigblue'] as const;
+export const WORLD_IDS = ['island', 'home', 'woods', 'buntown', 'cherrymart', 'sunnyside', 'bigblue', 'wonderwhirl'] as const;
 export type WorldId = (typeof WORLD_IDS)[number];
 
 /** The world a brand-new game starts in. */

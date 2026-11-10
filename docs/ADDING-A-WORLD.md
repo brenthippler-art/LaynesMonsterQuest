@@ -38,6 +38,7 @@ A new world should fit in one prompt. Use `src/worlds/home/` and
 ## 7. Put it together
 - [ ] `src/worlds/<id>/index.ts`: `makeBuildingWorld({ id, name, seed, scene, tiles, decor, legend, maps, realms })`.
 - [ ] Add it to `WORLDS` in `src/worlds/index.ts`. (It appears in the world picker, book and gallery by itself.)
+- [ ] Optional: `rides` for things that move (a Ferris wheel turning, cars rolling). Each ride covers squares Layne can't walk on, and its `pose(time)` says where its little pictures go each frame (see `src/worlds/wonderwhirl/rides/` and `src/worlds/building/rides.ts`). `/gallery` reports a ride that covers a walkable square.
 
 ## 8. Monsters: `src/monsters/worlds/<id>.ts`
 - [ ] 108 monsters, **12 per realm: 2 rare, 4 uncommon, 6 common**.

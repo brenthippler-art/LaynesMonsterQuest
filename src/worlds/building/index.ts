@@ -2,6 +2,7 @@ import { inBounds, indexOf, type MapLabel, type MapLook, type TileMap } from '..
 import { type RealmDef, type WorldDef } from '../types';
 import { stampDecor } from './decorPaint';
 import { unreachableSquares } from './reach';
+import { attachRides } from './rides';
 import { scatterDecor } from './scatter';
 import { paintRoomScene } from './scene';
 import { parseMaps } from './template';
@@ -60,11 +61,12 @@ export function makeBuildingWorld(plan: BuildingPlan): WorldDef {
       const { maps, spawn, entries } = parseMaps(plan, look, tileIds, decorIds);
       scatterDecor({ ...plan, seed }, maps, entries, decorIds, tileNames);
       for (const map of maps) map.labels = labelsFor(plan, map, realms);
+      const rideProblems = attachRides(plan, maps);
       return {
         maps,
         spawn,
         realmAt: (map: TileMap, x: number, y: number) => (inBounds(map, x, y) ? (realms[map.biome[indexOf(map, x, y)] - 1] ?? null) : null),
-        problems: unreachableSquares(maps, spawn),
+        problems: [...unreachableSquares(maps, spawn), ...rideProblems],
       };
     },
   };

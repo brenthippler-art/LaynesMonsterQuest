@@ -5,6 +5,7 @@ import { CHERRYMART } from './cherrymart';
 import { HOME } from './home';
 import { ISLAND } from './island';
 import { SUNNYSIDE } from './sunnyside';
+import { WONDERWHIRL } from './wonderwhirl';
 import { WOODS } from './woods';
 import { type RealmDef, type WorldDef } from './types';
 import { type WorldId } from './worldIds';
@@ -21,6 +22,7 @@ export const WORLDS: Record<WorldId, WorldDef> = {
   cherrymart: CHERRYMART,
   sunnyside: SUNNYSIDE,
   bigblue: BIGBLUE,
+  wonderwhirl: WONDERWHIRL,
 };
 
 /** All worlds, in order (for the title screen and /gallery). */

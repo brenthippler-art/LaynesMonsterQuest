@@ -2,7 +2,7 @@
 
 A gentle, NES-style pixel-art exploring game made for a 6-year-old. Layne picks
 a world, walks around it, and finds original monsters that live in the places
-that suit them. Every world has 9 realms and 108 monsters (756 so far).
+that suit them. Every world has 9 realms and 108 monsters (864 so far).
 
 - **No losing, ever.** A catch that doesn't work out just means the monster hops off to play; you can find it again.
 - **No reading needed.** Icons, pictures and a wordless how-to-play.
@@ -14,7 +14,7 @@ What's in it:
 | | |
 |---|---|
 | Worlds | See the table below. Each world has 9 realms with 12 monsters each (2 rare) |
-| Monsters | 756 original monsters, drawn from parts as 16-bit pixel art |
+| Monsters | 864 original monsters, drawn from parts as 16-bit pixel art |
 | Catching | Tap when the shrinking ring is in the green zone; 3 tries |
 | Monster Book | A tab per world, a section per realm (found / 12); silhouettes for the ones not found yet |
 | Coloring pages | Print any found monster as a line-art coloring page (US Letter), or a whole world or realm from the grown-ups area |
@@ -32,6 +32,7 @@ What's in it:
 | Cherry Mart | `cherrymart` | 90×68 department store with a red racetrack aisle, front doors and parking lot (drawn as ASCII); the holiday aisle follows the device's month | deals, toys, home, clothes, tech, cafe, grocery, beauty, holiday | 108 |
 | Sunnyside Elementary | `sunnyside` | 90×70 one-story school (drawn as ASCII): a long hallway with rooms off it, the playground out back and the bus loop out front | class, library, lunch, gym, recess, art, music, science, bus | 108 |
 | Big Blue Mart | `bigblue` | 100×96 giant superstore (drawn as ASCII): a huge parking lot out front, a fenced garden center on the left, an auto center on the right, and departments split by shelves inside; you start in the lot facing the doors | parking, garden, auto, produce, bakery, frozen, sports, pets, tools | 108 |
+| Wonderwhirl Park | `wonderwhirl` | 90×72 outdoor theme park (drawn as ASCII): a front gate and little main street at the bottom, paths around a central fountain, the fireworks plaza at the top; the rides really move (coaster, Ferris wheel, carousel, bumper cars, lazy river, fireworks), and the funhouse is a small map through its doors | gate, coaster, carousel, splash, funhouse, wheel, snacks, bumper, fireworks | 108 |
 
 New worlds are added with one checklist: see [docs/ADDING-A-WORLD.md](docs/ADDING-A-WORLD.md).
 

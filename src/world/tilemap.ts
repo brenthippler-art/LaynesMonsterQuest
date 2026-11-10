@@ -30,6 +30,21 @@ export interface MapLabel {
   icon: readonly string[];
 }
 
+/**
+ * Something on a building map that moves, like a theme-park ride. It's drawn fresh
+ * every frame on top of the ground (the ground itself is painted once and kept), and
+ * under Layne and the monsters. It always stands on squares nobody can walk on.
+ */
+export interface MapRide {
+  /** The squares it covers: top-left corner and size, in tiles. */
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  /** Draw it with its top-left corner at screen spot (sx, sy). p = screen pixels per art pixel. */
+  draw(ctx: CanvasRenderingContext2D, sx: number, sy: number, p: number, time: number): void;
+}
+
 /** One playable map: the overworld, a single cave, or the inside of a building. */
 export interface TileMap {
   id: string;
@@ -52,6 +67,8 @@ export interface TileMap {
   solid?: Uint8Array;
   /** Building worlds: realm icons for the corner map, one per room. */
   labels?: MapLabel[];
+  /** Building worlds: rides and other moving things (see worlds/building/rides.ts). */
+  rides?: MapRide[];
 }
 
 export function createMap(

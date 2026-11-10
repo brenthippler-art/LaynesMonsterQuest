@@ -95,6 +95,33 @@ export interface RealmPlan {
   labelAt?: { map: string; x: number; y: number };
 }
 
+/** One picture of a ride at one moment: which sprite, and where (art pixels from the ride's top-left corner). */
+export interface RidePart {
+  sprite: string;
+  x: number;
+  y: number;
+}
+
+/**
+ * Something that moves (a theme-park ride, a fountain's spray, fireworks): drawn
+ * every frame on top of the map, so it can turn, roll or twinkle. It must stand on
+ * squares nobody can walk on (checked on /gallery), so it never hides Layne or a
+ * monster and never blocks a path.
+ */
+export interface RidePlan {
+  /** Which map it's on (a MapPlan name). */
+  map: string;
+  /** The squares it covers: top-left corner and size, in tiles. Keep its pictures inside them. */
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  /** Its pictures, as pixel art in the decoration letters (any size). */
+  sprites: Record<string, readonly string[]>;
+  /** Where each picture goes `time` seconds after the game started, back to front. */
+  pose(time: number): RidePart[];
+}
+
 export interface BuildingPlan {
   id: WorldId;
   name: string;
@@ -105,4 +132,6 @@ export interface BuildingPlan {
   legend: Record<string, LegendEntry>;
   maps: MapPlan[];
   realms: RealmPlan[];
+  /** Things that move (optional). */
+  rides?: RidePlan[];
 }

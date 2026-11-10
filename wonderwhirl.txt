@@ -1,0 +1,3471 @@
+diff --git a/README.md b/README.md
+index 1649dd6..cd7ae95 100644
+--- a/README.md
++++ b/README.md
+@@ -2,7 +2,7 @@
+ 
+ A gentle, NES-style pixel-art exploring game made for a 6-year-old. Layne picks
+ a world, walks around it, and finds original monsters that live in the places
+-that suit them. Every world has 9 realms and 108 monsters (756 so far).
++that suit them. Every world has 9 realms and 108 monsters (864 so far).
+ 
+ - **No losing, ever.** A catch that doesn't work out just means the monster hops off to play; you can find it again.
+ - **No reading needed.** Icons, pictures and a wordless how-to-play.
+@@ -14,7 +14,7 @@ What's in it:
+ | | |
+ |---|---|
+ | Worlds | See the table below. Each world has 9 realms with 12 monsters each (2 rare) |
+-| Monsters | 756 original monsters, drawn from parts as 16-bit pixel art |
++| Monsters | 864 original monsters, drawn from parts as 16-bit pixel art |
+ | Catching | Tap when the shrinking ring is in the green zone; 3 tries |
+ | Monster Book | A tab per world, a section per realm (found / 12); silhouettes for the ones not found yet |
+ | Coloring pages | Print any found monster as a line-art coloring page (US Letter), or a whole world or realm from the grown-ups area |
+@@ -32,6 +32,7 @@ What's in it:
+ | Cherry Mart | `cherrymart` | 90×68 department store with a red racetrack aisle, front doors and parking lot (drawn as ASCII); the holiday aisle follows the device's month | deals, toys, home, clothes, tech, cafe, grocery, beauty, holiday | 108 |
+ | Sunnyside Elementary | `sunnyside` | 90×70 one-story school (drawn as ASCII): a long hallway with rooms off it, the playground out back and the bus loop out front | class, library, lunch, gym, recess, art, music, science, bus | 108 |
+ | Big Blue Mart | `bigblue` | 100×96 giant superstore (drawn as ASCII): a huge parking lot out front, a fenced garden center on the left, an auto center on the right, and departments split by shelves inside; you start in the lot facing the doors | parking, garden, auto, produce, bakery, frozen, sports, pets, tools | 108 |
++| Wonderwhirl Park | `wonderwhirl` | 90×72 outdoor theme park (drawn as ASCII): a front gate and little main street at the bottom, paths around a central fountain, the fireworks plaza at the top; the rides really move (coaster, Ferris wheel, carousel, bumper cars, lazy river, fireworks), and the funhouse is a small map through its doors | gate, coaster, carousel, splash, funhouse, wheel, snacks, bumper, fireworks | 108 |
+ 
+ New worlds are added with one checklist: see [docs/ADDING-A-WORLD.md](docs/ADDING-A-WORLD.md).
+ 
+diff --git a/docs/ADDING-A-WORLD.md b/docs/ADDING-A-WORLD.md
+index f3009d4..e6fe48e 100644
+--- a/docs/ADDING-A-WORLD.md
++++ b/docs/ADDING-A-WORLD.md
+@@ -38,6 +38,7 @@ A new world should fit in one prompt. Use `src/worlds/home/` and
+ ## 7. Put it together
+ - [ ] `src/worlds/<id>/index.ts`: `makeBuildingWorld({ id, name, seed, scene, tiles, decor, legend, maps, realms })`.
+ - [ ] Add it to `WORLDS` in `src/worlds/index.ts`. (It appears in the world picker, book and gallery by itself.)
++- [ ] Optional: `rides` for things that move (a Ferris wheel turning, cars rolling). Each ride covers squares Layne can't walk on, and its `pose(time)` says where its little pictures go each frame (see `src/worlds/wonderwhirl/rides/` and `src/worlds/building/rides.ts`). `/gallery` reports a ride that covers a walkable square.
+ 
+ ## 8. Monsters: `src/monsters/worlds/<id>.ts`
+ - [ ] 108 monsters, **12 per realm: 2 rare, 4 uncommon, 6 common**.
+diff --git a/src/audio/tracks.ts b/src/audio/tracks.ts
+index f8393ee..26b65ae 100644
+--- a/src/audio/tracks.ts
++++ b/src/audio/tracks.ts
+@@ -28,7 +28,7 @@ export interface Song {
+   parts: Part[];
+ }
+ 
+-export type SongName = 'title' | 'explore' | 'cave' | 'catch' | 'home' | 'buntown' | 'cherrymart' | 'sunnyside' | 'bigblue';
++export type SongName = 'title' | 'explore' | 'cave' | 'catch' | 'home' | 'buntown' | 'cherrymart' | 'sunnyside' | 'bigblue' | 'wonderwhirl';
+ 
+ export const SONGS: Record<SongName, Song> = {
+   // The title screen: bright and bouncy, "let's go on an adventure!". F major, 8 bars of eighth notes.
+@@ -251,6 +251,40 @@ export const SONGS: Record<SongName, Song> = {
+     ],
+   },
+ 
++  // Wonderwhirl Park: a twirly carnival waltz, like a merry-go-round organ (oom-pah-pah). C major, 16 bars of 3/4.
++  wonderwhirl: {
++    bpm: 168,
++    stepsPerBeat: 2,
++    parts: [
++      {
++        voice: 'pulse',
++        volume: 0.13,
++        notes: `E5 . G5 . C6 . | B5 . A5 . G5 . | F5 . A5 . D6 . | C6 . . . B5 . | A5 . F5 . D5 . | G5 . F5 . E5 . | D5 . E5 . F5 . | G5 . . . - -
++                E5 . G5 . C6 . | E6 . D6 . C6 . | A5 . C6 . F6 . | E6 . . . D6 . | C6 . A5 . F5 . | E5 . G5 . B5 . | D6 . B5 . G5 . | C6 . . . - -`,
++      },
++      {
++        // The "oom": a low note on the first beat of every bar.
++        voice: 'triangle',
++        volume: 0.22,
++        notes: `C3 . - - - - | G2 . - - - - | D3 . - - - - | C3 . - - - - | D3 . - - - - | C3 . - - - - | G2 . - - - - | G2 . - - - -
++                C3 . - - - - | C3 . - - - - | F2 . - - - - | C3 . - - - - | F2 . - - - - | C3 . - - - - | G2 . - - - - | C3 . . . - -`,
++      },
++      {
++        // The "pah-pah": two short chord notes on beats two and three, like a carousel organ.
++        voice: 'square',
++        volume: 0.05,
++        notes: `- - E4 - G4 - | - - B3 - D4 - | - - F4 - A4 - | - - E4 - G4 - | - - F4 - A4 - | - - E4 - G4 - | - - B3 - F4 - | - - B3 - D4 -
++                - - E4 - G4 - | - - E4 - G4 - | - - A3 - C4 - | - - E4 - G4 - | - - A3 - C4 - | - - E4 - G4 - | - - B3 - D4 - | - - E4 - - -`,
++      },
++      {
++        voice: 'drums',
++        volume: 0.05,
++        notes: `k - h - h - | k - h - h - | k - h - h - | k - h - h - | k - h - h - | k - h - h - | k - h - h - | k - h - h -
++                k - h - h - | k - h - h - | k - h - h - | k - h - h - | k - h - h - | k - h - h - | k - h - h - | k - h - - -`,
++      },
++    ],
++  },
++
+   // Mysterious, not scary: slow, quiet and echoey, like exploring a big hall of crystals. A minor.
+   cave: {
+     bpm: 76,
+diff --git a/src/monsters/worlds/index.ts b/src/monsters/worlds/index.ts
+index 50790a0..384fbc7 100644
+--- a/src/monsters/worlds/index.ts
++++ b/src/monsters/worlds/index.ts
+@@ -6,6 +6,7 @@ import { CHERRYMART_MONSTERS } from './cherrymart';
+ import { HOME_MONSTERS } from './home';
+ import { ISLAND_MONSTERS } from './island';
+ import { SUNNYSIDE_MONSTERS } from './sunnyside';
++import { WONDERWHIRL_MONSTERS } from './wonderwhirl';
+ import { WOODS_MONSTERS } from '../data/woods';
+ 
+ /**
+@@ -13,7 +14,7 @@ import { WOODS_MONSTERS } from '../data/woods';
+  * Ids are unique across ALL worlds, so the save can keep one collection.
+  * To add a world's monsters: make a file like island.ts and add it here.
+  */
+-export const MONSTERS: Monster[] = [...ISLAND_MONSTERS, ...HOME_MONSTERS, ...WOODS_MONSTERS, ...BUNTOWN_MONSTERS, ...CHERRYMART_MONSTERS, ...SUNNYSIDE_MONSTERS, ...BIGBLUE_MONSTERS];
++export const MONSTERS: Monster[] = [...ISLAND_MONSTERS, ...HOME_MONSTERS, ...WOODS_MONSTERS, ...BUNTOWN_MONSTERS, ...CHERRYMART_MONSTERS, ...SUNNYSIDE_MONSTERS, ...BIGBLUE_MONSTERS, ...WONDERWHIRL_MONSTERS];
+ 
+ /** One world's monsters. */
+ export function monstersOf(world: WorldId): Monster[] {
+diff --git a/src/monsters/worlds/wonderwhirl.ts b/src/monsters/worlds/wonderwhirl.ts
+new file mode 100644
+index 0000000..c5f9a55
+--- /dev/null
++++ b/src/monsters/worlds/wonderwhirl.ts
+@@ -0,0 +1,794 @@
++import { NES as C } from '../../render/nesPalette';
++import { type MonsterData, worldMonsters } from '../monsterTypes';
++
++/**
++ * WONDERWHIRL PARK's monsters: 12 per realm (2 rare, 4 uncommon, 6 common), 108 in total.
++ *
++ * Rules (checked on /gallery, see newWorldRules.ts):
++ *   - every id and name unique across ALL worlds; names one word, 2-4 syllables, no "-mon",
++ *     and no real brand, park, ride or character names
++ *   - per realm, besides the 2 rares: at least 4 creatures and 2 living objects,
++ *     at most 4 round/blob bodies, at least 5 different body shapes
++ *   - ability name 2-3 words, description under 12 words; fact one sentence under 15 words
++ *   - monsters play, help, sing, glow and bounce: they never fight or hurt
++ *
++ * `habitat` is one of the realm ids in src/worlds/wonderwhirl/realms.ts.
++ * `look` picks one part of each kind; see src/monsters/art/ for the options.
++ */
++const LIST: MonsterData[] = [
++  // ───────────── GATE ─────────────
++  {
++    id: 'stubbit', name: 'Stubbit', habitat: 'gate', type: 'Toy', rarity: 'common', size: 'small',
++    ability: { name: 'Ticket Hop', description: 'Hops along the line handing out paper tickets!' },
++    fact: 'Stubbit has one ear shaped like a ticket stub.',
++    colors: { main: C.salmon, accent: C.red, belly: C.pinkLight },
++    look: { body: 'beast', eyes: 'round', mouth: 'cat', top: 'bunny', tail: 'puff', feet: 'paws', arms: 'none', pattern: 'none', belly: true },
++  },
++  {
++    id: 'gatepeep', name: 'Gatepeep', habitat: 'gate', type: 'Fluff', rarity: 'common', size: 'tiny',
++    ability: { name: 'Welcome Chirp', description: 'Chirps a happy hello to every family!' },
++    fact: 'Gatepeep sits on the gate and counts smiles, not people.',
++    colors: { main: C.sky, accent: C.gold, belly: C.white, wing: C.skyLight },
++    look: { body: 'bird', eyes: 'happy', mouth: 'beak', top: 'tuft', tail: 'fluffy', feet: 'stubs', arms: 'bird', pattern: 'none', belly: true },
++  },
++  {
++    id: 'stampaw', name: 'Stampaw', habitat: 'gate', type: 'Toy', rarity: 'common', size: 'small',
++    ability: { name: 'Happy Stamp', description: 'Stamps a smiley face on your hand!' },
++    fact: 'Stampaw has a different stamp on each paw.',
++    colors: { main: C.gold, accent: C.brownRed, belly: C.yellowLight, feet: C.purple },
++    look: { body: 'beast', eyes: 'big', mouth: 'grin', top: 'cat', tail: 'curl', feet: 'paws', arms: 'none', pattern: 'spots', belly: true },
++  },
++  {
++    id: 'boothbox', name: 'Boothbox', habitat: 'gate', type: 'Gear', rarity: 'common', size: 'small',
++    ability: { name: 'Ticket Window', description: 'Slides open its little window and says hi!' },
++    fact: 'Boothbox keeps a jar of stickers for anyone who waves.',
++    colors: { main: C.blueMid, accent: C.white, belly: C.skyLight },
++    look: { body: 'appliance', eyes: 'round', mouth: 'smile', top: 'none', tail: 'none', feet: 'stubs', arms: 'nubs', pattern: 'stripes' },
++  },
++  {
++    id: 'mapkin', name: 'Mapkin', habitat: 'gate', type: 'Leaf', rarity: 'common', size: 'small',
++    ability: { name: 'You Are Here', description: 'Points a little arrow so nobody gets lost!' },
++    fact: 'Mapkin draws a new path on itself every morning.',
++    colors: { main: C.lime, accent: C.greenForest, belly: C.limeLight },
++    look: { body: 'square', eyes: 'dot', mouth: 'smile', top: 'none', tail: 'none', feet: 'stubs', arms: 'nubs', pattern: 'checks' },
++  },
++  {
++    id: 'puffloon', name: 'Puffloon', habitat: 'gate', type: 'Fluff', rarity: 'common', size: 'small',
++    ability: { name: 'String Float', description: 'Floats up high, then drifts gently back down!' },
++    fact: 'Puffloon ties its own string in a perfect bow.',
++    colors: { main: C.violet, accent: C.white, belly: C.lavender },
++    look: { body: 'round', eyes: 'happy', mouth: 'o', top: 'none', tail: 'curl', feet: 'none', arms: 'none', pattern: 'glow', cheeks: true },
++  },
++  {
++    id: 'turnstoat', name: 'Turnstoat', habitat: 'gate', type: 'Gear', rarity: 'uncommon', size: 'medium',
++    ability: { name: 'Click Spin', description: 'Spins the turnstile with a cheerful click-click!' },
++    fact: 'Turnstoat counts every visitor and never loses track.',
++    colors: { main: C.ochre, accent: C.sand, belly: C.yellowLight },
++    look: { body: 'long', eyes: 'round', mouth: 'smile', top: 'round', tail: 'fluffy', feet: 'four', arms: 'none', pattern: 'stripes', belly: true },
++  },
++  {
++    id: 'bandbug', name: 'Bandbug', habitat: 'gate', type: 'Sparkle', rarity: 'uncommon', size: 'tiny',
++    ability: { name: 'Wristband Wrap', description: 'Wraps a glittery band around your wrist!' },
++    fact: 'Bandbug glows a different color for every ride you try.',
++    colors: { main: C.greenSea, accent: C.yellowLight, belly: C.mint, wing: C.seafoam },
++    look: { body: 'pear', eyes: 'big', mouth: 'smile', top: 'antennae', tail: 'none', feet: 'stubs', arms: 'insect', pattern: 'spots', belly: true },
++  },
++  {
++    id: 'tallyclick', name: 'Tallyclick', habitat: 'gate', type: 'Zap', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Happy Count', description: 'Clicks once for every giggle it hears!' },
++    fact: 'Tallyclick has counted more giggles than there are stars.',
++    colors: { main: C.grayLight, accent: C.red, belly: C.white },
++    look: { body: 'bowl', eyes: 'cyclops', mouth: 'grin', top: 'antennae', tail: 'none', feet: 'stubs', arms: 'nubs', pattern: 'none' },
++  },
++  {
++    id: 'pennantail', name: 'Pennantail', habitat: 'gate', type: 'Fluff', rarity: 'uncommon', size: 'medium',
++    ability: { name: 'Flag Flutter', description: 'Waves its pennant tail to say the park is open!' },
++    fact: 'Pennantail flies laps over the gate at opening time.',
++    colors: { main: C.orange, accent: C.yellowLight, belly: C.orangeLight, wing: C.red },
++    look: { body: 'bird', eyes: 'round', mouth: 'beak', top: 'flame', tail: 'zigzag', feet: 'stubs', arms: 'feathers', pattern: 'stripes', belly: true },
++  },
++  {
++    id: 'ticketwyrm', name: 'Ticketwyrm', habitat: 'gate', type: 'Toy', rarity: 'rare', size: 'large',
++    ability: { name: 'Endless Tickets', description: 'Unrolls a ticket for everyone who visits!' },
++    fact: 'Ticketwyrm is one ticket roll long, and still growing.',
++    colors: { main: C.red, accent: C.white, belly: C.pinkLight, eye: C.blueDark },
++    look: { body: 'serpent', eyes: 'happy', mouth: 'grin', top: 'crown', extraTop: 'dragonhorns', tail: 'serpent', feet: 'none', arms: 'none', pattern: 'checks', belly: true },
++  },
++  {
++    id: 'balloonicorn', name: 'Balloonicorn', habitat: 'gate', type: 'Sparkle', rarity: 'rare', size: 'large',
++    ability: { name: 'Sky Prance', description: 'Prances through the air on a balloon string!' },
++    fact: 'Balloonicorn is so light it ties itself to the gate at night.',
++    colors: { main: C.pink, accent: C.gold, belly: C.white, wing: C.pastelBlue },
++    look: { body: 'beast', eyes: 'big', mouth: 'smile', top: 'unihorn', extraTop: 'mane', tail: 'plume', feet: 'hooves', arms: 'wings', pattern: 'glow', belly: true, cheeks: true },
++  },
++
++  // ───────────── COASTER ─────────────
++  {
++    id: 'railbug', name: 'Railbug', habitat: 'coaster', type: 'Gear', rarity: 'common', size: 'tiny',
++    ability: { name: 'Track Check', description: 'Scoots along the rails making sure they shine!' },
++    fact: 'Railbug rides the coaster every day and still squeals.',
++    colors: { main: C.greenBright, accent: C.greenDark, belly: C.limeLight, wing: C.mint },
++    look: { body: 'drop', eyes: 'big', mouth: 'smile', top: 'antennae', tail: 'none', feet: 'stubs', arms: 'insect', pattern: 'spots', belly: true },
++  },
++  {
++    id: 'twistle', name: 'Twistle', habitat: 'coaster', type: 'Toy', rarity: 'common', size: 'small',
++    ability: { name: 'Corkscrew Curl', description: 'Twists itself into a loop for friends to zoom through!' },
++    fact: 'Twistle can tie itself in three bows at once.',
++    colors: { main: C.redBright, accent: C.yellowLight, belly: C.pinkLight },
++    look: { body: 'serpent', eyes: 'happy', mouth: 'grin', top: 'none', tail: 'curl', feet: 'none', arms: 'none', pattern: 'stripes', belly: true },
++  },
++  {
++    id: 'queuefox', name: 'Queuefox', habitat: 'coaster', type: 'Fluff', rarity: 'common', size: 'small',
++    ability: { name: 'Patient Wait', description: 'Tells jokes to everyone waiting in line!' },
++    fact: 'Queuefox thinks waiting in line is half the fun.',
++    colors: { main: C.brownRed, accent: C.white, belly: C.sand },
++    look: { body: 'beast', eyes: 'round', mouth: 'cat', top: 'cat', tail: 'fluffy', feet: 'paws', arms: 'none', pattern: 'none', belly: true },
++  },
++  {
++    id: 'cartlet', name: 'Cartlet', habitat: 'coaster', type: 'Gear', rarity: 'common', size: 'small',
++    ability: { name: 'Front Seat', description: 'Saves the front seat for whoever smiles biggest!' },
++    fact: 'Cartlet honks a tiny horn at the top of every hill.',
++    colors: { main: C.red, accent: C.gold, belly: C.salmon },
++    look: { body: 'cart', eyes: 'round', mouth: 'open', top: 'none', tail: 'none', feet: 'wheels', arms: 'nubs', pattern: 'none' },
++  },
++  {
++    id: 'buckly', name: 'Buckly', habitat: 'coaster', type: 'Stone', rarity: 'common', size: 'tiny',
++    ability: { name: 'Snug Click', description: 'Clicks every lap bar safe and snug!' },
++    fact: 'Buckly makes the best click sound in the whole park.',
++    colors: { main: C.gray, accent: C.yellowLight, belly: C.grayLight },
++    look: { body: 'square', eyes: 'dot', mouth: 'smile', top: 'none', tail: 'none', feet: 'stubs', arms: 'nubs', pattern: 'none' },
++  },
++  {
++    id: 'whooshy', name: 'Whooshy', habitat: 'coaster', type: 'Fluff', rarity: 'common', size: 'small',
++    ability: { name: 'Breezy Rush', description: 'Blows a cool breeze as the coaster zooms by!' },
++    fact: 'Whooshy is made of the wind from a hundred happy rides.',
++    colors: { main: C.white, accent: C.sky, belly: C.skyLight },
++    look: { body: 'cloud', eyes: 'happy', mouth: 'o', top: 'tuft', tail: 'none', feet: 'none', arms: 'nubs', pattern: 'none', cheeks: true },
++  },
++  {
++    id: 'plungeling', name: 'Plungeling', habitat: 'coaster', type: 'Zap', rarity: 'uncommon', size: 'medium',
++    ability: { name: 'Big Drop', description: 'Dives down the biggest hill and lands with a giggle!' },
++    fact: 'Plungeling keeps its little wings tucked in on the drops.',
++    colors: { main: C.purple, accent: C.gold, belly: C.lavender, wing: C.violet },
++    look: { body: 'dragon', eyes: 'big', mouth: 'grin', top: 'horns', tail: 'dragon', feet: 'claws', arms: 'wings', pattern: 'scales', belly: true },
++  },
++  {
++    id: 'inchraff', name: 'Inchraff', habitat: 'coaster', type: 'Leaf', rarity: 'uncommon', size: 'medium',
++    ability: { name: 'Tall Enough', description: 'Measures kids and cheers when they grow!' },
++    fact: 'Inchraff has a ruler painted on its long neck.',
++    colors: { main: C.gold, accent: C.brownDark, belly: C.yellowLight },
++    look: { body: 'long', eyes: 'round', mouth: 'smile', top: 'horns', tail: 'puff', feet: 'hooves', arms: 'none', pattern: 'patches', belly: true },
++  },
++  {
++    id: 'hoorook', name: 'Hoorook', habitat: 'coaster', type: 'Sparkle', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Hooray Call', description: 'Shouts hooray at the top of every loop!' },
++    fact: 'Hoorook rides in the back row so it can see everyone.',
++    colors: { main: C.teal, accent: C.yellowLight, belly: C.seafoam, wing: C.blueMid },
++    look: { body: 'bird', eyes: 'happy', mouth: 'beak', top: 'spikes', tail: 'zigzag', feet: 'stubs', arms: 'bird', pattern: 'none', belly: true },
++  },
++  {
++    id: 'bellbop', name: 'Bellbop', habitat: 'coaster', type: 'Zap', rarity: 'uncommon', size: 'small',
++    ability: { name: 'All Aboard', description: 'Rings a happy ding when the cars roll out!' },
++    fact: 'Bellbop hangs in the station and dings in its sleep.',
++    colors: { main: C.yellowLight, accent: C.ochre, belly: C.white },
++    look: { body: 'bowl', eyes: 'sleepy', mouth: 'o', top: 'round', tail: 'none', feet: 'none', arms: 'nubs', pattern: 'glow' },
++  },
++  {
++    id: 'loopwyrm', name: 'Loopwyrm', habitat: 'coaster', type: 'Zap', rarity: 'rare', size: 'large',
++    ability: { name: 'Loop Ride', description: 'Rides loop after loop, waving at everyone below!' },
++    fact: 'Loopwyrm has never been dizzy, not even once.',
++    colors: { main: C.blue, accent: C.redBright, belly: C.skyLight, wing: C.sky },
++    look: { body: 'dragon', eyes: 'big', mouth: 'grin', top: 'crown', extraTop: 'dragonhorns', tail: 'dragon', feet: 'claws', arms: 'dragonwings', pattern: 'glow', belly: true },
++  },
++  {
++    id: 'zoomgriff', name: 'Zoomgriff', habitat: 'coaster', type: 'Zap', rarity: 'rare', size: 'large',
++    ability: { name: 'Goggle Zoom', description: 'Pulls on its goggles and races the coaster!' },
++    fact: 'Zoomgriff keeps its goggles on even when it naps.',
++    colors: { main: C.orange, accent: C.brownDark, belly: C.yellowLight, wing: C.gold, eye: C.blueDark },
++    look: { body: 'beast', eyes: 'big', mouth: 'beak', top: 'crown', extraTop: 'mane', tail: 'plume', feet: 'claws', arms: 'feathers', pattern: 'stripes', belly: true },
++  },
++
++  // ───────────── CAROUSEL ─────────────
++  {
++    id: 'bobpony', name: 'Bobpony', habitat: 'carousel', type: 'Toy', rarity: 'common', size: 'small',
++    ability: { name: 'Up And Down', description: 'Bobs up and down in time with the music!' },
++    fact: 'Bobpony was painted by hand, one spot at a time.',
++    colors: { main: C.rose, accent: C.gold, belly: C.pinkLight, feet: C.gold },
++    look: { body: 'beast', eyes: 'happy', mouth: 'smile', top: 'mane', tail: 'fluffy', feet: 'hooves', arms: 'none', pattern: 'spots', belly: true },
++  },
++  {
++    id: 'tootbox', name: 'Tootbox', habitat: 'carousel', type: 'Toy', rarity: 'common', size: 'small',
++    ability: { name: 'Organ Tune', description: 'Toots a twirly song from its little pipes!' },
++    fact: 'Tootbox knows forty songs and hums the rest.',
++    colors: { main: C.brownRed, accent: C.gold, belly: C.orangeLight },
++    look: { body: 'appliance', eyes: 'round', mouth: 'o', top: 'crystals', tail: 'none', feet: 'stubs', arms: 'nubs', pattern: 'stripes' },
++  },
++  {
++    id: 'ringaroo', name: 'Ringaroo', habitat: 'carousel', type: 'Sparkle', rarity: 'common', size: 'tiny',
++    ability: { name: 'Lucky Ring', description: 'Hangs out where riders can reach for it!' },
++    fact: 'Ringaroo is shiny brass and loves being polished.',
++    colors: { main: C.gold, accent: C.yellowLight, belly: C.yellowLight },
++    look: { body: 'round', eyes: 'big', mouth: 'grin', top: 'none', tail: 'none', feet: 'stubs', arms: 'nubs', pattern: 'glow', cheeks: true },
++  },
++  {
++    id: 'swanseat', name: 'Swanseat', habitat: 'carousel', type: 'Splash', rarity: 'common', size: 'medium',
++    ability: { name: 'Comfy Glide', description: 'Glides in slow circles for riders who like it gentle!' },
++    fact: 'Swanseat is the comfiest seat on the whole carousel.',
++    colors: { main: C.pastelBlue, accent: C.orange, belly: C.white, wing: C.white },
++    look: { body: 'bird', eyes: 'sleepy', mouth: 'beak', top: 'none', tail: 'curl', feet: 'none', arms: 'bird', pattern: 'none', belly: true },
++  },
++  {
++    id: 'stripetop', name: 'Stripetop', habitat: 'carousel', type: 'Toy', rarity: 'common', size: 'small',
++    ability: { name: 'Shady Twirl', description: 'Spins its striped roof to make a cool breeze!' },
++    fact: 'Stripetop has exactly twelve stripes, and it counts them daily.',
++    colors: { main: C.redBright, accent: C.white, belly: C.pinkLight },
++    look: { body: 'bowl', eyes: 'round', mouth: 'smile', top: 'tuft', tail: 'none', feet: 'stubs', arms: 'nubs', pattern: 'stripes' },
++  },
++  {
++    id: 'tunebee', name: 'Tunebee', habitat: 'carousel', type: 'Leaf', rarity: 'common', size: 'tiny',
++    ability: { name: 'Buzz Along', description: 'Buzzes the tune so nobody forgets the words!' },
++    fact: 'Tunebee buzzes in perfect tune, every single time.',
++    colors: { main: C.yellowLight, accent: C.black, belly: C.white, wing: C.skyLight },
++    look: { body: 'pear', eyes: 'big', mouth: 'o', top: 'antennae', tail: 'none', feet: 'stubs', arms: 'insect', pattern: 'stripes', belly: true },
++  },
++  {
++    id: 'twirlamb', name: 'Twirlamb', habitat: 'carousel', type: 'Fluff', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Wool Spin', description: 'Spins so fast its wool turns into a fluffy cloud!' },
++    fact: 'Twirlamb gets curlier every time it spins around.',
++    colors: { main: C.pinkLight, accent: C.plum, belly: C.white },
++    look: { body: 'beast', eyes: 'sleepy', mouth: 'smile', top: 'horns', tail: 'puff', feet: 'hooves', arms: 'none', pattern: 'patches', belly: true, cheeks: true },
++  },
++  {
++    id: 'whirlizard', name: 'Whirlizard', habitat: 'carousel', type: 'Sparkle', rarity: 'uncommon', size: 'medium',
++    ability: { name: 'Pole Climb', description: 'Climbs the golden poles to wave from the top!' },
++    fact: 'Whirlizard changes color every time the carousel stops.',
++    colors: { main: C.greenSea, accent: C.gold, belly: C.mint },
++    look: { body: 'long', eyes: 'round', mouth: 'grin', top: 'frill', tail: 'curl', feet: 'four', arms: 'none', pattern: 'scales', belly: true },
++  },
++  {
++    id: 'shinepanel', name: 'Shinepanel', habitat: 'carousel', type: 'Sparkle', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Mirror Wink', description: 'Flashes a little sparkle on every rider!' },
++    fact: 'Shinepanel can see every rider at once, and smiles at each.',
++    colors: { main: C.cyan, accent: C.white, belly: C.seafoam },
++    look: { body: 'square', eyes: 'happy', mouth: 'smile', top: 'crystals', tail: 'none', feet: 'none', arms: 'nubs', pattern: 'glow' },
++  },
++  {
++    id: 'steamtoot', name: 'Steamtoot', habitat: 'carousel', type: 'Bubble', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Puff Puff', description: 'Puffs little steam clouds in time with the organ!' },
++    fact: 'Steamtoot smells faintly of warm caramel.',
++    colors: { main: C.grayLight, accent: C.white, belly: C.white },
++    look: { body: 'cloud', eyes: 'happy', mouth: 'o', top: 'none', tail: 'none', feet: 'none', arms: 'nubs', pattern: 'none', cheeks: true },
++  },
++  {
++    id: 'merrycorn', name: 'Merrycorn', habitat: 'carousel', type: 'Sparkle', rarity: 'rare', size: 'large',
++    ability: { name: 'Golden Gallop', description: 'Gallops round and round on its golden pole!' },
++    fact: 'Merrycorn has been the first horse on the carousel for a hundred years.',
++    colors: { main: C.white, accent: C.gold, belly: C.pinkLight, feet: C.gold },
++    look: { body: 'beast', eyes: 'big', mouth: 'smile', top: 'unihorn', extraTop: 'mane', tail: 'plume', feet: 'hooves', arms: 'none', pattern: 'glow', belly: true, cheeks: true },
++  },
++  {
++    id: 'spingriff', name: 'Spingriff', habitat: 'carousel', type: 'Toy', rarity: 'rare', size: 'large',
++    ability: { name: 'Twirl Dance', description: 'Twirls in circles until everyone is giggling!' },
++    fact: 'Spingriff can spin on one claw like a top.',
++    colors: { main: C.lavender, accent: C.gold, belly: C.white, wing: C.violet },
++    look: { body: 'beast', eyes: 'happy', mouth: 'beak', top: 'crown', extraTop: 'mane', tail: 'plume', feet: 'claws', arms: 'feathers', pattern: 'sprinkles', belly: true },
++  },
++
++  // ───────────── SPLASH ─────────────
++  {
++    id: 'floatfish', name: 'Floatfish', habitat: 'splash', type: 'Splash', rarity: 'common', size: 'tiny',
++    ability: { name: 'Lazy Float', description: 'Floats on its back and waves at swimmers!' },
++    fact: 'Floatfish wears tiny water wings, just for fun.',
++    colors: { main: C.orange, accent: C.white, belly: C.orangeLight },
++    look: { body: 'drop', eyes: 'big', mouth: 'o', top: 'fins', tail: 'fish', feet: 'none', arms: 'flippers', pattern: 'stripes', belly: true },
++  },
++  {
++    id: 'bathbill', name: 'Bathbill', habitat: 'splash', type: 'Splash', rarity: 'common', size: 'small',
++    ability: { name: 'Squeaky Quack', description: 'Squeaks so loud the whole pool laughs!' },
++    fact: 'Bathbill bobs around the lazy river all day long.',
++    colors: { main: C.yellowLight, accent: C.orange, belly: C.white, wing: C.gold },
++    look: { body: 'bird', eyes: 'round', mouth: 'beak', top: 'tuft', tail: 'puff', feet: 'flippers', arms: 'bird', pattern: 'none', belly: true },
++  },
++  {
++    id: 'tubetoad', name: 'Tubetoad', habitat: 'splash', type: 'Leaf', rarity: 'common', size: 'small',
++    ability: { name: 'Tube Hop', description: 'Hops from tube to tube without one splash!' },
++    fact: 'Tubetoad carries its own little inner tube everywhere.',
++    colors: { main: C.greenBright, accent: C.redBright, belly: C.limeLight },
++    look: { body: 'beast', eyes: 'stalks', mouth: 'grin', top: 'none', tail: 'none', feet: 'flippers', arms: 'none', pattern: 'spots', belly: true },
++  },
++  {
++    id: 'chairsy', name: 'Chairsy', habitat: 'splash', type: 'Sand', rarity: 'common', size: 'small',
++    ability: { name: 'Comfy Lean', description: 'Leans back so tired grown-ups can rest!' },
++    fact: 'Chairsy folds up flat when it wants a nap.',
++    colors: { main: C.redBright, accent: C.white, belly: C.salmon },
++    look: { body: 'square', eyes: 'sleepy', mouth: 'smile', top: 'none', tail: 'none', feet: 'stubs', arms: 'nubs', pattern: 'stripes' },
++  },
++  {
++    id: 'shadetop', name: 'Shadetop', habitat: 'splash', type: 'Sand', rarity: 'common', size: 'small',
++    ability: { name: 'Cool Shade', description: 'Opens wide to make a shady spot!' },
++    fact: 'Shadetop spins slowly to follow the sun around.',
++    colors: { main: C.pink, accent: C.white, belly: C.pinkLight },
++    look: { body: 'bowl', eyes: 'happy', mouth: 'smile', top: 'round', tail: 'none', feet: 'stubs', arms: 'nubs', pattern: 'stripes' },
++  },
++  {
++    id: 'sprinklet', name: 'Sprinklet', habitat: 'splash', type: 'Splash', rarity: 'common', size: 'tiny',
++    ability: { name: 'Splash Pad', description: 'Squirts tiny fountains for little feet to jump through!' },
++    fact: 'Sprinklet giggles every time someone steps on it.',
++    colors: { main: C.sky, accent: C.white, belly: C.skyLight },
++    look: { body: 'round', eyes: 'happy', mouth: 'open', top: 'tuft', tail: 'none', feet: 'none', arms: 'nubs', pattern: 'spots', cheeks: true },
++  },
++  {
++    id: 'slidotter', name: 'Slidotter', habitat: 'splash', type: 'Splash', rarity: 'uncommon', size: 'medium',
++    ability: { name: 'Belly Slide', description: 'Slides down the water slide on its tummy!' },
++    fact: 'Slidotter has gone down the big slide a thousand times.',
++    colors: { main: C.brownRed, accent: C.sand, belly: C.orangeLight },
++    look: { body: 'long', eyes: 'round', mouth: 'cat', top: 'round', tail: 'long', feet: 'flippers', arms: 'none', pattern: 'none', belly: true },
++  },
++  {
++    id: 'guardseal', name: 'Guardseal', habitat: 'splash', type: 'Frost', rarity: 'uncommon', size: 'medium',
++    ability: { name: 'Safety Whistle', description: 'Toots a whistle to keep everyone safe and happy!' },
++    fact: 'Guardseal sits in the tall chair and waves at everyone.',
++    colors: { main: C.gray, accent: C.red, belly: C.grayLight },
++    look: { body: 'beast', eyes: 'round', mouth: 'smile', top: 'none', tail: 'fish', feet: 'flippers', arms: 'none', pattern: 'none', belly: true },
++  },
++  {
++    id: 'swirleel', name: 'Swirleel', habitat: 'splash', type: 'Splash', rarity: 'uncommon', size: 'medium',
++    ability: { name: 'River Swirl', description: 'Swirls the river so tubes drift along!' },
++    fact: 'Swirleel knows every bend of the lazy river by heart.',
++    colors: { main: C.teal, accent: C.mint, belly: C.seafoam },
++    look: { body: 'serpent', eyes: 'happy', mouth: 'smile', top: 'fins', tail: 'serpent', feet: 'none', arms: 'none', pattern: 'scales', belly: true },
++  },
++  {
++    id: 'jellypop', name: 'Jellypop', habitat: 'splash', type: 'Bubble', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Bubble Bob', description: 'Blows big bubbles that pop into rainbows!' },
++    fact: 'Jellypop is wobbly, squishy and never ever stings.',
++    colors: { main: C.lavender, accent: C.pink, belly: C.white },
++    look: { body: 'blob', eyes: 'big', mouth: 'o', top: 'none', tail: 'none', feet: 'tentacles', arms: 'none', pattern: 'glow', cheeks: true },
++  },
++  {
++    id: 'wavekraken', name: 'Wavekraken', habitat: 'splash', type: 'Splash', rarity: 'rare', size: 'large',
++    ability: { name: 'Wave Maker', description: 'Swishes its arms to make big, splashy waves!' },
++    fact: 'Wavekraken lives under the wave pool and loves cannonballs.',
++    colors: { main: C.blueMid, accent: C.white, belly: C.skyLight },
++    look: { body: 'blob', eyes: 'big', mouth: 'grin', top: 'crown', extraTop: 'fins', tail: 'none', feet: 'tentacles', arms: 'none', pattern: 'glow', cheeks: true },
++  },
++  {
++    id: 'lazywyrm', name: 'Lazywyrm', habitat: 'splash', type: 'Splash', rarity: 'rare', size: 'large',
++    ability: { name: 'Drift Along', description: 'Carries riders gently down the lazy river!' },
++    fact: 'Lazywyrm has napped through every single day of summer.',
++    colors: { main: C.seafoam, accent: C.gold, belly: C.white },
++    look: { body: 'serpent', eyes: 'sleepy', mouth: 'smile', top: 'crown', extraTop: 'fins', tail: 'serpent', feet: 'none', arms: 'none', pattern: 'glow', belly: true },
++  },
++
++  // ───────────── FUNHOUSE ─────────────
++  {
++    id: 'boingfrog', name: 'Boingfrog', habitat: 'funhouse', type: 'Leaf', rarity: 'common', size: 'small',
++    ability: { name: 'Bouncy Floor', description: 'Bounces so high it boops the ceiling!' },
++    fact: 'Boingfrog says boing out loud every time it lands.',
++    colors: { main: C.green, accent: C.pink, belly: C.limeLight },
++    look: { body: 'beast', eyes: 'stalks', mouth: 'grin', top: 'none', tail: 'none', feet: 'flippers', arms: 'none', pattern: 'spots', belly: true },
++  },
++  {
++    id: 'jigglepup', name: 'Jigglepup', habitat: 'funhouse', type: 'Fluff', rarity: 'common', size: 'small',
++    ability: { name: 'Wiggle Walk', description: 'Wiggles across the wobbly floor without falling!' },
++    fact: 'Jigglepup thinks every floor should be a little bit wobbly.',
++    colors: { main: C.orangeLight, accent: C.brownRed, belly: C.yellowLight },
++    look: { body: 'beast', eyes: 'happy', mouth: 'open', top: 'cat', tail: 'curl', feet: 'paws', arms: 'none', pattern: 'patches', belly: true, cheeks: true },
++  },
++  {
++    id: 'wavyglass', name: 'Wavyglass', habitat: 'funhouse', type: 'Sparkle', rarity: 'common', size: 'small',
++    ability: { name: 'Silly Stretch', description: 'Makes you look tall, short and wiggly!' },
++    fact: 'Wavyglass laughs harder than anyone who looks into it.',
++    colors: { main: C.cyan, accent: C.white, belly: C.skyLight },
++    look: { body: 'square', eyes: 'big', mouth: 'grin', top: 'none', tail: 'none', feet: 'stubs', arms: 'nubs', pattern: 'glow' },
++  },
++  {
++    id: 'tiltile', name: 'Tiltile', habitat: 'funhouse', type: 'Stone', rarity: 'common', size: 'tiny',
++    ability: { name: 'Gentle Tilt', description: 'Tips a tiny bit so you giggle as you walk!' },
++    fact: 'Tiltile is the floor square everyone hops on twice.',
++    colors: { main: C.purple, accent: C.yellowLight, belly: C.lavender },
++    look: { body: 'square', eyes: 'dot', mouth: 'smile', top: 'none', tail: 'none', feet: 'none', arms: 'nubs', pattern: 'checks' },
++  },
++  {
++    id: 'hahabox', name: 'Hahabox', habitat: 'funhouse', type: 'Toy', rarity: 'common', size: 'small',
++    ability: { name: 'Joke Pop', description: 'Pops open and tells a knock-knock joke!' },
++    fact: 'Hahabox knows a joke about every kind of cheese.',
++    colors: { main: C.red, accent: C.gold, belly: C.salmon },
++    look: { body: 'appliance', eyes: 'happy', mouth: 'grin', top: 'spikes', tail: 'none', feet: 'stubs', arms: 'nubs', pattern: 'sprinkles' },
++  },
++  {
++    id: 'chucklump', name: 'Chucklump', habitat: 'funhouse', type: 'Bubble', rarity: 'common', size: 'small',
++    ability: { name: 'Giggle Fit', description: 'Chuckles so hard everyone nearby starts laughing!' },
++    fact: 'Chucklump is soft and squishy, like a laughing pillow.',
++    colors: { main: C.pink, accent: C.plum, belly: C.pinkLight },
++    look: { body: 'blob', eyes: 'happy', mouth: 'open', top: 'tuft', tail: 'none', feet: 'stubs', arms: 'nubs', pattern: 'none', cheeks: true },
++  },
++  {
++    id: 'twirlworm', name: 'Twirlworm', habitat: 'funhouse', type: 'Toy', rarity: 'uncommon', size: 'medium',
++    ability: { name: 'Tunnel Twist', description: 'Rolls through the spinning tunnel like a ribbon!' },
++    fact: 'Twirlworm is striped just like the spinning tunnel.',
++    colors: { main: C.yellowLight, accent: C.blue, belly: C.white },
++    look: { body: 'serpent', eyes: 'round', mouth: 'smile', top: 'antennae', tail: 'curl', feet: 'none', arms: 'none', pattern: 'stripes', belly: true },
++  },
++  {
++    id: 'noodlecrane', name: 'Noodlecrane', habitat: 'funhouse', type: 'Fluff', rarity: 'uncommon', size: 'medium',
++    ability: { name: 'Bendy Bow', description: 'Bows so low its beak touches its toes!' },
++    fact: 'Noodlecrane looks extra tall in the stretchy mirror.',
++    colors: { main: C.rose, accent: C.white, belly: C.pinkLight, wing: C.white },
++    look: { body: 'bird', eyes: 'round', mouth: 'beak', top: 'tuft', tail: 'plume', feet: 'stubs', arms: 'bird', pattern: 'none', belly: true },
++  },
++  {
++    id: 'gigglebug', name: 'Gigglebug', habitat: 'funhouse', type: 'Zap', rarity: 'uncommon', size: 'tiny',
++    ability: { name: 'Tickle Buzz', description: 'Buzzes past your ear with a tickly hum!' },
++    fact: 'Gigglebug hides in the funhouse and giggles at nothing.',
++    colors: { main: C.blue, accent: C.yellowLight, belly: C.skyLight, wing: C.white },
++    look: { body: 'pear', eyes: 'big', mouth: 'grin', top: 'antennae', tail: 'none', feet: 'stubs', arms: 'insect', pattern: 'spots', belly: true },
++  },
++  {
++    id: 'honkhorn', name: 'Honkhorn', habitat: 'funhouse', type: 'Toy', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Silly Honk', description: 'Honks a funny sound when you squeeze it!' },
++    fact: 'Honkhorn can honk the first notes of the carousel song.',
++    colors: { main: C.gold, accent: C.red, belly: C.yellowLight },
++    look: { body: 'bowl', eyes: 'round', mouth: 'o', top: 'round', tail: 'none', feet: 'stubs', arms: 'nubs', pattern: 'none' },
++  },
++  {
++    id: 'mirrordrake', name: 'Mirrordrake', habitat: 'funhouse', type: 'Sparkle', rarity: 'rare', size: 'large',
++    ability: { name: 'Mirror Wave', description: 'Waves hello from every mirror at once!' },
++    fact: 'Mirrordrake is in every mirror, but nobody knows which one is real.',
++    colors: { main: C.grayLight, accent: C.cyan, belly: C.white, wing: C.skyLight },
++    look: { body: 'dragon', eyes: 'big', mouth: 'grin', top: 'crown', extraTop: 'crystals', tail: 'dragon', feet: 'claws', arms: 'dragonwings', pattern: 'glow', belly: true },
++  },
++  {
++    id: 'wobblewyvern', name: 'Wobblewyvern', habitat: 'funhouse', type: 'Bubble', rarity: 'rare', size: 'large',
++    ability: { name: 'Jelly Wobble', description: 'Wobbles like jelly and makes everyone dance!' },
++    fact: 'Wobblewyvern is see-through, wiggly and smells like grape jelly.',
++    colors: { main: C.lime, accent: C.violet, belly: C.limeLight, wing: C.mint },
++    look: { body: 'dragon', eyes: 'happy', mouth: 'smile', top: 'crown', extraTop: 'dragonhorns', tail: 'curl', feet: 'stubs', arms: 'wings', pattern: 'glow', belly: true, cheeks: true },
++  },
++
++  // ───────────── WHEEL ─────────────
++  {
++    id: 'cabinpod', name: 'Cabinpod', habitat: 'wheel', type: 'Gear', rarity: 'common', size: 'small',
++    ability: { name: 'Gentle Sway', description: 'Rocks softly so riders can see the whole park!' },
++    fact: 'Cabinpod has a tiny window on every side.',
++    colors: { main: C.redBright, accent: C.yellowLight, belly: C.skyLight },
++    look: { body: 'cart', eyes: 'round', mouth: 'smile', top: 'round', tail: 'none', feet: 'none', arms: 'nubs', pattern: 'none' },
++  },
++  {
++    id: 'peekscope', name: 'Peekscope', habitat: 'wheel', type: 'Gear', rarity: 'common', size: 'small',
++    ability: { name: 'Far Look', description: 'Spots your house from all the way up here!' },
++    fact: 'Peekscope says it can see the moon in daytime.',
++    colors: { main: C.brownRed, accent: C.gold, belly: C.sand },
++    look: { body: 'appliance', eyes: 'cyclops', mouth: 'o', top: 'antennae', tail: 'none', feet: 'stubs', arms: 'nubs', pattern: 'none' },
++  },
++  {
++    id: 'hillhop', name: 'Hillhop', habitat: 'wheel', type: 'Leaf', rarity: 'common', size: 'small',
++    ability: { name: 'Hill Roll', description: 'Rolls down the grassy hill giggling all the way!' },
++    fact: 'Hillhop climbs back up the hill just to roll again.',
++    colors: { main: C.sand, accent: C.greenForest, belly: C.white },
++    look: { body: 'beast', eyes: 'round', mouth: 'cat', top: 'bunny', tail: 'puff', feet: 'paws', arms: 'none', pattern: 'none', belly: true },
++  },
++  {
++    id: 'breezelark', name: 'Breezelark', habitat: 'wheel', type: 'Fluff', rarity: 'common', size: 'tiny',
++    ability: { name: 'Sky Song', description: 'Sings a sweet song on the windy hilltop!' },
++    fact: 'Breezelark rides the wind instead of flapping.',
++    colors: { main: C.sky, accent: C.yellowLight, belly: C.white, wing: C.skyLight },
++    look: { body: 'bird', eyes: 'happy', mouth: 'beak', top: 'tuft', tail: 'fluffy', feet: 'stubs', arms: 'bird', pattern: 'none', belly: true },
++  },
++  {
++    id: 'nimbuff', name: 'Nimbuff', habitat: 'wheel', type: 'Fluff', rarity: 'common', size: 'small',
++    ability: { name: 'Shady Puff', description: 'Floats over hot friends to give them shade!' },
++    fact: 'Nimbuff gets stuck on the top of the Ferris wheel a lot.',
++    colors: { main: C.pastelBlue, accent: C.white, belly: C.white },
++    look: { body: 'cloud', eyes: 'sleepy', mouth: 'smile', top: 'none', tail: 'none', feet: 'none', arms: 'nubs', pattern: 'none', cheeks: true },
++  },
++  {
++    id: 'kitekin', name: 'Kitekin', habitat: 'wheel', type: 'Zap', rarity: 'common', size: 'tiny',
++    ability: { name: 'Kite Loop', description: 'Swoops loop-de-loops on its ribbon tail!' },
++    fact: 'Kitekin has never once gotten tangled in a tree.',
++    colors: { main: C.orange, accent: C.blue, belly: C.orangeLight },
++    look: { body: 'drop', eyes: 'big', mouth: 'grin', top: 'none', tail: 'zigzag', feet: 'none', arms: 'nubs', pattern: 'checks' },
++  },
++  {
++    id: 'spokebug', name: 'Spokebug', habitat: 'wheel', type: 'Gear', rarity: 'uncommon', size: 'tiny',
++    ability: { name: 'Bolt Polish', description: 'Polishes every bolt on the big wheel!' },
++    fact: 'Spokebug rides the wheel from the inside, along the spokes.',
++    colors: { main: C.gray, accent: C.gold, belly: C.grayLight, wing: C.white },
++    look: { body: 'pear', eyes: 'round', mouth: 'smile', top: 'antennae', tail: 'none', feet: 'stubs', arms: 'insect', pattern: 'cracks', belly: true },
++  },
++  {
++    id: 'peakgoat', name: 'Peakgoat', habitat: 'wheel', type: 'Stone', rarity: 'uncommon', size: 'medium',
++    ability: { name: 'Lookout Leap', description: 'Leaps to the highest spot to wave at friends!' },
++    fact: 'Peakgoat thinks the lookout hill is the top of the world.',
++    colors: { main: C.ochre, accent: C.white, belly: C.yellowLight },
++    look: { body: 'beast', eyes: 'happy', mouth: 'smile', top: 'horns', tail: 'puff', feet: 'hooves', arms: 'none', pattern: 'patches', belly: true },
++  },
++  {
++    id: 'flaglet', name: 'Flaglet', habitat: 'wheel', type: 'Toy', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Wind Wave', description: 'Flaps in the breeze to show which way it blows!' },
++    fact: 'Flaglet waves at every cabin going by.',
++    colors: { main: C.violet, accent: C.yellowLight, belly: C.lavender },
++    look: { body: 'square', eyes: 'round', mouth: 'grin', top: 'leaf', tail: 'zigzag', feet: 'stubs', arms: 'nubs', pattern: 'stripes' },
++  },
++  {
++    id: 'soarsaur', name: 'Soarsaur', habitat: 'wheel', type: 'Fluff', rarity: 'uncommon', size: 'medium',
++    ability: { name: 'High Glide', description: 'Glides in big circles around the Ferris wheel!' },
++    fact: 'Soarsaur naps on clouds when the wind is just right.',
++    colors: { main: C.greenSea, accent: C.white, belly: C.mint, wing: C.seafoam },
++    look: { body: 'dragon', eyes: 'round', mouth: 'smile', top: 'horns', tail: 'dragon', feet: 'claws', arms: 'wings', pattern: 'none', belly: true },
++  },
++  {
++    id: 'ferrisphoenix', name: 'Ferrisphoenix', habitat: 'wheel', type: 'Ember', rarity: 'rare', size: 'large',
++    ability: { name: 'Wheel Glow', description: 'Spreads its glowing wings like a turning wheel!' },
++    fact: 'Ferrisphoenix lights up the whole hill at sunset.',
++    colors: { main: C.gold, accent: C.redBright, belly: C.yellowLight, wing: C.orange },
++    look: { body: 'bird', eyes: 'big', mouth: 'beak', top: 'crown', extraTop: 'flame', tail: 'plume', feet: 'claws', arms: 'feathers', pattern: 'glow', belly: true },
++  },
++  {
++    id: 'cloudroc', name: 'Cloudroc', habitat: 'wheel', type: 'Fluff', rarity: 'rare', size: 'large',
++    ability: { name: 'Cloud Carry', description: 'Gives friends soft, fluffy rides across the sky!' },
++    fact: 'Cloudroc is so big that people think it is weather.',
++    colors: { main: C.white, accent: C.sky, belly: C.skyLight, wing: C.pastelBlue },
++    look: { body: 'bird', eyes: 'happy', mouth: 'beak', top: 'crown', extraTop: 'tuft', tail: 'fluffy', feet: 'claws', arms: 'feathers', pattern: 'glow', belly: true, cheeks: true },
++  },
++
++  // ───────────── SNACKS ─────────────
++  {
++    id: 'kernelpop', name: 'Kernelpop', habitat: 'snacks', type: 'Snack', rarity: 'common', size: 'tiny',
++    ability: { name: 'Pop Hop', description: 'Pops up and down like hot popcorn!' },
++    fact: 'Kernelpop was a little seed until it got warm.',
++    colors: { main: C.yellowLight, accent: C.gold, belly: C.white },
++    look: { body: 'round', eyes: 'happy', mouth: 'open', top: 'tuft', tail: 'none', feet: 'stubs', arms: 'nubs', pattern: 'spots', cheeks: true },
++  },
++  {
++    id: 'popcart', name: 'Popcart', habitat: 'snacks', type: 'Snack', rarity: 'common', size: 'small',
++    ability: { name: 'Free Sample', description: 'Hands out tiny cups of warm popcorn!' },
++    fact: 'Popcart squeaks one wheel to the beat of the music.',
++    colors: { main: C.red, accent: C.white, belly: C.yellowLight },
++    look: { body: 'cart', eyes: 'round', mouth: 'grin', top: 'none', tail: 'none', feet: 'wheels', arms: 'nubs', pattern: 'stripes' },
++  },
++  {
++    id: 'candyfleece', name: 'Candyfleece', habitat: 'snacks', type: 'Snack', rarity: 'common', size: 'small',
++    ability: { name: 'Sugar Fluff', description: 'Shakes its wool into fluffy cotton candy!' },
++    fact: 'Candyfleece is blue on Mondays and pink on Fridays.',
++    colors: { main: C.pastelBlue, accent: C.pink, belly: C.white },
++    look: { body: 'beast', eyes: 'sleepy', mouth: 'smile', top: 'tuft', tail: 'puff', feet: 'hooves', arms: 'none', pattern: 'none', belly: true, cheeks: true },
++  },
++  {
++    id: 'knotzel', name: 'Knotzel', habitat: 'snacks', type: 'Snack', rarity: 'common', size: 'small',
++    ability: { name: 'Pretzel Twist', description: 'Twists into a pretzel shape and back again!' },
++    fact: 'Knotzel is sprinkled with sugar, never salt.',
++    colors: { main: C.brownRed, accent: C.white, belly: C.ochre },
++    look: { body: 'serpent', eyes: 'round', mouth: 'grin', top: 'none', tail: 'curl', feet: 'none', arms: 'none', pattern: 'sprinkles', belly: true },
++  },
++  {
++    id: 'lemonsip', name: 'Lemonsip', habitat: 'snacks', type: 'Splash', rarity: 'common', size: 'tiny',
++    ability: { name: 'Cool Sip', description: 'Shares a cold sip on a hot day!' },
++    fact: 'Lemonsip has a curly straw that it uses as a hat.',
++    colors: { main: C.lime, accent: C.yellowLight, belly: C.limeLight },
++    look: { body: 'bowl', eyes: 'happy', mouth: 'smile', top: 'antennae', tail: 'none', feet: 'stubs', arms: 'nubs', pattern: 'spots' },
++  },
++  {
++    id: 'crumbgull', name: 'Crumbgull', habitat: 'snacks', type: 'Fluff', rarity: 'common', size: 'small',
++    ability: { name: 'Tidy Peck', description: 'Picks up every dropped crumb and keeps tables clean!' },
++    fact: 'Crumbgull always asks before it takes a fry.',
++    colors: { main: C.white, accent: C.orange, belly: C.grayLight, wing: C.grayLight },
++    look: { body: 'bird', eyes: 'round', mouth: 'beak', top: 'none', tail: 'fluffy', feet: 'stubs', arms: 'bird', pattern: 'none', belly: true },
++  },
++  {
++    id: 'picnant', name: 'Picnant', habitat: 'snacks', type: 'Leaf', rarity: 'uncommon', size: 'tiny',
++    ability: { name: 'Crumb Parade', description: 'Marches crumbs home in a tiny happy line!' },
++    fact: 'Picnant can carry a whole popcorn kernel by itself.',
++    colors: { main: C.plum, accent: C.redBright, belly: C.rose, wing: C.white },
++    look: { body: 'pear', eyes: 'big', mouth: 'smile', top: 'antennae', tail: 'none', feet: 'stubs', arms: 'insect', pattern: 'none', belly: true },
++  },
++  {
++    id: 'conechill', name: 'Conechill', habitat: 'snacks', type: 'Frost', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Brain Freeze', description: 'Makes a snowy treat that tickles your nose!' },
++    fact: 'Conechill melts a little when it laughs too hard.',
++    colors: { main: C.cyan, accent: C.pink, belly: C.white },
++    look: { body: 'drop', eyes: 'happy', mouth: 'o', top: 'crystals', tail: 'none', feet: 'none', arms: 'nubs', pattern: 'sprinkles', cheeks: true },
++  },
++  {
++    id: 'saucebot', name: 'Saucebot', habitat: 'snacks', type: 'Gear', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Squiggle Squirt', description: 'Draws smiley faces on snacks with sauce!' },
++    fact: 'Saucebot can write your name in mustard.',
++    colors: { main: C.redBright, accent: C.gold, belly: C.salmon },
++    look: { body: 'appliance', eyes: 'dot', mouth: 'grin', top: 'antennae', tail: 'none', feet: 'stubs', arms: 'nubs', pattern: 'none' },
++  },
++  {
++    id: 'churroo', name: 'Churroo', habitat: 'snacks', type: 'Snack', rarity: 'uncommon', size: 'medium',
++    ability: { name: 'Sugar Hop', description: 'Hops along sprinkling cinnamon sugar everywhere!' },
++    fact: 'Churroo keeps a warm churro in its pocket for friends.',
++    colors: { main: C.gold, accent: C.brownDark, belly: C.sand },
++    look: { body: 'long', eyes: 'round', mouth: 'smile', top: 'bunny', tail: 'long', feet: 'four', arms: 'none', pattern: 'sprinkles', belly: true },
++  },
++  {
++    id: 'cottondrake', name: 'Cottondrake', habitat: 'snacks', type: 'Snack', rarity: 'rare', size: 'large',
++    ability: { name: 'Candy Cloud', description: 'Puffs out sweet clouds of pink cotton candy!' },
++    fact: 'Cottondrake is soft as a pillow and sweet as sugar.',
++    colors: { main: C.pinkLight, accent: C.pastelBlue, belly: C.white, wing: C.pastelBlue },
++    look: { body: 'dragon', eyes: 'happy', mouth: 'smile', top: 'crown', extraTop: 'tuft', tail: 'fluffy', feet: 'claws', arms: 'dragonwings', pattern: 'glow', belly: true, cheeks: true },
++  },
++  {
++    id: 'corndogberus', name: 'Corndogberus', habitat: 'snacks', type: 'Snack', rarity: 'rare', size: 'large',
++    ability: { name: 'Triple Wag', description: 'Wags its tail and gives three happy licks!' },
++    fact: 'Corndogberus has three heads and shares every snack three ways.',
++    colors: { main: C.ochre, accent: C.redBright, belly: C.yellowLight },
++    look: { body: 'beast', eyes: 'happy', mouth: 'open', top: 'crown', extraTop: 'cat', tail: 'curl', feet: 'paws', arms: 'none', pattern: 'glow', belly: true, heads: 3 },
++  },
++
++  // ───────────── BUMPER ─────────────
++  {
++    id: 'bonkbot', name: 'Bonkbot', habitat: 'bumper', type: 'Gear', rarity: 'common', size: 'small',
++    ability: { name: 'Soft Bonk', description: 'Gives the gentlest bonk, then says sorry!' },
++    fact: 'Bonkbot has a rubber bumper all the way around.',
++    colors: { main: C.redBright, accent: C.gold, belly: C.salmon },
++    look: { body: 'appliance', eyes: 'round', mouth: 'grin', top: 'antennae', tail: 'none', feet: 'wheels', arms: 'nubs', pattern: 'none' },
++  },
++  {
++    id: 'bumpbun', name: 'Bumpbun', habitat: 'bumper', type: 'Fluff', rarity: 'common', size: 'small',
++    ability: { name: 'Fluffy Bump', description: 'Bumps you with a soft, fluffy tummy!' },
++    fact: 'Bumpbun drives with its ears flapping in the wind.',
++    colors: { main: C.pink, accent: C.white, belly: C.pinkLight },
++    look: { body: 'beast', eyes: 'happy', mouth: 'cat', top: 'bunny', tail: 'puff', feet: 'paws', arms: 'none', pattern: 'none', belly: true, cheeks: true },
++  },
++  {
++    id: 'zipbug', name: 'Zipbug', habitat: 'bumper', type: 'Zap', rarity: 'common', size: 'tiny',
++    ability: { name: 'Zip Zoom', description: 'Zips between the cars without touching one!' },
++    fact: 'Zipbug buzzes the same note as the bumper car sparks.',
++    colors: { main: C.lime, accent: C.yellowLight, belly: C.limeLight, wing: C.white },
++    look: { body: 'pear', eyes: 'big', mouth: 'grin', top: 'antennae', tail: 'none', feet: 'stubs', arms: 'insect', pattern: 'stripes', belly: true },
++  },
++  {
++    id: 'pointbox', name: 'Pointbox', habitat: 'bumper', type: 'Zap', rarity: 'common', size: 'small',
++    ability: { name: 'Everyone Wins', description: 'Gives every driver a gold star!' },
++    fact: 'Pointbox counts bonks, giggles and high fives.',
++    colors: { main: C.greenDark, accent: C.gold, belly: C.green },
++    look: { body: 'square', eyes: 'dot', mouth: 'smile', top: 'antennae', tail: 'none', feet: 'stubs', arms: 'nubs', pattern: 'glow' },
++  },
++  {
++    id: 'squishbonk', name: 'Squishbonk', habitat: 'bumper', type: 'Bubble', rarity: 'common', size: 'tiny',
++    ability: { name: 'Squish Bounce', description: 'Squishes flat and bounces right back up!' },
++    fact: 'Squishbonk is the bounciest thing in the whole arena.',
++    colors: { main: C.orange, accent: C.black, belly: C.orangeLight },
++    look: { body: 'round', eyes: 'happy', mouth: 'o', top: 'none', tail: 'none', feet: 'stubs', arms: 'nubs', pattern: 'stripes', cheeks: true },
++  },
++  {
++    id: 'stripecone', name: 'Stripecone', habitat: 'bumper', type: 'Toy', rarity: 'common', size: 'tiny',
++    ability: { name: 'This Way', description: 'Points the way so drivers go round and round!' },
++    fact: 'Stripecone likes to stand in a line with its friends.',
++    colors: { main: C.salmon, accent: C.white, belly: C.orangeLight },
++    look: { body: 'drop', eyes: 'round', mouth: 'smile', top: 'none', tail: 'none', feet: 'none', arms: 'nubs', pattern: 'stripes' },
++  },
++  {
++    id: 'zapferret', name: 'Zapferret', habitat: 'bumper', type: 'Zap', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Static Fluff', description: 'Rubs its fur to make tiny tickly sparks!' },
++    fact: 'Zapferret fur stands straight up after every ride.',
++    colors: { main: C.gold, accent: C.blue, belly: C.yellowLight },
++    look: { body: 'long', eyes: 'big', mouth: 'grin', top: 'spikes', tail: 'zigzag', feet: 'four', arms: 'none', pattern: 'none', belly: true },
++  },
++  {
++    id: 'honkgoose', name: 'Honkgoose', habitat: 'bumper', type: 'Fluff', rarity: 'uncommon', size: 'medium',
++    ability: { name: 'Happy Honk', description: 'Honks hello at every car it passes!' },
++    fact: 'Honkgoose drives in circles just to honk more.',
++    colors: { main: C.white, accent: C.orange, belly: C.grayLight, wing: C.grayLight },
++    look: { body: 'bird', eyes: 'round', mouth: 'beak', top: 'none', tail: 'puff', feet: 'flippers', arms: 'bird', pattern: 'none', belly: true },
++  },
++  {
++    id: 'steerly', name: 'Steerly', habitat: 'bumper', type: 'Gear', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Easy Turn', description: 'Helps little hands steer left and right!' },
++    fact: 'Steerly gets a little dizzy, but it loves it.',
++    colors: { main: C.gray, accent: C.redBright, belly: C.grayLight },
++    look: { body: 'bowl', eyes: 'happy', mouth: 'smile', top: 'round', tail: 'none', feet: 'none', arms: 'nubs', pattern: 'checks' },
++  },
++  {
++    id: 'gridsnake', name: 'Gridsnake', habitat: 'bumper', type: 'Zap', rarity: 'uncommon', size: 'medium',
++    ability: { name: 'Spark Slither', description: 'Slides along the ceiling grid making friendly sparks!' },
++    fact: 'Gridsnake glows brighter when the cars go faster.',
++    colors: { main: C.purple, accent: C.yellowLight, belly: C.lavender },
++    look: { body: 'serpent', eyes: 'round', mouth: 'smile', top: 'none', tail: 'zigzag', feet: 'none', arms: 'none', pattern: 'glow', belly: true },
++  },
++  {
++    id: 'bumpertaur', name: 'Bumpertaur', habitat: 'bumper', type: 'Stone', rarity: 'rare', size: 'large',
++    ability: { name: 'Gentle Bonk', description: 'Gives the softest, friendliest bonks in the arena!' },
++    fact: 'Bumpertaur has rubber bumpers on its horns, just to be safe.',
++    colors: { main: C.blue, accent: C.gold, belly: C.skyLight, feet: C.gray },
++    look: { body: 'beast', eyes: 'big', mouth: 'grin', top: 'crown', extraTop: 'horns', tail: 'curl', feet: 'wheels', arms: 'claws', pattern: 'checks', belly: true },
++  },
++  {
++    id: 'sparkwyvern', name: 'Sparkwyvern', habitat: 'bumper', type: 'Zap', rarity: 'rare', size: 'large',
++    ability: { name: 'Friendly Sparks', description: 'Crackles with sparks that tickle and never sting!' },
++    fact: 'Sparkwyvern powers every bumper car with one big smile.',
++    colors: { main: C.yellowLight, accent: C.blue, belly: C.white, wing: C.gold },
++    look: { body: 'dragon', eyes: 'big', mouth: 'grin', top: 'crown', extraTop: 'spikes', tail: 'dragon', feet: 'claws', arms: 'dragonwings', pattern: 'glow', belly: true },
++  },
++
++  // ───────────── FIREWORKS ─────────────
++  {
++    id: 'rocketot', name: 'Rocketot', habitat: 'fireworks', type: 'Ember', rarity: 'common', size: 'tiny',
++    ability: { name: 'Whee Launch', description: 'Shoots up high and floats down with a giggle!' },
++    fact: 'Rocketot always counts down from three before it jumps.',
++    colors: { main: C.red, accent: C.white, belly: C.salmon },
++    look: { body: 'drop', eyes: 'big', mouth: 'open', top: 'flame', tail: 'flame', feet: 'none', arms: 'nubs', pattern: 'stripes' },
++  },
++  {
++    id: 'twinklefly', name: 'Twinklefly', habitat: 'fireworks', type: 'Sparkle', rarity: 'common', size: 'tiny',
++    ability: { name: 'Tiny Twinkle', description: 'Twinkles like a sparkler at the end of the show!' },
++    fact: 'Twinklefly blinks in time with the fireworks music.',
++    colors: { main: C.greenBright, accent: C.yellowLight, belly: C.limeLight, wing: C.white },
++    look: { body: 'pear', eyes: 'happy', mouth: 'smile', top: 'antennae', tail: 'none', feet: 'stubs', arms: 'insect', pattern: 'glow', belly: true },
++  },
++  {
++    id: 'lanternly', name: 'Lanternly', habitat: 'fireworks', type: 'Ember', rarity: 'common', size: 'small',
++    ability: { name: 'Warm Glow', description: 'Glows warm and cozy so nobody feels lost!' },
++    fact: 'Lanternly hangs out along the paths after dark.',
++    colors: { main: C.orange, accent: C.redBright, belly: C.yellowLight },
++    look: { body: 'bowl', eyes: 'sleepy', mouth: 'smile', top: 'round', tail: 'none', feet: 'none', arms: 'nubs', pattern: 'glow' },
++  },
++  {
++    id: 'hootstar', name: 'Hootstar', habitat: 'fireworks', type: 'Shadow', rarity: 'common', size: 'small',
++    ability: { name: 'Night Watch', description: 'Hoots ooh and aah at every firework!' },
++    fact: 'Hootstar stays up late every night for the show.',
++    colors: { main: C.periwinkle, accent: C.gold, belly: C.lavender, wing: C.blueMid },
++    look: { body: 'bird', eyes: 'big', mouth: 'beak', top: 'cat', tail: 'fluffy', feet: 'claws', arms: 'bird', pattern: 'none', belly: true },
++  },
++  {
++    id: 'boomybox', name: 'Boomybox', habitat: 'fireworks', type: 'Zap', rarity: 'common', size: 'small',
++    ability: { name: 'Show Tune', description: 'Plays the music while the sky lights up!' },
++    fact: 'Boomybox turns the volume down for little ears.',
++    colors: { main: C.gray, accent: C.cyan, belly: C.grayLight },
++    look: { body: 'appliance', eyes: 'round', mouth: 'grin', top: 'antennae', tail: 'none', feet: 'stubs', arms: 'nubs', pattern: 'none' },
++  },
++  {
++    id: 'glimmerdot', name: 'Glimmerdot', habitat: 'fireworks', type: 'Sparkle', rarity: 'common', size: 'tiny',
++    ability: { name: 'Star Shine', description: 'Shines like a little star you can hug!' },
++    fact: 'Glimmerdot fell from a firework and decided to stay.',
++    colors: { main: C.yellowLight, accent: C.gold, belly: C.white },
++    look: { body: 'round', eyes: 'happy', mouth: 'smile', top: 'crystals', tail: 'none', feet: 'none', arms: 'nubs', pattern: 'sprinkles', cheeks: true },
++  },
++  {
++    id: 'pinwhirl', name: 'Pinwhirl', habitat: 'fireworks', type: 'Toy', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Color Spin', description: 'Spins so fast its colors blend together!' },
++    fact: 'Pinwhirl spins faster when everybody claps.',
++    colors: { main: C.pink, accent: C.sky, belly: C.yellowLight },
++    look: { body: 'square', eyes: 'round', mouth: 'grin', top: 'leaf', tail: 'curl', feet: 'stubs', arms: 'nubs', pattern: 'patches' },
++  },
++  {
++    id: 'duskfox', name: 'Duskfox', habitat: 'fireworks', type: 'Shadow', rarity: 'uncommon', size: 'medium',
++    ability: { name: 'Moon Nap', description: 'Curls up under the stars and hums softly!' },
++    fact: 'Duskfox has tiny stars in the tip of its tail.',
++    colors: { main: C.purple, accent: C.yellowLight, belly: C.lavender },
++    look: { body: 'beast', eyes: 'sleepy', mouth: 'cat', top: 'cat', tail: 'fluffy', feet: 'paws', arms: 'none', pattern: 'sprinkles', belly: true },
++  },
++  {
++    id: 'ribbonglow', name: 'Ribbonglow', habitat: 'fireworks', type: 'Sparkle', rarity: 'uncommon', size: 'medium',
++    ability: { name: 'Light Ribbon', description: 'Draws glowing ribbons across the dark sky!' },
++    fact: 'Ribbonglow can write a whole word in the sky.',
++    colors: { main: C.cyan, accent: C.pink, belly: C.white },
++    look: { body: 'serpent', eyes: 'happy', mouth: 'smile', top: 'fins', tail: 'serpent', feet: 'none', arms: 'none', pattern: 'glow', belly: true },
++  },
++  {
++    id: 'kaboomling', name: 'Kaboomling', habitat: 'fireworks', type: 'Ember', rarity: 'uncommon', size: 'medium',
++    ability: { name: 'Glitter Sneeze', description: 'Sneezes a tiny burst of colorful glitter!' },
++    fact: 'Kaboomling says kaboom very softly, so nobody jumps.',
++    colors: { main: C.gold, accent: C.redBright, belly: C.yellowLight, wing: C.orange },
++    look: { body: 'dragon', eyes: 'big', mouth: 'grin', top: 'horns', tail: 'flame', feet: 'claws', arms: 'wings', pattern: 'spots', belly: true },
++  },
++  {
++    id: 'dazzlephoenix', name: 'Dazzlephoenix', habitat: 'fireworks', type: 'Ember', rarity: 'rare', size: 'large',
++    ability: { name: 'Color Burst', description: 'Bursts into every color, then floats down smiling!' },
++    fact: 'Dazzlephoenix is the very last firework of every show.',
++    colors: { main: C.redBright, accent: C.gold, belly: C.yellowLight, wing: C.violet },
++    look: { body: 'bird', eyes: 'big', mouth: 'beak', top: 'crown', extraTop: 'flame', tail: 'plume', feet: 'claws', arms: 'feathers', pattern: 'sprinkles', belly: true },
++  },
++  {
++    id: 'skywyrm', name: 'Skywyrm', habitat: 'fireworks', type: 'Shadow', rarity: 'rare', size: 'large',
++    ability: { name: 'Starry Swoop', description: 'Swoops across the sky leaving a trail of stars!' },
++    fact: 'Skywyrm wears the whole night sky like a blanket.',
++    colors: { main: C.blueDark, accent: C.gold, belly: C.periwinkle, wing: C.blue, eye: C.yellowLight },
++    look: { body: 'dragon', eyes: 'big', mouth: 'smile', top: 'crown', extraTop: 'dragonhorns', tail: 'dragon', feet: 'claws', arms: 'dragonwings', pattern: 'sprinkles', belly: true },
++  },
++];
++
++export const WONDERWHIRL_MONSTERS = worldMonsters('wonderwhirl', LIST);
+diff --git a/src/render/renderer.ts b/src/render/renderer.ts
+index f82a0b1..50ef430 100644
+--- a/src/render/renderer.ts
++++ b/src/render/renderer.ts
+@@ -90,6 +90,7 @@ export class Renderer {
+     ring.sort((a, b) => ahead(b) - ahead(a));
+     this.chunks.warmStep(map, ring);
+ 
++    if (map.rides) this.drawRides(map, camera, s.time);
+     if (s.target) this.drawTarget(s.target, camera, s.time);
+ 
+     // Layne and the monsters, back to front: whoever is lower on screen is in front.
+@@ -108,6 +109,17 @@ export class Renderer {
+     }
+   }
+ 
++  /** Rides and other moving things: only the ones on screen (each is a few small pictures, so this is cheap). */
++  private drawRides(map: TileMap, camera: Camera, time: number) {
++    const t = camera.tilePx;
++    for (const ride of map.rides!) {
++      const sx = camera.originX + ride.x * t;
++      const sy = camera.originY + ride.y * t;
++      if (sx >= camera.viewW || sy >= camera.viewH || sx + ride.w * t <= 0 || sy + ride.h * t <= 0) continue;
++      ride.draw(this.ctx, sx, sy, camera.pixelPx, time);
++    }
++  }
++
+   private drawPlayer(s: Scene) {
+     const feet = s.camera.toScreen(s.player.x, s.player.y);
+     drawLayne(this.ctx, feet.x, feet.y, s.camera.pixelPx, s.player.facing, s.player.walkFrame, s.glasses);
+diff --git a/src/world/tilemap.ts b/src/world/tilemap.ts
+index b2cf0f4..70669e5 100644
+--- a/src/world/tilemap.ts
++++ b/src/world/tilemap.ts
+@@ -30,6 +30,21 @@ export interface MapLabel {
+   icon: readonly string[];
+ }
+ 
++/**
++ * Something on a building map that moves, like a theme-park ride. It's drawn fresh
++ * every frame on top of the ground (the ground itself is painted once and kept), and
++ * under Layne and the monsters. It always stands on squares nobody can walk on.
++ */
++export interface MapRide {
++  /** The squares it covers: top-left corner and size, in tiles. */
++  x: number;
++  y: number;
++  w: number;
++  h: number;
++  /** Draw it with its top-left corner at screen spot (sx, sy). p = screen pixels per art pixel. */
++  draw(ctx: CanvasRenderingContext2D, sx: number, sy: number, p: number, time: number): void;
++}
++
+ /** One playable map: the overworld, a single cave, or the inside of a building. */
+ export interface TileMap {
+   id: string;
+@@ -52,6 +67,8 @@ export interface TileMap {
+   solid?: Uint8Array;
+   /** Building worlds: realm icons for the corner map, one per room. */
+   labels?: MapLabel[];
++  /** Building worlds: rides and other moving things (see worlds/building/rides.ts). */
++  rides?: MapRide[];
+ }
+ 
+ export function createMap(
+diff --git a/src/worlds/building/index.ts b/src/worlds/building/index.ts
+index 9d0fea5..2a6831e 100644
+--- a/src/worlds/building/index.ts
++++ b/src/worlds/building/index.ts
+@@ -2,6 +2,7 @@ import { inBounds, indexOf, type MapLabel, type MapLook, type TileMap } from '..
+ import { type RealmDef, type WorldDef } from '../types';
+ import { stampDecor } from './decorPaint';
+ import { unreachableSquares } from './reach';
++import { attachRides } from './rides';
+ import { scatterDecor } from './scatter';
+ import { paintRoomScene } from './scene';
+ import { parseMaps } from './template';
+@@ -60,11 +61,12 @@ export function makeBuildingWorld(plan: BuildingPlan): WorldDef {
+       const { maps, spawn, entries } = parseMaps(plan, look, tileIds, decorIds);
+       scatterDecor({ ...plan, seed }, maps, entries, decorIds, tileNames);
+       for (const map of maps) map.labels = labelsFor(plan, map, realms);
++      const rideProblems = attachRides(plan, maps);
+       return {
+         maps,
+         spawn,
+         realmAt: (map: TileMap, x: number, y: number) => (inBounds(map, x, y) ? (realms[map.biome[indexOf(map, x, y)] - 1] ?? null) : null),
+-        problems: unreachableSquares(maps, spawn),
++        problems: [...unreachableSquares(maps, spawn), ...rideProblems],
+       };
+     },
+   };
+diff --git a/src/worlds/building/rides.ts b/src/worlds/building/rides.ts
+new file mode 100644
+index 0000000..8a8bc3c
+--- /dev/null
++++ b/src/worlds/building/rides.ts
+@@ -0,0 +1,63 @@
++import { PixelBuffer, rgba, stamp } from '../../render/pixels';
++import { realmIconColor } from '../../ui/pixelIcon';
++import { isWalkable, type MapRide, type TileMap } from '../../world/tilemap';
++import { type BuildingPlan, type RidePlan } from './types';
++
++/**
++ * Turn a plan's rides into MapRides the renderer draws every frame.
++ *
++ * Each sprite is turned into a tiny picture only once (the first time it's drawn),
++ * so a frame is just a few drawImage() calls per ride on screen: cheap, even on an
++ * older tablet. Positions are rounded to whole art pixels, so rides move one
++ * pixel-art pixel at a time, like everything else in the game.
++ */
++export function attachRides(plan: BuildingPlan, maps: TileMap[]): string[] {
++  const problems: string[] = [];
++  for (const ride of plan.rides ?? []) {
++    const map = maps.find((m) => m.id === `${plan.id}/${ride.map}`);
++    if (!map) throw new Error(`World "${plan.id}": a ride is on map "${ride.map}", which isn't in the maps list.`);
++    for (const part of ride.pose(0)) {
++      if (!ride.sprites[part.sprite]) throw new Error(`World "${plan.id}": a ride uses sprite "${part.sprite}", which it doesn't have.`);
++    }
++    problems.push(...walkableUnder(ride, map));
++    (map.rides ??= []).push(toMapRide(ride));
++  }
++  return problems;
++}
++
++function toMapRide(ride: RidePlan): MapRide {
++  const pictures = new Map<string, HTMLCanvasElement>();
++  const picture = (name: string) => {
++    let canvas = pictures.get(name);
++    if (!canvas) {
++      const rows = ride.sprites[name];
++      const buf = new PixelBuffer(Math.max(...rows.map((r) => r.length)), rows.length);
++      stamp(buf, rows, (ch) => rgba(realmIconColor(ch)), 0, 0);
++      canvas = buf.toCanvas();
++      pictures.set(name, canvas);
++    }
++    return canvas;
++  };
++  return {
++    x: ride.x,
++    y: ride.y,
++    w: ride.w,
++    h: ride.h,
++    draw(ctx, sx, sy, p, time) {
++      for (const part of ride.pose(time)) {
++        const pic = picture(part.sprite);
++        ctx.drawImage(pic, sx + Math.round(part.x) * p, sy + Math.round(part.y) * p, pic.width * p, pic.height * p);
++      }
++    },
++  };
++}
++
++/** A ride drawn over a walkable square would hide Layne (and could look like it's in the way). */
++function walkableUnder(ride: RidePlan, map: TileMap): string[] {
++  for (let y = ride.y; y < ride.y + ride.h; y++) {
++    for (let x = ride.x; x < ride.x + ride.w; x++) {
++      if (isWalkable(map, x, y)) return [`Map "${map.id}": the ride at ${ride.x},${ride.y} covers ${x},${y}, a square Layne can walk on.`];
++    }
++  }
++  return [];
++}
+diff --git a/src/worlds/building/types.ts b/src/worlds/building/types.ts
+index 00f775f..4e0f8b2 100644
+--- a/src/worlds/building/types.ts
++++ b/src/worlds/building/types.ts
+@@ -95,6 +95,33 @@ export interface RealmPlan {
+   labelAt?: { map: string; x: number; y: number };
+ }
+ 
++/** One picture of a ride at one moment: which sprite, and where (art pixels from the ride's top-left corner). */
++export interface RidePart {
++  sprite: string;
++  x: number;
++  y: number;
++}
++
++/**
++ * Something that moves (a theme-park ride, a fountain's spray, fireworks): drawn
++ * every frame on top of the map, so it can turn, roll or twinkle. It must stand on
++ * squares nobody can walk on (checked on /gallery), so it never hides Layne or a
++ * monster and never blocks a path.
++ */
++export interface RidePlan {
++  /** Which map it's on (a MapPlan name). */
++  map: string;
++  /** The squares it covers: top-left corner and size, in tiles. Keep its pictures inside them. */
++  x: number;
++  y: number;
++  w: number;
++  h: number;
++  /** Its pictures, as pixel art in the decoration letters (any size). */
++  sprites: Record<string, readonly string[]>;
++  /** Where each picture goes `time` seconds after the game started, back to front. */
++  pose(time: number): RidePart[];
++}
++
+ export interface BuildingPlan {
+   id: WorldId;
+   name: string;
+@@ -105,4 +132,6 @@ export interface BuildingPlan {
+   legend: Record<string, LegendEntry>;
+   maps: MapPlan[];
+   realms: RealmPlan[];
++  /** Things that move (optional). */
++  rides?: RidePlan[];
+ }
+diff --git a/src/worlds/index.ts b/src/worlds/index.ts
+index 24e8cc9..0a430db 100644
+--- a/src/worlds/index.ts
++++ b/src/worlds/index.ts
+@@ -5,6 +5,7 @@ import { CHERRYMART } from './cherrymart';
+ import { HOME } from './home';
+ import { ISLAND } from './island';
+ import { SUNNYSIDE } from './sunnyside';
++import { WONDERWHIRL } from './wonderwhirl';
+ import { WOODS } from './woods';
+ import { type RealmDef, type WorldDef } from './types';
+ import { type WorldId } from './worldIds';
+@@ -21,6 +22,7 @@ export const WORLDS: Record<WorldId, WorldDef> = {
+   cherrymart: CHERRYMART,
+   sunnyside: SUNNYSIDE,
+   bigblue: BIGBLUE,
++  wonderwhirl: WONDERWHIRL,
+ };
+ 
+ /** All worlds, in order (for the title screen and /gallery). */
+diff --git a/src/worlds/wonderwhirl/decor/bumperFireworks.ts b/src/worlds/wonderwhirl/decor/bumperFireworks.ts
+new file mode 100644
+index 0000000..d022f6a
+--- /dev/null
++++ b/src/worlds/wonderwhirl/decor/bumperFireworks.ts
+@@ -0,0 +1,154 @@
++import { type DecorKind } from '../../building/types';
++
++/**
++ * Bumper-car and fireworks-show things (pixel art, one character = one pixel).
++ * Letters are the decoration colors from render/decorArt.ts (listed in parkGate.ts).
++ */
++export const BUMPER_FIREWORKS: Record<string, DecorKind> = {
++  // A bumper car: a round blue car with a soft black bumper and a spark pole on the back.
++  bumperCar: {
++    solid: true,
++    place: 'open',
++    sprite: [
++      '..........kk....',
++      '.........kYk....',
++      '.........kak....',
++      '.........kak....',
++      '...kkkkkkkak....',
++      '..kbbbbbbbbbkk..',
++      '.kbbwbbbbbbbbbk.',
++      'kkkkkkkkkkkkkkkk',
++      'kAAAAAAAAAAAAAAk',
++      'kkkkkkkkkkkkkkkk',
++      '.kbbbbbbbbbbbbk.',
++      '..kkkkkkkkkkkk..',
++    ],
++  },
++  // The bumper-car scoreboard: big glowing dots for the "bonk count".
++  scoreboard: {
++    solid: true,
++    sprite: [
++      'kkkkkkkkkkkkkkkk',
++      'kAAAAAAAAAAAAAAk',
++      'kAkkkkkkkkkkkkAk',
++      'kAkYkYkkkrkrkkAk',
++      'kAkYYYkkkrrrkkAk',
++      'kAkkkYkkkkkrkkAk',
++      'kAkkkkkkkkkkkkAk',
++      'kAkgkgkgkukukuAk',
++      'kAkkkkkkkkkkkkAk',
++      'kAAAAAAAAAAAAAAk',
++      'kkkkkkkkkkkkkkkk',
++      '......kAAk......',
++      '......kAAk......',
++      '......kAAk......',
++      '.....kAAAAk.....',
++      '.....kkkkkk.....',
++    ],
++  },
++  // A pole with a friendly crackle of sparks at the top (they tickle, they don't zap).
++  sparkPole: {
++    solid: true,
++    sprite: [
++      '...Y......Y...',
++      '....Y.yy.Y....',
++      '..Y..yYYy..Y..',
++      '....yYwwYy....',
++      '..YyYwwwwYyY..',
++      '....yYwwYy....',
++      '..Y..yYYy..Y..',
++      '....Y.kk.Y....',
++      '......kA......',
++      '......kA......',
++      '......kA......',
++      '......kA......',
++      '......kA......',
++      '.....kAAk.....',
++      '....kAAAAk....',
++      '....kkkkkk....',
++    ],
++  },
++  // An orange-and-white cone.
++  cone: {
++    solid: true,
++    place: 'open',
++    sprite: [
++      '.....kk.....',
++      '....kOOk....',
++      '....kOOk....',
++      '...kwwwwk...',
++      '...kOOOOk...',
++      '..kOOOOOOk..',
++      '..kwwwwwwk..',
++      '.kOOOOOOOOk.',
++      'kkkkkkkkkkkk',
++      'kOOOOOOOOOOk',
++      'kkkkkkkkkkkk',
++    ],
++  },
++  // A firework rocket on its little stand, ready for the show.
++  rocket: {
++    solid: true,
++    sprite: [
++      '.......kk.......',
++      '......krrk......',
++      '.....krrrrk.....',
++      '.....kwwwwk.....',
++      '.....kbbbbk.....',
++      '.....kbYYbk.....',
++      '.....kbYYbk.....',
++      '.....kbbbbk.....',
++      '.....kwwwwk.....',
++      '....krbbbbrk....',
++      '...krrkbbkrrk...',
++      '...kk.kOOk.kk...',
++      '.......yy.......',
++      '......kAAk......',
++      '.....kAAAAk.....',
++      '.....kkkkkk.....',
++    ],
++  },
++  // A paper lantern on a post, glowing soft orange.
++  lantern: {
++    solid: true,
++    sprite: [
++      '.....kkkk.....',
++      '......kk......',
++      '....kkkkkk....',
++      '...koooooOk...',
++      '...koyyyoOk...',
++      '...koooooOk...',
++      '...koyyyoOk...',
++      '....kkkkkk....',
++      '......kn......',
++      '......kn......',
++      '......kn......',
++      '......kn......',
++      '......kn......',
++      '.....knnk.....',
++      '....knnnnk....',
++      '....kkkkkk....',
++    ],
++  },
++  // A big speaker for the show music.
++  speaker: {
++    solid: true,
++    place: 'wall',
++    sprite: [
++      '.kkkkkkkkkkkk.',
++      '.kAAAAAAAAAAk.',
++      '.kAAkkkkkkAAk.',
++      '.kAkkaaaakkAk.',
++      '.kAkaakkaakAk.',
++      '.kAkaakkaakAk.',
++      '.kAkkaaaakkAk.',
++      '.kAAkkkkkkAAk.',
++      '.kAAAkkkkAAAk.',
++      '.kAAkkaakkAAk.',
++      '.kAAkkaakkAAk.',
++      '.kAAAkkkkAAAk.',
++      '.kAAAAAAAAAAk.',
++      '.kkkkkkkkkkkk.',
++    ],
++  },
++};
+diff --git a/src/worlds/wonderwhirl/decor/coasterCarousel.ts b/src/worlds/wonderwhirl/decor/coasterCarousel.ts
+new file mode 100644
+index 0000000..ed13da9
+--- /dev/null
++++ b/src/worlds/wonderwhirl/decor/coasterCarousel.ts
+@@ -0,0 +1,173 @@
++import { type DecorKind } from '../../building/types';
++
++/**
++ * Roller-coaster and carousel things (pixel art, one character = one pixel).
++ * Letters are the decoration colors from render/decorArt.ts (listed in parkGate.ts).
++ */
++export const COASTER_CAROUSEL: Record<string, DecorKind> = {
++  // A little red coaster car with a lap bar and a gold stripe.
++  coasterCar: {
++    solid: true,
++    place: 'open',
++    sprite: [
++      '................',
++      '...kkkk..kkkk...',
++      '..kaaaak.kaaak..',
++      '.kkkkkkkkkkkkkk.',
++      'krrrrrrrrrrrrrrk',
++      'krwrrrrrrrrrrrrk',
++      'kYYYYYYYYYYYYYYk',
++      'krrrrrrrrrrrrrrk',
++      'kkkkkkkkkkkkkkkk',
++      '.kAAk......kAAk.',
++      '.kaak......kaak.',
++      '..kk........kk..',
++    ],
++  },
++  // A loop-de-loop of coaster track, seen from the side.
++  loopHill: {
++    solid: true,
++    sprite: [
++      '.....kkkkkk.....',
++      '...kkrrrrrrkk...',
++      '..krrkk..kkrrk..',
++      '.krrk......krrk.',
++      '.krk........krk.',
++      'krrk........krrk',
++      'krk..........krk',
++      'krk..........krk',
++      'krrk........krrk',
++      '.krk........krk.',
++      '.krrk......krrk.',
++      '..krrkk..kkrrk..',
++      'kkkkrrrrrrrrkkkk',
++      'rrrrrrkkkkrrrrrr',
++      'kkkkkkn..nkkkkkk',
++      '......n..n......',
++    ],
++  },
++  // Posts and a rope: the zigzag line you wait in.
++  queueRail: {
++    solid: true,
++    sprite: [
++      '................',
++      '.kk..........kk.',
++      'kYYk........kYYk',
++      '.kAkkk....kkkAk.',
++      '.kArrrkkkkrrrAk.',
++      '.kA..rrrrrr..Ak.',
++      '.kA..........Ak.',
++      '.kA..........Ak.',
++      '.kA..........Ak.',
++      '.kA..........Ak.',
++      'kAAAk......kAAAk',
++      'kkkkk......kkkkk',
++    ],
++  },
++  // A "this tall to ride" sign: a smiling yellow ruler.
++  heightSign: {
++    solid: true,
++    place: 'wall',
++    sprite: [
++      '....kkkkkk....',
++      '...kyyyyyyk...',
++      '...kykyykyk...',
++      '...kyyyyyyk...',
++      '...kykkkkyk...',
++      '...kyyyyyyk...',
++      '...kkkkkkkk...',
++      '....kYrYYk....',
++      '....kYYYYk....',
++      '....kYrYYk....',
++      '....kYYYYk....',
++      '....kYrYYk....',
++      '....kYYYYk....',
++      '....kYrYYk....',
++      '...kkYYYYkk...',
++      '...kkkkkkkk...',
++    ],
++  },
++  // A carousel horse on its golden pole, with a pink saddle.
++  carouselHorse: {
++    solid: true,
++    place: 'open',
++    sprite: [
++      '.......kk.......',
++      '......kYYk......',
++      '.......kk.......',
++      '...kk..kY.......',
++      '..kwwkkkYk......',
++      '.kwwkwPPkY......',
++      'kwwwwwPPkYkkkk..',
++      '.kkwwwwwwwwwwwk.',
++      '...kwwwPPPwwwwPk',
++      '...kwwwPPPwwwwkP',
++      '...kwwwwwwwwwk.k',
++      '...kwkkYkkkwk...',
++      '...kwk.kYk.kwk..',
++      '...kk..kYk..kk..',
++      '......kYYYk.....',
++      '......kkkkk.....',
++    ],
++  },
++  // A band organ: gold pipes on top and a painted red box that plays the carousel song.
++  organ: {
++    solid: true,
++    sprite: [
++      '...k.k.k.k.k....',
++      '..kYkYkYkYkYk...',
++      '..kYkYkYkYkYk...',
++      '..kYkYkYkYkYk...',
++      '.kkkkkkkkkkkkkk.',
++      '.kRRRRRRRRRRRRk.',
++      '.kRYYYYYYYYYYRk.',
++      '.kRYkwkYYkwkYRk.',
++      '.kRYwkwYYwkwYRk.',
++      '.kRYkwkYYkwkYRk.',
++      '.kRYYYYYYYYYYRk.',
++      '.kRRRRRRRRRRRRk.',
++      '.kRRRYRRRRYRRRk.',
++      '.kkkkkkkkkkkkkk.',
++      '..kNk......kNk..',
++      '..kkk......kkk..',
++    ],
++  },
++  // A little red-and-white striped tent.
++  stripedTent: {
++    solid: true,
++    sprite: [
++      '.......kk.......',
++      '......kYYk......',
++      '.......kk.......',
++      '......krwk......',
++      '.....krwrwk.....',
++      '....krwrwrwk....',
++      '...krwrwrwrwk...',
++      '..krwrwrwrwrwk..',
++      '.krwrwrwrwrwrwk.',
++      'kkkkkkkkkkkkkkkk',
++      '.krwrwkkkkrwrwk.',
++      '.krwrkkNNkkrwrk.',
++      '.krwrkNNNNkwrwk.',
++      '.krwrkNNNNkrwrk.',
++      '.krwrkNNNNkwrwk.',
++      '.kkkkkkkkkkkkkk.',
++    ],
++  },
++  // Music notes floating up from the organ (you can walk through them).
++  musicNotes: {
++    solid: false,
++    place: 'open',
++    sprite: [
++      '.......kkkk',
++      '.......kvvk',
++      '.......k..k',
++      '.......k..k',
++      '..kk...k..k',
++      '.kvvk.kk.kk',
++      '.kvvkkvvkvk',
++      '..kk.kvvk..',
++      '......kk...',
++    ],
++  },
++};
+diff --git a/src/worlds/wonderwhirl/decor/parkGate.ts b/src/worlds/wonderwhirl/decor/parkGate.ts
+new file mode 100644
+index 0000000..a90d354
+--- /dev/null
++++ b/src/worlds/wonderwhirl/decor/parkGate.ts
+@@ -0,0 +1,183 @@
++import { type DecorKind } from '../../building/types';
++
++/**
++ * Things all over the park, and at the front gate (pixel art, one character = one pixel).
++ * Letters are the decoration colors from render/decorArt.ts:
++ *   k black  w white  a light gray  A gray  r red  R dark red  O orange  o light orange
++ *   Y gold  y light yellow  n brown  N dark brown  u sky  U light blue  b blue  B dark blue
++ *   g green  l light green  G dark green  p light pink  P pink  s sand  d ochre  v purple  L lavender
++ *   m mint  t teal  i periwinkle  e rose  h skin
++ */
++export const PARK_GATE: Record<string, DecorKind> = {
++  // A round, leafy park tree.
++  tree: {
++    solid: true,
++    sprite: [
++      '....kkkkkkk.....',
++      '..kklllgggkk....',
++      '.klllggggggGk...',
++      'kllgggggggGGGk..',
++      'klggPgggggGGGk..',
++      'kgggggggPgGGGGk.',
++      'kGggggggggGGGGk.',
++      '.kGggPggggGGGk..',
++      '..kGGggGGGGGk...',
++      '...kkGGGGGkk....',
++      '.....kknkk......',
++      '......knk.......',
++      '......knk.......',
++      '......knk.......',
++      '.....kNnNk......',
++      '......kkk.......',
++    ],
++  },
++  // An old-fashioned park lamp: a round glowing globe on a dark green post.
++  lampPost: {
++    solid: true,
++    sprite: [
++      '.....kkkk.....',
++      '....kyyyyk....',
++      '...kyywyyyk...',
++      '...kyyyyyYk...',
++      '....kYYYYk....',
++      '.....kGGk.....',
++      '......kG......',
++      '......kG......',
++      '......kG......',
++      '......kG......',
++      '......kG......',
++      '......kG......',
++      '......kG......',
++      '.....kGGGk....',
++      '....kGGGGGk...',
++      '....kkkkkkk...',
++    ],
++  },
++  // A green park bench.
++  bench: {
++    solid: true,
++    place: 'any',
++    sprite: [
++      '................',
++      '.kkkkkkkkkkkkkk.',
++      '.kggggggggggggk.',
++      '.kkkkkkkkkkkkkk.',
++      '.kggggggggggggk.',
++      '.kkkkkkkkkkkkkk.',
++      'kggggggggggggggk',
++      'kGGGGGGGGGGGGGGk',
++      'kkkkkkkkkkkkkkkk',
++      '.kAk........kAk.',
++      '.kAk........kAk.',
++      '.kkk........kkk.',
++    ],
++  },
++  // A ticket booth: a little stand with a striped roof and a window.
++  ticketBooth: {
++    solid: true,
++    sprite: [
++      '.....kkkkkk.....',
++      '...kkrwrwrwkk...',
++      '.kkrwrwrwrwrwkk.',
++      'krwrwrwrwrwrwrwk',
++      'kkkkkkkkkkkkkkkk',
++      '.kYYYYYYYYYYYYk.',
++      '.kYkkkkkkkkkkYk.',
++      '.kYkUUUUUUUUkYk.',
++      '.kYkUwUUUUUUkYk.',
++      '.kYkUUUUUUUUkYk.',
++      '.kYkkkkkkkkkkYk.',
++      '.kYYYYYYYYYYYYk.',
++      '.krrrrrrrrrrrrk.',
++      '.krrrryyyyrrrrk.',
++      '.krrrrrrrrrrrrk.',
++      '.kkkkkkkkkkkkkk.',
++    ],
++  },
++  // A turnstile: a shiny post with three arms that turn as you walk through.
++  turnstile: {
++    solid: true,
++    sprite: [
++      '.....kkkk.....',
++      '....kaaaak....',
++      '....kawwak....',
++      'kkkkkaaaakkkkk',
++      'kaaaaaaaaaaaak',
++      'kkkkkaaaakkkkk',
++      '.....kaaak....',
++      '.....kAAAk....',
++      '.....kAAAk....',
++      '.....kAAAk....',
++      '.....kAAAk....',
++      '.....kAAAk....',
++      '....kAAAAAk...',
++      '....kkkkkkk...',
++    ],
++  },
++  // A balloon cart: a little wagon with a bunch of balloons tied to it.
++  balloonCart: {
++    solid: true,
++    sprite: [
++      '...kk..kk..kk...',
++      '..krrkkuukkYYk..',
++      '..krwkkuwkkYwk..',
++      '..krrkkuukkYYk..',
++      '...kk.kPPk.kk...',
++      '....k.kPwk.k....',
++      '.....kkPPkk.....',
++      '......kkkk......',
++      '.......kk.......',
++      '.kkkkkkkkkkkkkk.',
++      '.kbbbbbbbbbbbbk.',
++      '.kbwbwbwbwbwbwk.',
++      '.kbbbbbbbbbbbbk.',
++      '.kkkkkkkkkkkkkk.',
++      '..kAk......kAk..',
++      '...k........k...',
++    ],
++  },
++  // The park map board: a big colorful map on two legs (the dot says "you are here").
++  mapBoard: {
++    solid: true,
++    sprite: [
++      'kkkkkkkkkkkkkkkk',
++      'knnnnnnnnnnnnnnk',
++      'knlllllluuuuuunk',
++      'knllPPlluuYYuunk',
++      'knllPPllssuuuunk',
++      'knsssssssssssunk',
++      'knllYYllssggggnk',
++      'knlllllrrsggggnk',
++      'knllllrrrsgrrgnk',
++      'knnnnnnnnnnnnnnk',
++      'kkkkkkkkkkkkkkkk',
++      '..kn........nk..',
++      '..kn........nk..',
++      '..kn........nk..',
++      '.kNNk......kNNk.',
++      '.kkkk......kkkk.',
++    ],
++  },
++  // A bunch of balloons tied to a little weight.
++  balloonPost: {
++    solid: true,
++    sprite: [
++      '...kkk..kkk.....',
++      '..kPPPkkuuuk....',
++      '..kPwPkkuwuk....',
++      '..kPPPkkuuuk....',
++      '...kkkkYYYkk....',
++      '....k.kYwYk.....',
++      '....k.kYYYk.....',
++      '.....k.kkk......',
++      '.....k..k.......',
++      '......k.k.......',
++      '......kk........',
++      '......k.........',
++      '......k.........',
++      '.....kAk........',
++      '....kAAAk.......',
++      '....kkkkk.......',
++    ],
++  },
++};
+diff --git a/src/worlds/wonderwhirl/decor/splashFunhouse.ts b/src/worlds/wonderwhirl/decor/splashFunhouse.ts
+new file mode 100644
+index 0000000..5bb5cf2
+--- /dev/null
++++ b/src/worlds/wonderwhirl/decor/splashFunhouse.ts
+@@ -0,0 +1,149 @@
++import { type DecorKind } from '../../building/types';
++
++/**
++ * Water-park and funhouse things (pixel art, one character = one pixel).
++ * Letters are the decoration colors from render/decorArt.ts (listed in parkGate.ts).
++ */
++export const SPLASH_FUNHOUSE: Record<string, DecorKind> = {
++  // A striped beach chair, leaning back.
++  beachChair: {
++    solid: true,
++    on: ['poolDeck'],
++    sprite: [
++      '..........kk....',
++      '.........kuuk...',
++      '........kuwwk...',
++      '.......kuuuk....',
++      '......kwwwk.....',
++      '.....kuuuk......',
++      '....kwwwk.......',
++      '..kkuuukkkkkkk..',
++      '.kuuwwwuuuwwwuk.',
++      '.kkkkkkkkkkkkkk.',
++      '..kak.......kak.',
++      '..kak.......kak.',
++      '..kkk.......kkk.',
++    ],
++  },
++  // A big beach umbrella with pink and white stripes.
++  umbrella: {
++    solid: true,
++    on: ['poolDeck'],
++    sprite: [
++      '.....kkkkkk.....',
++      '...kkPwPwPwkk...',
++      '..kPwPwPwPwPwk..',
++      '.kPwPwPwPwPwPwk.',
++      'kPwPwPwPwPwPwPwk',
++      'kkkkkkkkkkkkkkkk',
++      '.......kk.......',
++      '.......ka.......',
++      '.......ka.......',
++      '.......ka.......',
++      '.......ka.......',
++      '.......ka.......',
++      '.......ka.......',
++      '......kaak......',
++      '....kkkkkkkk....',
++    ],
++  },
++  // A floaty inner tube lying on the deck (you can walk past it).
++  innerTube: {
++    solid: false,
++    on: ['poolDeck'],
++    sprite: [
++      '...kkkkkkkk...',
++      '.kkYYwYYYwYYk.',
++      'kYYYkkkkkkYYYk',
++      'kYwk......kwYk',
++      'kYYYkkkkkkYYYk',
++      '.kkYYYwYYYYkk.',
++      '...kkkkkkkk...',
++    ],
++  },
++  // A little kiddie water slide: steps up one side, a blue slide down the other.
++  waterSlide: {
++    solid: true,
++    place: 'open',
++    on: ['poolDeck'],
++    sprite: [
++      '...kkkk.........',
++      '..kYYYYk........',
++      '..kYkkYkk.......',
++      '..kYk.kuuk......',
++      '..kYkkkuUuk.....',
++      '..kYYYkkuUuk....',
++      '..kYk...kuUuk...',
++      '..kYkkk..kuUuk..',
++      '..kYYYk...kuUuk.',
++      '..kYk......kuUk.',
++      '..kYkkk.....kuuk',
++      '..kYYYk......kuk',
++      '..kYk.........kk',
++      '..kYk...kk...kuk',
++      '.kkkkk.kuUk.kuUk',
++      '.kkkkk.kkkkkkkkk',
++    ],
++  },
++  // A wavy funhouse mirror in a gold frame (it makes you look super tall and silly).
++  wavyMirror: {
++    solid: true,
++    place: 'wall',
++    on: ['funFloor'],
++    sprite: [
++      '....kkkkkkkk....',
++      '...kYYYYYYYYk...',
++      '..kYkkkkkkkkYk..',
++      '..kYkUUUwUUkYk..',
++      '..kYkUUUUwUkYk..',
++      '..kYkUUUwUUkYk..',
++      '..kYkUUwUUUkYk..',
++      '..kYkUwUUUUkYk..',
++      '..kYkUUwUUUkYk..',
++      '..kYkUUUwUUkYk..',
++      '..kYkUUUUwUkYk..',
++      '..kYkkkkkkkkYk..',
++      '...kYYYYYYYYk...',
++      '....kkkkkkkk....',
++      '.....kNk.kNk....',
++      '.....kkk.kkk....',
++    ],
++  },
++  // A bouncy spot on the floor: boing! (You can walk on it.)
++  bouncePad: {
++    solid: false,
++    place: 'open',
++    on: ['funFloor'],
++    sprite: [
++      '....kkkkkkkk....',
++      '..kkPPPPPPPPkk..',
++      '.kPPPwwPPPPPPPk.',
++      'kPPPPPPPPPPPPPPk',
++      'kePPPPPPPPPPPPek',
++      '.keeeeeeeeeeeek.',
++      '..kkkkkkkkkkkk..',
++    ],
++  },
++  // A little spinning barrel you can't go inside, painted with a swirl.
++  spinTunnel: {
++    solid: true,
++    place: 'open',
++    on: ['funFloor'],
++    sprite: [
++      '....kkkkkkkk....',
++      '..kkvLvLvLvLkk..',
++      '.kLvLvLvLvLvLvk.',
++      'kvLvkkkkkkkkvLvk',
++      'kLvk.kkkkkk.kvLk',
++      'kvLk.kLLLLk.kLvk',
++      'kLvk.kLkkLk.kvLk',
++      'kvLk.kLkkLk.kLvk',
++      'kLvk.kLLLLk.kvLk',
++      'kvLk.kkkkkk.kLvk',
++      'kLvLkkkkkkkkLvLk',
++      '.kLvLvLvLvLvLvk.',
++      '..kkvLvLvLvLkk..',
++      '....kkkkkkkk....',
++    ],
++  },
++};
+diff --git a/src/worlds/wonderwhirl/decor/wheelSnacks.ts b/src/worlds/wonderwhirl/decor/wheelSnacks.ts
+new file mode 100644
+index 0000000..7d3670f
+--- /dev/null
++++ b/src/worlds/wonderwhirl/decor/wheelSnacks.ts
+@@ -0,0 +1,194 @@
++import { type DecorKind } from '../../building/types';
++
++/**
++ * Ferris-wheel hill and snack-street things (pixel art, one character = one pixel).
++ * Letters are the decoration colors from render/decorArt.ts (listed in parkGate.ts).
++ */
++export const WHEEL_SNACKS: Record<string, DecorKind> = {
++  // A little Ferris wheel (the realm's icon; the big one turns on the hill, see rides/).
++  ferrisIcon: {
++    solid: true,
++    sprite: [
++      '.....kkkkkk.....',
++      '...kkPk..kYkk...',
++      '..kuk.kaak.kuk..',
++      '.kk..k.aa.k..kk.',
++      '.k.k..kaak..k.k.',
++      'kYk.kkkaakkk.kPk',
++      'kk.aaaakkaaaa.kk',
++      'kk.aaaakkaaaa.kk',
++      'kPk.kkkaakkk.kYk',
++      '.k.k..kaak..k.k.',
++      '.kk..k.aa.k..kk.',
++      '..kuk.kaak.kuk..',
++      '...kkYkaakPkk...',
++      '....kAk..kAk....',
++      '...kAk....kAk...',
++      '..kkkkkkkkkkkk..',
++    ],
++  },
++  // A coin telescope on the lookout: look at the whole park!
++  telescope: {
++    solid: true,
++    place: 'wall',
++    on: ['lookout'],
++    sprite: [
++      '................',
++      '.kkk............',
++      'kaaakkkk........',
++      'kawaaaaakkk.....',
++      'kaaaaaaaaaakk...',
++      '.kkkkaaaaaaaak..',
++      '.....kkkkAAAAk..',
++      '.........kkkAk..',
++      '..........kAk...',
++      '..........kAk...',
++      '..........kAk...',
++      '.........kAAAk..',
++      '........kAAAAAk.',
++      '........kkkkkkk.',
++    ],
++  },
++  // A low puff of cloud resting on the hilltop (you can walk through it).
++  cloudPuff: {
++    solid: false,
++    place: 'open',
++    on: ['hillGrass'],
++    sprite: [
++      '.....kkk......',
++      '...kkwwwkkk...',
++      '..kwwwwwwwwk..',
++      '.kwwwwwwwwUwk.',
++      'kwwwwwwwwwwUUk',
++      '.kkkkkkkkkkkk.',
++    ],
++  },
++  // A tall flag on top of the hill, flapping in the breeze.
++  hillFlag: {
++    solid: true,
++    on: ['hillGrass'],
++    sprite: [
++      '..kkkkkkkk....',
++      '..kkPPPPPPk...',
++      '..kkPPwwPPPk..',
++      '..kkPPPPPPk...',
++      '..kkkkkkkk....',
++      '..kk..........',
++      '..kk..........',
++      '..kk..........',
++      '..kk..........',
++      '..kk..........',
++      '..kk..........',
++      '..kk..........',
++      '..kk..........',
++      '.kAAk.........',
++      'kAAAAk........',
++      'kkkkkk........',
++    ],
++  },
++  // A cotton-candy cart: a pink fluffy cloud of cotton candy on a cone, on wheels.
++  cottonCandyCart: {
++    solid: true,
++    sprite: [
++      '.....kkkk.......',
++      '...kkPPPPkk.....',
++      '..kPPpPPPPPk....',
++      '..kPPPPPpPPk....',
++      '...kkPPPPkk.....',
++      '.....kyyk.......',
++      '.....kyyk.......',
++      '.kkkkkkkkkkkkkk.',
++      '.kLLLLLLLLLLLLk.',
++      '.kLwLLwLLwLLwLk.',
++      '.kLLLLLLLLLLLLk.',
++      '.kkkkkkkkkkkkkk.',
++      '.kAk........kAk.',
++      'kAAAk......kAAAk',
++      'kkkkk......kkkkk',
++    ],
++  },
++  // A popcorn cart: a glass box full of popcorn with a red roof.
++  popcornCart: {
++    solid: true,
++    sprite: [
++      '..kkkkkkkkkkkk..',
++      '.krrrrrrrrrrrrk.',
++      'kkkkkkkkkkkkkkkk',
++      '.kUUUUUUUUUUUUk.',
++      '.kUywyywywyywUk.',
++      '.kywyywyywyywyk.',
++      '.kyyywyyyywyyyk.',
++      '.kkkkkkkkkkkkkk.',
++      '.krrrrrrrrrrrrk.',
++      '.krwrwrwrwrwrwk.',
++      '.krrrrrrrrrrrrk.',
++      '.kkkkkkkkkkkkkk.',
++      '..kAk......kAk..',
++      '.kAAAk....kAAAk.',
++      '.kkkkk....kkkkk.',
++    ],
++  },
++  // A corn-dog stand: a little booth with a giant corn dog on its sign.
++  cornDogStand: {
++    solid: true,
++    sprite: [
++      '.......kk.......',
++      '......kddk......',
++      '.....kdOOdk.....',
++      '.....kdOOdk.....',
++      '.....kdOOdk.....',
++      '......kddk......',
++      '.......kk.......',
++      '.kkkkkkkkkkkkkk.',
++      'kYYrrYYrrYYrrYYk',
++      'kkkkkkkkkkkkkkkk',
++      '.kwwwwwwwwwwwwk.',
++      '.kwkkkkkkkkkkwk.',
++      '.kwk........kwk.',
++      '.kYYYYYYYYYYYYk.',
++      '.kYYYYYYYYYYYYk.',
++      '.kkkkkkkkkkkkkk.',
++    ],
++  },
++  // A red picnic table with two benches.
++  picnicTable: {
++    solid: true,
++    place: 'open',
++    sprite: [
++      '................',
++      '.kkkkkkkkkkkkkk.',
++      '.krrrrrrrrrrrrk.',
++      '.kkkkkkkkkkkkkk.',
++      '................',
++      'kkkkkkkkkkkkkkkk',
++      'krwrwrwrwrwrwrwk',
++      'krwrwrwrwrwrwrwk',
++      'kkkkkkkkkkkkkkkk',
++      '.knk........knk.',
++      '.knk........knk.',
++      '................',
++      '.kkkkkkkkkkkkkk.',
++      '.krrrrrrrrrrrrk.',
++      '.kkkkkkkkkkkkkk.',
++    ],
++  },
++  // A smiling green trash bin that loves snack wrappers.
++  parkBin: {
++    solid: true,
++    place: 'wall',
++    sprite: [
++      '...kkkkkkkk...',
++      '..kGGGGGGGGk..',
++      '.kkkkkkkkkkkk.',
++      '.kggggggggggk.',
++      '.kgkkggggkkgk.',
++      '.kggggggggggk.',
++      '.kggkggggkggk.',
++      '.kgggkkkkgggk.',
++      '.kggggggggggk.',
++      '.kGgGgGgGgGgk.',
++      '.kGgGgGgGgGgk.',
++      '.kkkkkkkkkkkk.',
++    ],
++  },
++};
+diff --git a/src/worlds/wonderwhirl/index.ts b/src/worlds/wonderwhirl/index.ts
+new file mode 100644
+index 0000000..a4d422c
+--- /dev/null
++++ b/src/worlds/wonderwhirl/index.ts
+@@ -0,0 +1,32 @@
++import { makeBuildingWorld } from '../building';
++import { BUMPER_FIREWORKS } from './decor/bumperFireworks';
++import { COASTER_CAROUSEL } from './decor/coasterCarousel';
++import { PARK_GATE } from './decor/parkGate';
++import { SPLASH_FUNHOUSE } from './decor/splashFunhouse';
++import { WHEEL_SNACKS } from './decor/wheelSnacks';
++import { LEGEND, WONDERWHIRL_MAPS } from './layout';
++import { WONDERWHIRL_REALMS } from './realms';
++import { WONDERWHIRL_RIDES } from './rides';
++import { WONDERWHIRL_SCENE } from './scene';
++import { WONDERWHIRL_TILES } from './tiles';
++
++/**
++ * Wonderwhirl Park: an outdoor theme park (an original one, with its own
++ * swirly-pinwheel sign; no real parks, castles, characters, rides or mascots).
++ * Layne starts just inside the front gate. A little main street leads up to
++ * paths that branch out to the ride areas around a central fountain, with the
++ * fireworks plaza at the top. The rides really move (see rides/), and the
++ * funhouse is a small map of its own through its doors.
++ */
++export const WONDERWHIRL = makeBuildingWorld({
++  id: 'wonderwhirl',
++  name: 'Wonderwhirl Park',
++  seed: 3131,
++  scene: WONDERWHIRL_SCENE,
++  tiles: WONDERWHIRL_TILES,
++  decor: { ...PARK_GATE, ...COASTER_CAROUSEL, ...SPLASH_FUNHOUSE, ...WHEEL_SNACKS, ...BUMPER_FIREWORKS },
++  legend: LEGEND,
++  maps: WONDERWHIRL_MAPS,
++  realms: WONDERWHIRL_REALMS,
++  rides: WONDERWHIRL_RIDES,
++});
+diff --git a/src/worlds/wonderwhirl/layout.ts b/src/worlds/wonderwhirl/layout.ts
+new file mode 100644
+index 0000000..f021d57
+--- /dev/null
++++ b/src/worlds/wonderwhirl/layout.ts
+@@ -0,0 +1,306 @@
++import { type LegendEntry, type MapPlan } from '../building/types';
++
++/**
++ * Wonderwhirl Park, drawn as ASCII: one character per 16x16 tile.
++ * Change the park by retyping characters (every row must stay the same length).
++ *
++ * LEGEND (what each character is)
++ *   All over:  H hedge (the edge of the world)   , lawn   = path   + an opening in a fence
++ *              f white picket fence   * flower bed   R gravel under a ride (nobody walks there)
++ *              K day sky   N night sky   T a tree   L a lamp post   & a bench
++ *   Gate:      g brick plaza   W the front wall   $ the pinwheel sign   A shop roofs   s main street
++ *              J a main-street lamp   B ticket booth   t turnstile   M the park map   b balloon cart
++ *              @ the start (just inside the front gate, looking up main street)
++ *   Coaster:   q queue plaza   r coaster track   Z the station   i queue rail   0 a loop-de-loop
++ *   Carousel:  k wooden boards   O the carousel's platform   o the band organ
++ *   Splash:    d pool deck   ~ lazy river   w wave pool   / slide tower   j splash pad
++ *   Funhouse:  F striped funhouse wall   D its front door   (inside: z bouncy floor, m wavy mirrors,
++ *              y the spinning tunnel's floor, v the tunnel's sides, E the way out)
++ *   Wheel:     h hill grass   e lookout deck   p a telescope
++ *   Snacks:    n picnic-check plaza   c cotton candy   P popcorn   C corn dogs
++ *   Bumper:    u silver deck   | bumper rail   a the bumper-car floor   Q scoreboard
++ *   Fireworks: x show plaza   Y the stage
++ *   Middle:    U the fountain
++ *
++ * ZONES (which realm each tile is in; '.' = none: paths, fences, rides, walls)
++ *   G gate  C coaster  K carousel  P splash  F funhouse  W wheel  N snacks  B bumper  X fireworks
++ *   The paths and the fountain plaza in the middle belong to no realm.
++ *
++ * The rides themselves (the Ferris wheel, the coaster cars, the carousel, the bumper cars,
++ * the floating tubes, the fountain, the fireworks, the spinning sign) move, so they're
++ * drawn on top of the map every frame: see rides/. They only ever stand on squares
++ * nobody can walk on.
++ */
++export const LEGEND: Record<string, LegendEntry> = {
++  H: { tile: 'hedge' },
++  ',': { tile: 'lawn' },
++  '=': { tile: 'path' },
++  '+': { tile: 'gap' },
++  f: { tile: 'fence' },
++  '*': { tile: 'flowerBed' },
++  R: { tile: 'rideGround' },
++  K: { tile: 'daySky' },
++  N: { tile: 'nightSky' },
++  T: { tile: 'lawn', decor: 'tree' },
++  L: { tile: 'path', decor: 'lampPost' },
++  '&': { tile: 'path', decor: 'bench' },
++  g: { tile: 'gatePlaza' },
++  W: { tile: 'gateWall' },
++  $: { tile: 'signBoard' },
++  A: { tile: 'shopRoof' },
++  s: { tile: 'mainStreet' },
++  J: { tile: 'mainStreet', decor: 'lampPost' },
++  B: { tile: 'gatePlaza', decor: 'ticketBooth' },
++  t: { tile: 'gatePlaza', decor: 'turnstile' },
++  M: { tile: 'gatePlaza', decor: 'mapBoard' },
++  b: { tile: 'gatePlaza', decor: 'balloonCart' },
++  '@': { tile: 'gatePlaza', spawn: true, face: 'up' },
++  q: { tile: 'queuePlaza' },
++  r: { tile: 'track' },
++  Z: { tile: 'station' },
++  i: { tile: 'queuePlaza', decor: 'queueRail' },
++  '0': { tile: 'rideGround', decor: 'loopHill' },
++  k: { tile: 'carouselBoards' },
++  O: { tile: 'carouselBase' },
++  o: { tile: 'carouselBoards', decor: 'organ' },
++  d: { tile: 'poolDeck' },
++  '~': { tile: 'river' },
++  w: { tile: 'wavePool' },
++  '/': { tile: 'slideTower' },
++  j: { tile: 'splashPad' },
++  F: { tile: 'funWall' },
++  D: { tile: 'funDoor', link: 'funhouse', arrive: 'down' },
++  z: { tile: 'funFloor' },
++  m: { tile: 'mirrorWall' },
++  y: { tile: 'tunnelFloor' },
++  v: { tile: 'tunnelWall' },
++  E: { tile: 'funExit', link: 'funhouse', arrive: 'up' },
++  h: { tile: 'hillGrass' },
++  e: { tile: 'lookout' },
++  p: { tile: 'lookout', decor: 'telescope' },
++  n: { tile: 'snackPlaza' },
++  c: { tile: 'snackPlaza', decor: 'cottonCandyCart' },
++  P: { tile: 'snackPlaza', decor: 'popcornCart' },
++  C: { tile: 'snackPlaza', decor: 'cornDogStand' },
++  u: { tile: 'bumperDeck' },
++  '|': { tile: 'bumperRail' },
++  a: { tile: 'arenaFloor' },
++  Q: { tile: 'bumperDeck', decor: 'scoreboard' },
++  x: { tile: 'showPlaza' },
++  Y: { tile: 'stage' },
++  U: { tile: 'fountainBasin' },
++};
++
++/**
++ * The whole park (90 x 72), top to bottom:
++ *   - top: the Ferris-wheel hill (left), the fireworks plaza under the night sky (middle),
++ *     the bumper cars (right)
++ *   - middle: the roller coaster (left), the fountain plaza with the funhouse (middle),
++ *     the water park (right)
++ *   - bottom: the carousel (left), main street and the front gate (middle), snacks (right)
++ * Two long paths go across and two go down, so every area opens onto a path.
++ */
++const MAIN: MapPlan = {
++  name: 'main',
++  outside: 'hedge',
++  rows: [
++    'HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH',
++    'HKKKKKKKKKKKKKKKKKKKKKKKKKKKK==NNNNNNNNNNNNNNNNNNNNNNNNNNNN==fuuuuuuuuuuuuuuuuuuuuuuuuuuuH',
++    'HKKKKKKKKKKKKKKKKKKKKKKKKKKKK==NNNNNNNNNNNNNNNNNNNNNNNNNNNN==fuuuuuuuuQuuuuuuuuQuuuuuuuuuH',
++    'Hhhhhhhhhhhhhhhhhhhhhhhhhhhhf==NNNNNNNNNNNNNNNNNNNNNNNNNNNN==fuuuuuuuuuuuuuuuuuuuuuuuuuuuH',
++    'HhhhhRRRRRRRhhhhhhepeepeepehf==NNNNNNNNNNNNNNNNNNNNNNNNNNNN==fuuuu||||||||||||||||||uuuuuH',
++    'HhhhhRRRRRRRhhhhhheeeeeeeeehf==NNNNNNNNNNNNNNNNNNNNNNNNNNNN==fuuuu|aaaaaaaaaaaaaaaa|uuuuuH',
++    'HhhhhRRRRRRRhhhhhheeeeeeeeehf==NNNNNNNNNNNNNNNNNNNNNNNNNNNN==fuuuu|aaaaaaaaaaaaaaaa|uuuuuH',
++    'HhhhhRRRRRRRhhhhhheeeeeeeeehf==NNNNNNNNNNNNNNNNNNNNNNNNNNNN==fuuuu|aaaaaaaaaaaaaaaa|uuuuuH',
++    'HhhhhRRRRRRRhhhhhheeeeeeeeehf==fxxxxxYYYYYYYYYYYYYYYYxxxxxf==fuuuu|aaaaaaaaaaaaaaaa|uuuuuH',
++    'HhhhhRRRRRRRhhhhhhhhhhhhhhhhf==fxxxxxYYYYYYYYYYYYYYYYxxxxxf==fuuuu|aaaaaaaaaaaaaaaa|uuuuuH',
++    'HhhhhRRRRRRRhhhhhhhhhhhhhhhh+==fxxxxxYYYYYYYYYYYYYYYYxxxxxf==+uuuu|aaaaaaaaaaaaaaaa|uuuuuH',
++    'Hhhhhhhhhhhhhhhhhhhhhhhhhhhh+==fxxxxxxxxxxxxxxxxxxxxxxxxxxf==+uuuu|aaaaaaaaaaaaaaaa|uuuuuH',
++    'Hhhhhhhhhhhhhhhhhhhhhhhhhhhh+==fxxxxxxxxxxxxxxxxxxxxxxxxxxf==+uuuu|aaaaaaaaaaaaaaaa|uuuuuH',
++    'Hhhhhhhhhhhhhhhhhhhhhhhhhhhhf==fxxxxxxxxxxxxxxxxxxxxxxxxxxf==fuuuu|aaaaaaaaaaaaaaaa|uuuuuH',
++    'Hhhhhhhhhhhhhhhhhhhhhhhhhhhhf==fxxxxxxxxxxxxxxxxxxxxxxxxxxf==fuuuu||||||||||||||||||uuuuuH',
++    'Hhhhhhhhhhhhhhhhhhhhhhhhhhhhf==+xxxxxxxxxxxxxxxxxxxxxxxxxx+==fuuuuuuuuuuuuuuuuuuuuuuuuuuuH',
++    'Hhhhhhhhhhhhhhhhhhhhhhhhhhhhf==+xxxxxxxxxxxxxxxxxxxxxxxxxx+==fuuuuuuuuuuuuuuuuuuuuuuuuuuuH',
++    'Hhhhhhhhhhhhhhhhhhhhhhhhhhhhf==+xxxxxxxxxxxxxxxxxxxxxxxxxx+==fuuuuuuuuuuuuuuuuuuuuuuuuuuuH',
++    'Hhhhhhhhhhhhhhhhhhhhhhhhhhhhf==fxxxxxxxxxxxxxxxxxxxxxxxxxxf==fuuuuuuuuuuuuuuuuuuuuuuuuuuuH',
++    'Hhhhhhhhhhhhhhhhhhhhhhhhhhhhf==fxxxxxxxxxxxxxxxxxxxxxxxxxxf==fuuuuuuuuuuuuuuuuuuuuuuuuuuuH',
++    'Hhhhhhhhhhhhhhhhhhhhhhhhhhhhf==fxxxxxxxxxxxxxxxxxxxxxxxxxxf==fuuuuuuuuuuuuuuuuuuuuuuuuuuuH',
++    'Hhhhhhhhhhhhhhhhhhhhhhhhhhhhf==fxxxxxxxxxxxxxxxxxxxxxxxxxxf==fuuuuuuuuuuuuuuuuuuuuuuuuuuuH',
++    'Hffffffffffff+++fffffffffffff==ffffffffffff++++ffffffffffff==ffffffffffff+++fffffffffffffH',
++    'H========================================================================================H',
++    'H========================================================================================H',
++    'Hffffffffffff+++fffffffffffff================================ffffffffffff+++fffffffffffffH',
++    'Hqqqqqqqqqqqqqqqqqqqqqqqqqqqf====FFFFFFFFF========,,,,,,,====fdddddddddddddddddddddddddddH',
++    'Hqqffffffffffffffffffffffffqf====FFFFFFFFF========,T,,,T,====fdd~~~~~~~~~~~~~~~~~~~~~~dddH',
++    'Hqqfrrrrrrrrrrrrrrrrrrrrrrfqf====FFFFFFFFF========,,,,,,,====fdd~~~~~~~~~~~~~~~~~~~~~~dddH',
++    'HqqfrRRRRRRRRRRRRRRRRRRRRrfqf====FFFFFFFFF========,,,T,,,====fdd~~wwwwwwwwwwwwwwwwww~~dddH',
++    'HqqfrRRRRRRRRRRRRRRRRRRRRrfqf====FFFFFFFFF========,,,,,,,====fdd~~www///wwwwww///www~~dddH',
++    'HqqfrRRRR0RRRRR0RRRR0RRRRrfqf====FFFFDFFFF===================fdd~~www///wwwwww///www~~dddH',
++    'HqqfrRRRRRRRRRRRRRRRRRRRRrfqf=============*====*=============fdd~~www///wwwwww///www~~dddH',
++    'HqqfrRRRRRRRRRRRRRRRRRRRRrfq+===========L==UUUU==&===========+dd~~wwwwwwwwwwwwwwwwww~~dddH',
++    'HqqfrRRRRRRRRRRRRRRRRRRRRrfq+===*****======UUUU=====******===+dd~~wwwwwwwwwwwwwwwwww~~dddH',
++    'Hqqfrrrrrrrrrrrrrrrrrrrrrrfq+===*****======UUUU=====******===+dd~~wwwwwwwwwwwwwwwwww~~dddH',
++    'HqqfffffffffZZZZZZfffffffffqf===========&==UUUU==L===========fdd~~wwwwwwwwwwwwwwwwww~~dddH',
++    'Hqqqqqqqqqqqqqqqqqqqqqqqqqqqf=============*====*=============fdd~~wwwwwwwwwwwwwwwwww~~dddH',
++    'Hqqqqqqqqqqqqqqqqqqqqqqqqqqqf====L======================L====fdd~~wwwwwwwwwwwwwwwwww~~dddH',
++    'Hqqqqiiiiiiiiiiiiiiiiiiqqqqqf================================fdd~~~~~~~~~~~~~~~~~~~~~~dddH',
++    'Hqqqqqqqqqqqqqqqqqqqqqqqqqqqf=======&================&=======fdd~~~~~~~~~~~~~~~~~~~~~~dddH',
++    'Hqqqqqqiiiiiiiiiiiiiiiiiiqqqf================================fdddddddddddddddddddddddddddH',
++    'Hqqqqqqqqqqqqqqqqqqqqqqqqqqqf====L======================L====fddddjjjjddddddddjjjjdddddddH',
++    'Hqqqqqqqqqqqqqqqqqqqqqqqqqqqf================================fdddddddddddddddddddddddddddH',
++    'Hffffffffffff+++fffffffffffff================================ffffffffffff+++fffffffffffffH',
++    'H========================================================================================H',
++    'H========================================================================================H',
++    'Hffffffffffff+++fffffffffffff==AAAAAAAssssssssssssssAAAAAAA==ffffffffffff+++fffffffffffffH',
++    'Hkkkkkkkkkkkkkkkkkkkkkkkkkkkf==AAAAAAAssssssssssssssAAAAAAA==fnnnnnnnnnnnnnnnnnnnnnnnnnnnH',
++    'Hkkkkkkkkkkkkkkkkkkkkkkkkkkkf==AAAAAAAJssssssssssssJAAAAAAA==fnnnnnnnnnnnnnnnnnnnnnnnnnnnH',
++    'Hkkkkkkkkkkkkkkkkkkkkkkkkkkkf==AAAAAAAssssssssssssssAAAAAAA==fnnncnnnnnPnnnnnCnnnnncnnnnnH',
++    'HkkkkkkkkOOOOOOOOOkkkkkkkkkkf==AAAAAAAssssssssssssssAAAAAAA==fnnnnnnnnnnnnnnnnnnnnnnnnnnnH',
++    'HkkkkkkkkOOOOOOOOOkkkkkkkkkkf==AAAAAAAssssssssssssssAAAAAAA==fnnnnnnnnnnnnnnnnnnnnnnnnnnnH',
++    'HkkkkkkkkOOOOOOOOOkkokkkkkkkf==AAAAAAAJssssssssssssJAAAAAAA==fnnnnnnnnnnnnnnnnnnnnnnnnnnnH',
++    'HkkkkkkkkOOOOOOOOOkkkkkkkkkkf==AAAAAAAssssssssssssssAAAAAAA==fnnnnnnnnnnnnnnnnnnnnnnnnnnnH',
++    'HkkkkkkkkOOOOOOOOOkkkkkkkkkk+==AAAAAAAssssssssssssssAAAAAAA==+nnnnnnnnnnnnnnnnnnnnnnnnnnnH',
++    'HkkkkkkkkOOOOOOOOOkkkkkkkkkk+==AAAAAAAssssssssssssssAAAAAAA==+nnnnnnnnnnnnnnnnnnnnnnnnnnnH',
++    'Hkkkkkkkkkkkkkkkkkkkkkkkkkkk+==AAAAAAAJssssssssssssJAAAAAAA==+nnnnnnnnnnnnnnnnnnnnnnnnnnnH',
++    'Hkkkkkkkkkkkkkkkkkkkkkkkkkkkf==AAAAAAAssssssssssssssAAAAAAA==fnnnnnnnnnnnnnnnnnnnnnnnnnnnH',
++    'Hkkkkkkkkkkkkkkkkkkkkkkkkkkkf==AAAAAAAssssssssssssssAAAAAAA==fnnnnnnnnnnnnnnnnnnnnnnnnnnnH',
++    'Hkkkkkkkkkkkkkkkkkkkkkkkkkkkf==AAAAAAAssssssssssssssAAAAAAA==fnnnnnnnnnnnnnnnn,,,,,,,,,,nH',
++    'Hkkkkkkkkkkkkkkkkkkkkkkkkkkkf==fggggggggggggggggggggggggggf==fnnnnnnnnnnnnnnnn,,,,,,,,,,nH',
++    'Hkkkkkkkkkkkkkkkkkkkkkkkkkkkf==fggggggggMggggggggbggggggggf==fnnnnnnnnnnnnnnnn,,T,,,,T,,nH',
++    'Hkkkkkkkkkkkkkkkkkkkkkkkkkkkf==fggggggggggggggggggggggggggf==fnnnnnnnnnnnnnnnn,,,,,,,,,,nH',
++    'Hkkkkkkkkkkkkkkkkkkkkkkkkkkkf==fggggggggggggggggggggggggggf==fnnnnnnnnnnnnnnnn,,,,,,,,,,nH',
++    'Hkkkkkkkkkkkkkkkkkkkkkkkkkkkf==fggggggggggggggggggggggggggf==fnnnnnnnnnnnnnnnn,,,,,,,,,,nH',
++    'Hkkkkkkkkkkkkkkkkkkkkkkkkkkkf==fgBgggggggggg@gggggggggggBgf==fnnnnnnnnnnnnnnnn,,,,T,,,,,nH',
++    'Hkkkkkkkkkkkkkkkkkkkkkkkkkkkf==fggggggggggggggggggggggggggf==fnnnnnnnnnnnnnnnn,,,,,,,,,,nH',
++    'Hkkkkkkkkkkkkkkkkkkkkkkkkkkkf==fggggtgtgtgtgtgtgtgtgtgggggf==fnnnnnnnnnnnnnnnn,,,,,,,,,,nH',
++    'Hkkkkkkkkkkkkkkkkkkkkkkkkkkkf==WWWWWWWWWWW$$$$$$WWWWWWWWWWW==fnnnnnnnnnnnnnnnn,,,,,,,,,,nH',
++    'Hkkkkkkkkkkkkkkkkkkkkkkkkkkkf==WWWWWWWWWWW$$$$$$WWWWWWWWWWW==fnnnnnnnnnnnnnnnnnnnnnnnnnnnH',
++    'HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH',
++  ],
++  zones: [
++    '..........................................................................................',
++    '..............................................................BBBBBBBBBBBBBBBBBBBBBBBBBBB.',
++    '..............................................................BBBBBBBBBBBBBBBBBBBBBBBBBBB.',
++    '.WWWWWWWWWWWWWWWWWWWWWWWWWWW..................................BBBBBBBBBBBBBBBBBBBBBBBBBBB.',
++    '.WWWW.......WWWWWWWWWWWWWWWW..................................BBBB..................BBBBB.',
++    '.WWWW.......WWWWWWWWWWWWWWWW..................................BBBB..................BBBBB.',
++    '.WWWW.......WWWWWWWWWWWWWWWW..................................BBBB..................BBBBB.',
++    '.WWWW.......WWWWWWWWWWWWWWWW..................................BBBB..................BBBBB.',
++    '.WWWW.......WWWWWWWWWWWWWWWW....XXXXX................XXXXX....BBBB..................BBBBB.',
++    '.WWWW.......WWWWWWWWWWWWWWWW....XXXXX................XXXXX....BBBB..................BBBBB.',
++    '.WWWW.......WWWWWWWWWWWWWWWWW...XXXXX................XXXXX...BBBBB..................BBBBB.',
++    '.WWWWWWWWWWWWWWWWWWWWWWWWWWWW...XXXXXXXXXXXXXXXXXXXXXXXXXX...BBBBB..................BBBBB.',
++    '.WWWWWWWWWWWWWWWWWWWWWWWWWWWW...XXXXXXXXXXXXXXXXXXXXXXXXXX...BBBBB..................BBBBB.',
++    '.WWWWWWWWWWWWWWWWWWWWWWWWWWW....XXXXXXXXXXXXXXXXXXXXXXXXXX....BBBB..................BBBBB.',
++    '.WWWWWWWWWWWWWWWWWWWWWWWWWWW....XXXXXXXXXXXXXXXXXXXXXXXXXX....BBBB..................BBBBB.',
++    '.WWWWWWWWWWWWWWWWWWWWWWWWWWW...XXXXXXXXXXXXXXXXXXXXXXXXXXXX...BBBBBBBBBBBBBBBBBBBBBBBBBBB.',
++    '.WWWWWWWWWWWWWWWWWWWWWWWWWWW...XXXXXXXXXXXXXXXXXXXXXXXXXXXX...BBBBBBBBBBBBBBBBBBBBBBBBBBB.',
++    '.WWWWWWWWWWWWWWWWWWWWWWWWWWW...XXXXXXXXXXXXXXXXXXXXXXXXXXXX...BBBBBBBBBBBBBBBBBBBBBBBBBBB.',
++    '.WWWWWWWWWWWWWWWWWWWWWWWWWWW....XXXXXXXXXXXXXXXXXXXXXXXXXX....BBBBBBBBBBBBBBBBBBBBBBBBBBB.',
++    '.WWWWWWWWWWWWWWWWWWWWWWWWWWW....XXXXXXXXXXXXXXXXXXXXXXXXXX....BBBBBBBBBBBBBBBBBBBBBBBBBBB.',
++    '.WWWWWWWWWWWWWWWWWWWWWWWWWWW....XXXXXXXXXXXXXXXXXXXXXXXXXX....BBBBBBBBBBBBBBBBBBBBBBBBBBB.',
++    '.WWWWWWWWWWWWWWWWWWWWWWWWWWW....XXXXXXXXXXXXXXXXXXXXXXXXXX....BBBBBBBBBBBBBBBBBBBBBBBBBBB.',
++    '.............WWW...........................XXXX..........................BBB..............',
++    '..........................................................................................',
++    '..........................................................................................',
++    '.............CCC.........................................................PPP..............',
++    '.CCCCCCCCCCCCCCCCCCCCCCCCCCC..................................PPPPPPPPPPPPPPPPPPPPPPPPPPP.',
++    '.CC........................C..................................PP......................PPP.',
++    '.CC........................C..................................PP......................PPP.',
++    '.CC........................C..................................PP......................PPP.',
++    '.CC........................C..................................PP......................PPP.',
++    '.CC........................C..................................PP......................PPP.',
++    '.CC........................C..................................PP......................PPP.',
++    '.CC........................CC................................PPP......................PPP.',
++    '.CC........................CC................................PPP......................PPP.',
++    '.CC........................CC................................PPP......................PPP.',
++    '.CC........................C..................................PP......................PPP.',
++    '.CCCCCCCCCCCCCCCCCCCCCCCCCCC..................................PP......................PPP.',
++    '.CCCCCCCCCCCCCCCCCCCCCCCCCCC..................................PP......................PPP.',
++    '.CCCCCCCCCCCCCCCCCCCCCCCCCCC..................................PP......................PPP.',
++    '.CCCCCCCCCCCCCCCCCCCCCCCCCCC..................................PP......................PPP.',
++    '.CCCCCCCCCCCCCCCCCCCCCCCCCCC..................................PPPPPPPPPPPPPPPPPPPPPPPPPPP.',
++    '.CCCCCCCCCCCCCCCCCCCCCCCCCCC..................................PPPPPPPPPPPPPPPPPPPPPPPPPPP.',
++    '.CCCCCCCCCCCCCCCCCCCCCCCCCCC..................................PPPPPPPPPPPPPPPPPPPPPPPPPPP.',
++    '.............CCC.........................................................PPP..............',
++    '..........................................................................................',
++    '..........................................................................................',
++    '.............KKK......................GGGGGGGGGGGGGG.....................NNN..............',
++    '.KKKKKKKKKKKKKKKKKKKKKKKKKKK..........GGGGGGGGGGGGGG..........NNNNNNNNNNNNNNNNNNNNNNNNNNN.',
++    '.KKKKKKKKKKKKKKKKKKKKKKKKKKK..........GGGGGGGGGGGGGG..........NNNNNNNNNNNNNNNNNNNNNNNNNNN.',
++    '.KKKKKKKKKKKKKKKKKKKKKKKKKKK..........GGGGGGGGGGGGGG..........NNNNNNNNNNNNNNNNNNNNNNNNNNN.',
++    '.KKKKKKKK.........KKKKKKKKKK..........GGGGGGGGGGGGGG..........NNNNNNNNNNNNNNNNNNNNNNNNNNN.',
++    '.KKKKKKKK.........KKKKKKKKKK..........GGGGGGGGGGGGGG..........NNNNNNNNNNNNNNNNNNNNNNNNNNN.',
++    '.KKKKKKKK.........KKKKKKKKKK..........GGGGGGGGGGGGGG..........NNNNNNNNNNNNNNNNNNNNNNNNNNN.',
++    '.KKKKKKKK.........KKKKKKKKKK..........GGGGGGGGGGGGGG..........NNNNNNNNNNNNNNNNNNNNNNNNNNN.',
++    '.KKKKKKKK.........KKKKKKKKKKK.........GGGGGGGGGGGGGG.........NNNNNNNNNNNNNNNNNNNNNNNNNNNN.',
++    '.KKKKKKKK.........KKKKKKKKKKK.........GGGGGGGGGGGGGG.........NNNNNNNNNNNNNNNNNNNNNNNNNNNN.',
++    '.KKKKKKKKKKKKKKKKKKKKKKKKKKKK.........GGGGGGGGGGGGGG.........NNNNNNNNNNNNNNNNNNNNNNNNNNNN.',
++    '.KKKKKKKKKKKKKKKKKKKKKKKKKKK..........GGGGGGGGGGGGGG..........NNNNNNNNNNNNNNNNNNNNNNNNNNN.',
++    '.KKKKKKKKKKKKKKKKKKKKKKKKKKK..........GGGGGGGGGGGGGG..........NNNNNNNNNNNNNNNNNNNNNNNNNNN.',
++    '.KKKKKKKKKKKKKKKKKKKKKKKKKKK..........GGGGGGGGGGGGGG..........NNNNNNNNNNNNNNNNNNNNNNNNNNN.',
++    '.KKKKKKKKKKKKKKKKKKKKKKKKKKK....GGGGGGGGGGGGGGGGGGGGGGGGGG....NNNNNNNNNNNNNNNNNNNNNNNNNNN.',
++    '.KKKKKKKKKKKKKKKKKKKKKKKKKKK....GGGGGGGGGGGGGGGGGGGGGGGGGG....NNNNNNNNNNNNNNNNNNNNNNNNNNN.',
++    '.KKKKKKKKKKKKKKKKKKKKKKKKKKK....GGGGGGGGGGGGGGGGGGGGGGGGGG....NNNNNNNNNNNNNNNNNNNNNNNNNNN.',
++    '.KKKKKKKKKKKKKKKKKKKKKKKKKKK....GGGGGGGGGGGGGGGGGGGGGGGGGG....NNNNNNNNNNNNNNNNNNNNNNNNNNN.',
++    '.KKKKKKKKKKKKKKKKKKKKKKKKKKK....GGGGGGGGGGGGGGGGGGGGGGGGGG....NNNNNNNNNNNNNNNNNNNNNNNNNNN.',
++    '.KKKKKKKKKKKKKKKKKKKKKKKKKKK....GGGGGGGGGGGGGGGGGGGGGGGGGG....NNNNNNNNNNNNNNNNNNNNNNNNNNN.',
++    '.KKKKKKKKKKKKKKKKKKKKKKKKKKK....GGGGGGGGGGGGGGGGGGGGGGGGGG....NNNNNNNNNNNNNNNNNNNNNNNNNNN.',
++    '.KKKKKKKKKKKKKKKKKKKKKKKKKKK....GGGGGGGGGGGGGGGGGGGGGGGGGG....NNNNNNNNNNNNNNNNNNNNNNNNNNN.',
++    '.KKKKKKKKKKKKKKKKKKKKKKKKKKK..................................NNNNNNNNNNNNNNNNNNNNNNNNNNN.',
++    '.KKKKKKKKKKKKKKKKKKKKKKKKKKK..................................NNNNNNNNNNNNNNNNNNNNNNNNNNN.',
++    '..........................................................................................',
++  ],
++};
++
++/** Inside the funhouse (30 x 20): bouncy floors, wavy mirrors, and the spinning tunnel across the middle. */
++const FUNHOUSE: MapPlan = {
++  name: 'funhouse',
++  outside: 'funWall',
++  rows: [
++    'FFFmmmmmmmmmmmmmmmmmmmmmmmmFFF',
++    'FzzzzzzzzzzzzzzzzzzzzzzzzzzzzF',
++    'FzzzzzzzzzzzzzzzzzzzzzzzzzzzzF',
++    'FzzzzzzzzzzzzzzzzzzzzzzzzzzzzF',
++    'FzzzzzzzzzzzzzzzzzzzzzzzzzzzzF',
++    'FzzzzzzzzzzzzzzzzzzzzzzzzzzzzF',
++    'FzzzzzzzzzzzzzzzzzzzzzzzzzzzzF',
++    'FzzzzzzzzzzzzzzzzzzzzzzzzzzzzF',
++    'FzzzvvvvvvvvvvvvvvvvvvvvvvzzzF',
++    'FzzzyyyyyyyyyyyyyyyyyyyyyyzzzF',
++    'FzzzyyyyyyyyyyyyyyyyyyyyyyzzzF',
++    'FzzzvvvvvvvvvvvvvvvvvvvvvvzzzF',
++    'FzzzzzzzzzzzzzzzzzzzzzzzzzzzzF',
++    'mzzzzzzzzzzzzzzzzzzzzzzzzzzzzm',
++    'mzzzzzzzzzzzzzzzzzzzzzzzzzzzzm',
++    'mzzzzzzzzzzzzzzzzzzzzzzzzzzzzm',
++    'mzzzzzzzzzzzzzzzzzzzzzzzzzzzzm',
++    'FzzzzzzzzzzzzzzzzzzzzzzzzzzzzF',
++    'FzzzzzzzzzzzzzzzzzzzzzzzzzzzzF',
++    'FFFFFFFFFFFFFFFEFFFFFFFFFFFFFF',
++  ],
++  zones: [
++    '..............................',
++    '.FFFFFFFFFFFFFFFFFFFFFFFFFFFF.',
++    '.FFFFFFFFFFFFFFFFFFFFFFFFFFFF.',
++    '.FFFFFFFFFFFFFFFFFFFFFFFFFFFF.',
++    '.FFFFFFFFFFFFFFFFFFFFFFFFFFFF.',
++    '.FFFFFFFFFFFFFFFFFFFFFFFFFFFF.',
++    '.FFFFFFFFFFFFFFFFFFFFFFFFFFFF.',
++    '.FFFFFFFFFFFFFFFFFFFFFFFFFFFF.',
++    '.FFF......................FFF.',
++    '.FFFFFFFFFFFFFFFFFFFFFFFFFFFF.',
++    '.FFFFFFFFFFFFFFFFFFFFFFFFFFFF.',
++    '.FFF......................FFF.',
++    '.FFFFFFFFFFFFFFFFFFFFFFFFFFFF.',
++    '.FFFFFFFFFFFFFFFFFFFFFFFFFFFF.',
++    '.FFFFFFFFFFFFFFFFFFFFFFFFFFFF.',
++    '.FFFFFFFFFFFFFFFFFFFFFFFFFFFF.',
++    '.FFFFFFFFFFFFFFFFFFFFFFFFFFFF.',
++    '.FFFFFFFFFFFFFFFFFFFFFFFFFFFF.',
++    '.FFFFFFFFFFFFFFFFFFFFFFFFFFFF.',
++    '..............................',
++  ],
++};
++
++export const WONDERWHIRL_MAPS: MapPlan[] = [MAIN, FUNHOUSE];
+diff --git a/src/worlds/wonderwhirl/pinwheel.ts b/src/worlds/wonderwhirl/pinwheel.ts
+new file mode 100644
+index 0000000..0f2ce65
+--- /dev/null
++++ b/src/worlds/wonderwhirl/pinwheel.ts
+@@ -0,0 +1,53 @@
++import { rect } from '../building/paint';
++import { type TileCtx } from '../building/types';
++
++/**
++ * Wonderwhirl Park's own sign: a swirly pinwheel, drawn in code (so it's nobody
++ * else's logo). Its blades curl as they go out, like a lollipop swirl.
++ *
++ * pinwheelPick() says which blade a pixel is on: dx, dy = how far from the middle,
++ * r = how big, turn = how far it has spun (in radians). -1 = outside the pinwheel.
++ */
++const BLADES = 6;
++const CURL = 2.2; // how much the blades curl toward the edge
++
++export function pinwheelPick(dx: number, dy: number, r: number, turn: number): number {
++  const d = Math.hypot(dx, dy);
++  if (d > r) return -1;
++  if (d < r * 0.18) return BLADES; // the round middle
++  const a = Math.atan2(dy, dx) - turn + (CURL * d) / r;
++  const slice = (((a / (Math.PI * 2)) * BLADES) % BLADES + BLADES) % BLADES;
++  return Math.floor(slice);
++}
++
++/**
++ * The pinwheel as rows of decoration letters (for the spinning sign and the world card).
++ * `letters` = the blades' colors, going round; `middle` = the dot in the center.
++ */
++export function pinwheelRows(size: number, turn: number, letters: string, middle: string, rim = 'k'): string[] {
++  const r = size / 2 - 0.5;
++  const rows: string[] = [];
++  for (let y = 0; y < size; y++) {
++    let row = '';
++    for (let x = 0; x < size; x++) {
++      const dx = x - r;
++      const dy = y - r;
++      const pick = pinwheelPick(dx, dy, r, turn);
++      if (pick < 0) row += '.';
++      else if (Math.hypot(dx, dy) > r - 1) row += rim; // a dark outline round the edge
++      else row += pick === BLADES ? middle : letters[pick % letters.length];
++    }
++    rows.push(row);
++  }
++  return rows;
++}
++
++/** A small pinwheel painted straight into a tile (the swirls on the sign board). */
++export function drawPinwheel(c: TileCtx, cx: number, cy: number, r: number, turn: number, colors: string[]): void {
++  for (let y = -r; y <= r; y++) {
++    for (let x = -r; x <= r; x++) {
++      const pick = pinwheelPick(x, y, r, turn);
++      if (pick >= 0 && pick < BLADES && pick % 2 === 0) rect(c, cx + x, cy + y, 1, 1, colors[(pick / 2) % colors.length]);
++    }
++  }
++}
+diff --git a/src/worlds/wonderwhirl/realms.ts b/src/worlds/wonderwhirl/realms.ts
+new file mode 100644
+index 0000000..406e08e
+--- /dev/null
++++ b/src/worlds/wonderwhirl/realms.ts
+@@ -0,0 +1,65 @@
++import { type RealmPlan } from '../building/types';
++
++/**
++ * Wonderwhirl Park's 9 realms, in Monster Book order. `zone` is the realm's letter in
++ * layout.ts; `scatter` is what gets sprinkled around (and how many). The ticket booths,
++ * turnstiles, carts, queue rails, organ, telescopes and scoreboards are placed by hand
++ * in layout.ts instead, and the rides themselves are in rides/.
++ */
++export const WONDERWHIRL_REALMS: RealmPlan[] = [
++  {
++    id: 'gate', label: 'GATE', zone: 'G', icon: 'ticketBooth', music: 'wonderwhirl',
++    scatter: { balloonPost: 6, bench: 4 },
++    scene: { wall: 'gateWall', floor: 'gatePlaza', decor: ['ticketBooth', 'balloonCart', 'mapBoard'] },
++    printDecor: ['ticketBooth', 'turnstile', 'balloonCart', 'mapBoard', 'balloonPost'],
++  },
++  {
++    id: 'coaster', label: 'COASTER', zone: 'C', icon: 'coasterCar', music: 'wonderwhirl',
++    scatter: { heightSign: 4, coasterCar: 2, bench: 3 },
++    scene: { wall: 'track', floor: 'queuePlaza', decor: ['coasterCar', 'loopHill', 'heightSign'] },
++    printDecor: ['coasterCar', 'loopHill', 'queueRail', 'heightSign', 'bench'],
++  },
++  {
++    id: 'carousel', label: 'CAROUSEL', zone: 'K', icon: 'carouselHorse', music: 'wonderwhirl',
++    scatter: { carouselHorse: 5, stripedTent: 4, musicNotes: 10, bench: 3 },
++    scene: { wall: 'fence', floor: 'carouselBoards', decor: ['carouselHorse', 'organ', 'stripedTent'] },
++    printDecor: ['carouselHorse', 'organ', 'stripedTent', 'musicNotes', 'balloonPost'],
++  },
++  {
++    id: 'splash', label: 'SPLASH', zone: 'P', icon: 'waterSlide', music: 'wonderwhirl',
++    scatter: { beachChair: 8, umbrella: 6, innerTube: 8, waterSlide: 2 },
++    scene: { wall: 'river', floor: 'poolDeck', decor: ['waterSlide', 'umbrella', 'beachChair'] },
++    printDecor: ['waterSlide', 'umbrella', 'beachChair', 'innerTube', 'bench'],
++  },
++  {
++    id: 'funhouse', label: 'FUNHOUSE', zone: 'F', icon: 'spinTunnel', music: 'wonderwhirl',
++    scatter: { wavyMirror: 10, bouncePad: 12, spinTunnel: 4 },
++    scene: { wall: 'mirrorWall', floor: 'funFloor', decor: ['wavyMirror', 'spinTunnel', 'bouncePad'] },
++    printDecor: ['wavyMirror', 'spinTunnel', 'bouncePad', 'balloonPost', 'musicNotes'],
++    labelAt: { map: 'main', x: 37, y: 28 }, // the funhouse is its own little map, so show its icon on the building outside
++  },
++  {
++    id: 'wheel', label: 'WHEEL', zone: 'W', icon: 'ferrisIcon', music: 'wonderwhirl',
++    scatter: { cloudPuff: 12, hillFlag: 3, tree: 4, bench: 3 },
++    scene: { wall: 'daySky', floor: 'hillGrass', decor: ['ferrisIcon', 'telescope', 'cloudPuff'] },
++    printDecor: ['ferrisIcon', 'telescope', 'cloudPuff', 'hillFlag', 'tree'],
++  },
++  {
++    id: 'snacks', label: 'SNACKS', zone: 'N', icon: 'popcornCart', music: 'wonderwhirl',
++    scatter: { picnicTable: 8, parkBin: 4, bench: 2 },
++    scene: { wall: 'shopRoof', floor: 'snackPlaza', decor: ['cottonCandyCart', 'popcornCart', 'cornDogStand'] },
++    printDecor: ['cottonCandyCart', 'popcornCart', 'cornDogStand', 'picnicTable', 'parkBin'],
++  },
++  {
++    id: 'bumper', label: 'BUMPER', zone: 'B', icon: 'bumperCar', music: 'wonderwhirl',
++    scatter: { cone: 10, sparkPole: 4, bumperCar: 3 },
++    scene: { wall: 'bumperRail', floor: 'bumperDeck', decor: ['bumperCar', 'scoreboard', 'sparkPole'] },
++    printDecor: ['bumperCar', 'scoreboard', 'sparkPole', 'cone', 'lampPost'],
++  },
++  {
++    id: 'fireworks', label: 'FIREWORKS', zone: 'X', icon: 'rocket', music: 'wonderwhirl',
++    scatter: { lantern: 8, rocket: 4, speaker: 2, bench: 4 },
++    scene: { wall: 'nightSky', floor: 'showPlaza', decor: ['rocket', 'lantern', 'speaker'] },
++    printDecor: ['rocket', 'lantern', 'speaker', 'bench', 'balloonPost'],
++  },
++];
+diff --git a/src/worlds/wonderwhirl/rides/index.ts b/src/worlds/wonderwhirl/rides/index.ts
+new file mode 100644
+index 0000000..5a50d12
+--- /dev/null
++++ b/src/worlds/wonderwhirl/rides/index.ts
+@@ -0,0 +1,7 @@
++import { type RidePlan } from '../../building/types';
++import { ROLLING_RIDES } from './rolling';
++import { SKY_RIDES } from './sky';
++import { SPINNING_RIDES } from './spinning';
++
++/** Everything in Wonderwhirl Park that moves (see building/rides.ts for how they're drawn). */
++export const WONDERWHIRL_RIDES: RidePlan[] = [...SPINNING_RIDES, ...ROLLING_RIDES, ...SKY_RIDES];
+diff --git a/src/worlds/wonderwhirl/rides/rolling.ts b/src/worlds/wonderwhirl/rides/rolling.ts
+new file mode 100644
+index 0000000..4ab46b7
+--- /dev/null
++++ b/src/worlds/wonderwhirl/rides/rolling.ts
+@@ -0,0 +1,145 @@
++import { type RidePart, type RidePlan } from '../../building/types';
++import { mirror, recolor, turn, wrap } from './sketch';
++
++/**
++ * The rides that roll and slide: the roller-coaster train going round its track,
++ * the bumper cars wandering their floor, and the floating tubes on the lazy river.
++ */
++
++/** A point that goes round a rectangle (corners at x0,y0 and x1,y1) at `d` pixels from the top-left, clockwise. */
++function aroundBox(d: number, x0: number, y0: number, x1: number, y1: number): { x: number; y: number; across: boolean } {
++  const w = x1 - x0;
++  const h = y1 - y0;
++  const p = wrap(d, 2 * (w + h));
++  if (p < w) return { x: x0 + p, y: y0, across: true };
++  if (p < w + h) return { x: x1, y: y0 + p - w, across: false };
++  if (p < 2 * w + h) return { x: x1 - (p - w - h), y: y1, across: true };
++  return { x: x0, y: y1 - (p - 2 * w - h), across: false };
++}
++
++// ---------- The roller coaster (its track is the ring of 'r' squares in layout.ts) ----------
++/** A coaster car seen from above: red, with two seats and a gold stripe. */
++const CAR = [
++  '.kkkkkkkkkkkk.',
++  'krrrrrrrrrrrrk',
++  'kraakraakrrYrk',
++  'kraakraakrrYrk',
++  'krrrrrrrrrrYrk',
++  'kraakraakrrYrk',
++  'kraakraakrrYrk',
++  'krrrrrrrrrrrrk',
++  '.kkkkkkkkkkkk.',
++];
++// The track's middle line, in pixels from the ride's top-left corner (the middle of each 'r' square).
++const LOOP = { x0: 8, y0: 8, x1: 344, y1: 120 };
++const LOOP_LENGTH = 2 * (LOOP.x1 - LOOP.x0 + LOOP.y1 - LOOP.y0);
++const COASTER_SPEED = 56; // pixels a second: about 16 seconds round the track
++const STATION_X = (14.5 - 4) * 16; // the middle of the station (squares 12-17), in pixels from the ride's left edge
++const STATION_AT = LOOP.x1 - LOOP.x0 + (LOOP.y1 - LOOP.y0) + (LOOP.x1 - STATION_X); // how far round the track that is
++const STATION_WAIT = 2.5; // seconds the train waits at the station
++const CARS = 3;
++const CAR_GAP = 16;
++
++/** How far along the track the train's front car is: rolling, then a little stop at the station. */
++function trainAt(time: number): number {
++  const lap = LOOP_LENGTH / COASTER_SPEED + STATION_WAIT;
++  const t = wrap(time, lap);
++  const arrive = STATION_AT / COASTER_SPEED;
++  if (t < arrive) return t * COASTER_SPEED;
++  if (t < arrive + STATION_WAIT) return STATION_AT;
++  return (t - STATION_WAIT) * COASTER_SPEED;
++}
++
++const coaster: RidePlan = {
++  map: 'main', x: 4, y: 28, w: 22, h: 8,
++  sprites: { across: CAR, down: turn(CAR), acrossBack: mirror(CAR) },
++  pose(time) {
++    const front = trainAt(time);
++    const parts: RidePart[] = [];
++    for (let k = 0; k < CARS; k++) {
++      const d = front - k * CAR_GAP;
++      const p = aroundBox(d, LOOP.x0, LOOP.y0, LOOP.x1, LOOP.y1);
++      const goingLeft = p.across && p.y > LOOP.y0; // the bottom straight goes right to left
++      parts.push(p.across ? { sprite: goingLeft ? 'acrossBack' : 'across', x: p.x - 7, y: p.y - 4 } : { sprite: 'down', x: p.x - 4, y: p.y - 7 });
++    }
++    return parts;
++  },
++};
++
++// ---------- The bumper cars (the dark 'a' floor in layout.ts, 16 x 9 squares) ----------
++/** A round bumper car seen from above, with its pole and a little spark on top. */
++const BUMPER = [
++  '......kk......',
++  '.....kYYk.....',
++  '..kkkkkkkkkk..',
++  '.kAAAAAAAAAAk.',
++  'kAkBBBBBBBBkAk',
++  'kAkBwBBBBBBkAk',
++  'kAkBBBaaBBBkAk',
++  'kAkBBBaaBBBkAk',
++  'kAkBBBBBBBBkAk',
++  '.kAAAAAAAAAAk.',
++  '..kkkkkkkkkk..',
++];
++const BUMPER_COLORS = ['b', 'r', 'Y', 'g', 'P'];
++const ARENA = { w: 256, h: 144 };
++/** Each car glides along its own slow wobbly loop, so they drift close and gently bonk. */
++const LOOPS = [
++  { fx: 0.21, fy: 0.33, px: 0, py: 1 },
++  { fx: 0.27, fy: 0.19, px: 2, py: 0.5 },
++  { fx: 0.17, fy: 0.29, px: 4, py: 3 },
++  { fx: 0.31, fy: 0.23, px: 1, py: 5 },
++  { fx: 0.23, fy: 0.37, px: 5, py: 2 },
++];
++
++const bumper: RidePlan = {
++  map: 'main', x: 67, y: 5, w: 16, h: 9,
++  sprites: {
++    ...Object.fromEntries(BUMPER_COLORS.map((c, k) => [`car${k}`, recolor(BUMPER, { B: c })])),
++    ...Object.fromEntries(BUMPER_COLORS.map((c, k) => [`zap${k}`, recolor(BUMPER, { B: c, Y: 'w' })])),
++  },
++  pose(time) {
++    return LOOPS.map((l, k) => ({
++      // The spark on the pole flickers between gold and white.
++      sprite: `${Math.floor(time * 4 + k) % 3 === 0 ? 'zap' : 'car'}${k}`,
++      x: (ARENA.w - 14) / 2 + Math.sin(time * l.fx + l.px) * ((ARENA.w - 30) / 2),
++      y: (ARENA.h - 11) / 2 + Math.sin(time * l.fy + l.py) * ((ARENA.h - 26) / 2),
++    }));
++  },
++};
++
++// ---------- Floating tubes on the lazy river (the ring of '~' squares in layout.ts) ----------
++const TUBE = [
++  '..kkkkkk..',
++  '.kYYYYYYk.',
++  'kYYkkkkYYk',
++  'kYk.hh.kYk',
++  'kYYkkkkYYk',
++  '.kYYYYYYk.',
++  '..kkkkkk..',
++];
++const TUBE_COLORS = ['Y', 'P', 'O', 'm'];
++const RIVER = { x0: 16, y0: 16, x1: 336, y1: 208 };
++const RIVER_LENGTH = 2 * (RIVER.x1 - RIVER.x0 + RIVER.y1 - RIVER.y0);
++const TUBES = 8;
++/** A little white ripple drifting across the wave pool. */
++const RIPPLE = ['.wwww.', 'w....w'];
++
++const river: RidePlan = {
++  map: 'main', x: 64, y: 27, w: 22, h: 14,
++  sprites: { ...Object.fromEntries(TUBE_COLORS.map((c, k) => [`tube${k}`, recolor(TUBE, { Y: c })])), ripple: RIPPLE },
++  pose(time) {
++    const parts: RidePart[] = [];
++    for (let k = 0; k < TUBES; k++) {
++      const p = aroundBox(time * 10 + (k * RIVER_LENGTH) / TUBES, RIVER.x0, RIVER.y0, RIVER.x1, RIVER.y1); // 10 pixels a second: lazy!
++      parts.push({ sprite: `tube${k % TUBE_COLORS.length}`, x: p.x - 5, y: p.y - 3 + Math.sin(time * 2 + k) });
++    }
++    // Ripples roll across the wave pool, under the slide towers.
++    for (let k = 0; k < 6; k++) {
++      parts.push({ sprite: 'ripple', x: 40 + wrap(time * 12 + k * 47, 270), y: 112 + (k % 3) * 30 });
++    }
++    return parts;
++  },
++};
++
++export const ROLLING_RIDES: RidePlan[] = [coaster, bumper, river];
+diff --git a/src/worlds/wonderwhirl/rides/sketch.ts b/src/worlds/wonderwhirl/rides/sketch.ts
+new file mode 100644
+index 0000000..a496cf0
+--- /dev/null
++++ b/src/worlds/wonderwhirl/rides/sketch.ts
+@@ -0,0 +1,75 @@
++/**
++ * A tiny drawing pad for making ride pictures in code: a grid of decoration
++ * letters ('.' = see-through) with a few pen tools. rows() gives the finished
++ * picture, ready to use as a ride sprite.
++ */
++export class Sketch {
++  private grid: string[][];
++
++  constructor(
++    readonly w: number,
++    readonly h: number,
++  ) {
++    this.grid = Array.from({ length: h }, () => Array<string>(w).fill('.'));
++  }
++
++  dot(x: number, y: number, ch: string): void {
++    const px = Math.round(x);
++    const py = Math.round(y);
++    if (px >= 0 && py >= 0 && px < this.w && py < this.h) this.grid[py][px] = ch;
++  }
++
++  rect(x: number, y: number, w: number, h: number, ch: string): void {
++    for (let py = y; py < y + h; py++) for (let px = x; px < x + w; px++) this.dot(px, py, ch);
++  }
++
++  /** A straight line, `thick` pixels wide. */
++  line(x0: number, y0: number, x1: number, y1: number, ch: string, thick = 1): void {
++    const steps = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0)));
++    for (let i = 0; i <= steps; i++) {
++      const x = x0 + ((x1 - x0) * i) / steps;
++      const y = y0 + ((y1 - y0) * i) / steps;
++      this.rect(Math.round(x - (thick - 1) / 2), Math.round(y - (thick - 1) / 2), thick, thick, ch);
++    }
++  }
++
++  /** A ring: every pixel between radius r - width and r from (cx, cy). */
++  ring(cx: number, cy: number, r: number, width: number, ch: string): void {
++    for (let y = Math.floor(cy - r); y <= Math.ceil(cy + r); y++) {
++      for (let x = Math.floor(cx - r); x <= Math.ceil(cx + r); x++) {
++        const d = Math.hypot(x - cx, y - cy);
++        if (d <= r && d > r - width) this.dot(x, y, ch);
++      }
++    }
++  }
++
++  /** A filled circle. */
++  disc(cx: number, cy: number, r: number, ch: string): void {
++    this.ring(cx, cy, r, r + 1, ch);
++  }
++
++  /** Copy a picture (rows of letters) onto the pad, skipping its see-through pixels. */
++  paste(rows: readonly string[], ox: number, oy: number): void {
++    rows.forEach((row, y) => {
++      for (let x = 0; x < row.length; x++) if (row[x] !== '.') this.dot(ox + x, oy + y, row[x]);
++    });
++  }
++
++  rows(): string[] {
++    return this.grid.map((row) => row.join(''));
++  }
++}
++
++/** A picture mirrored left to right (a horse facing the other way). */
++export const mirror = (rows: readonly string[]): string[] => rows.map((row) => [...row].reverse().join(''));
++
++/** A picture turned a quarter turn (a coaster car going down instead of across). */
++export const turn = (rows: readonly string[]): string[] =>
++  Array.from({ length: rows[0].length }, (_, x) => rows.map((row) => row[x]).reverse().join(''));
++
++/** The same picture in other colors: swap = { from letter: to letter }. */
++export const recolor = (rows: readonly string[], swap: Record<string, string>): string[] =>
++  rows.map((row) => [...row].map((ch) => swap[ch] ?? ch).join(''));
++
++/** Wrap a number into 0..length (for things that go round and round). */
++export const wrap = (value: number, length: number): number => ((value % length) + length) % length;
+diff --git a/src/worlds/wonderwhirl/rides/sky.ts b/src/worlds/wonderwhirl/rides/sky.ts
+new file mode 100644
+index 0000000..01d9dcb
+--- /dev/null
++++ b/src/worlds/wonderwhirl/rides/sky.ts
+@@ -0,0 +1,131 @@
++import { type RidePart, type RidePlan } from '../../building/types';
++import { Sketch, wrap } from './sketch';
++
++/**
++ * The gentle "just for looking" animations: fireworks in the night sky over the
++ * show stage, clouds drifting over the Ferris-wheel hill, the fountain in the middle
++ * of the park, and the stripes rolling round the funhouse's spinning tunnel.
++ */
++const TAU = Math.PI * 2;
++
++// ---------- Fireworks over the stage (the night sky, 28 x 7 squares) ----------
++/** A burst of sparks: 12 rays of dots, `size` pixels across, in two colors (outer, inner). */
++function burst(size: number, outer: string, inner: string, dotsOnly = false): string[] {
++  const s = new Sketch(size, size);
++  const c = (size - 1) / 2;
++  for (let k = 0; k < 12; k++) {
++    const a = (k * TAU) / 12;
++    for (let d = dotsOnly ? c : 2; d <= c; d += dotsOnly ? 1 : 2) s.dot(c + Math.cos(a) * d, c + Math.sin(a) * d, d > c * 0.6 ? outer : inner);
++  }
++  if (!dotsOnly) s.dot(c, c, 'w');
++  return s.rows();
++}
++const SHOW_COLORS = [['r', 'Y'], ['P', 'w'], ['u', 'U'], ['l', 'y'], ['Y', 'w'], ['L', 'P']];
++const STAGES = [9, 17, 27]; // a burst grows in three steps, then twinkles away
++const SKY = { w: 28 * 16, h: 7 * 16 };
++const SHOWS = 5;
++const SHOW_TIME = 5; // seconds for one firework, from launch to the last twinkle
++
++const fireworks: RidePlan = {
++  map: 'main', x: 31, y: 1, w: 28, h: 7,
++  sprites: {
++    trail: ['w', 'y', 'o', 'O'],
++    ...Object.fromEntries(
++      SHOW_COLORS.flatMap(([o, i], k) => [
++        ...STAGES.map((size, n) => [`b${k}-${n}`, burst(size, o, i)]),
++        [`b${k}-twinkle`, burst(27, o, '.', true)],
++      ]),
++    ),
++  },
++  pose(time) {
++    const parts: RidePart[] = [];
++    for (let k = 0; k < SHOWS; k++) {
++      const t = time + (k * SHOW_TIME) / SHOWS;
++      const round = Math.floor(t / SHOW_TIME); // a new spot and color every time this firework goes up
++      const s = wrap(t, SHOW_TIME) / SHOW_TIME;
++      const pick = (round * 7 + k * 3) % SHOW_COLORS.length;
++      const x = 24 + (((round * 97 + k * 61) % 9) / 8) * (SKY.w - 48);
++      const y = 22 + ((round * 31 + k * 17) % 4) * 8;
++      if (s < 0.3) parts.push({ sprite: 'trail', x, y: SKY.h - 6 - (s / 0.3) * (SKY.h - 6 - y) });
++      else if (s < 0.4) parts.push({ sprite: `b${pick}-0`, x: x - 4, y: y - 4 });
++      else if (s < 0.52) parts.push({ sprite: `b${pick}-1`, x: x - 8, y: y - 8 });
++      else if (s < 0.7) parts.push({ sprite: `b${pick}-2`, x: x - 13, y: y - 13 });
++      else if (s < 0.85) parts.push({ sprite: `b${pick}-twinkle`, x: x - 13, y: y - 11 }); // the sparks drift down a little
++      // ...and then a quiet moment before the next one goes up.
++    }
++    return parts;
++  },
++};
++
++// ---------- Clouds over the Ferris-wheel hill (the day sky, 28 x 2 squares) ----------
++function cloud(w: number): string[] {
++  const s = new Sketch(w, 12);
++  s.disc(w * 0.3, 7, 4.5, 'w');
++  s.disc(w * 0.55, 5, 5.5, 'w');
++  s.disc(w * 0.75, 7, 4, 'w');
++  s.rect(Math.round(w * 0.2), 8, Math.round(w * 0.65), 4, 'w');
++  s.rect(Math.round(w * 0.22), 11, Math.round(w * 0.6), 1, 'U');
++  return s.rows();
++}
++const CLOUDS = [
++  { sprite: 'big', x: 40, y: 6, sway: 30, speed: 0.07 },
++  { sprite: 'small', x: 190, y: 14, sway: 40, speed: 0.05 },
++  { sprite: 'big', x: 330, y: 4, sway: 34, speed: 0.06 },
++];
++
++const clouds: RidePlan = {
++  map: 'main', x: 1, y: 1, w: 28, h: 2,
++  sprites: { big: cloud(30), small: cloud(22) },
++  // Clouds drift slowly back and forth (never off the edge, so they never pop in or out).
++  pose: (time) => CLOUDS.map((c, k) => ({ sprite: c.sprite, x: c.x + Math.sin(time * c.speed + k * 2) * c.sway, y: c.y })),
++};
++
++// ---------- The fountain in the middle of the park (4 x 4 squares) ----------
++/** The tall jet in the middle: it sparkles in three pictures. */
++function jet(frame: number): string[] {
++  const s = new Sketch(8, 22);
++  s.rect(2, 0, 4, 22, 'U');
++  s.rect(3, 0, 2, 22, 'w');
++  for (let y = frame * 3; y < 22; y += 7) s.rect(1, y, 6, 2, 'w');
++  s.rect(0, 0, 8, 3, 'U');
++  return s.rows();
++}
++const DROPS = 10;
++
++const fountain: RidePlan = {
++  map: 'main', x: 43, y: 33, w: 4, h: 4,
++  sprites: { jet0: jet(0), jet1: jet(1), jet2: jet(2), drop: ['ww', 'UU'] },
++  pose(time) {
++    const parts: RidePart[] = [{ sprite: `jet${Math.floor(time * 6) % 3}`, x: 28, y: 12 }];
++    // Drops arc out of the top of the jet and fall back into the basin, all the way round.
++    for (let k = 0; k < DROPS; k++) {
++      const s = wrap(time * 0.9 + k / DROPS, 1);
++      const a = (k * TAU) / DROPS;
++      parts.push({ sprite: 'drop', x: 31 + Math.cos(a) * 20 * s, y: 13 + Math.sin(a) * 10 * s - Math.sin(Math.PI * s) * 10 + s * 24 });
++    }
++    return parts;
++  },
++};
++
++// ---------- The funhouse's spinning tunnel (its two sides, 22 x 1 squares each) ----------
++const STRIPE_COLORS = 'PYuL';
++const STRIPE_WIDTH = 6;
++const STRIPE_FRAMES = (STRIPE_COLORS.length * STRIPE_WIDTH) / 2; // 2 pixels a picture, until the pattern repeats
++/** Rainbow stripes leaning sideways; each picture is shifted 2 pixels, so they seem to roll. */
++function stripes(frame: number, way: 1 | -1): string[] {
++  const period = STRIPE_COLORS.length * STRIPE_WIDTH;
++  const s = new Sketch(22 * 16, 16);
++  for (let y = 0; y < 16; y++) {
++    for (let x = 0; x < 22 * 16; x++) s.dot(x, y, STRIPE_COLORS[Math.floor(wrap(x + y - way * frame * 2, period) / STRIPE_WIDTH)]);
++  }
++  s.rect(0, 0, 22 * 16, 1, 'k');
++  s.rect(0, 15, 22 * 16, 1, 'k');
++  return s.rows();
++}
++const tunnelSide = (y: number, way: 1 | -1): RidePlan => ({
++  map: 'funhouse', x: 4, y, w: 22, h: 1,
++  sprites: Object.fromEntries(Array.from({ length: STRIPE_FRAMES }, (_, i) => [`roll${i}`, stripes(i, way)])),
++  pose: (time) => [{ sprite: `roll${Math.floor(time * 10) % STRIPE_FRAMES}`, x: 0, y: 0 }],
++});
++
++export const SKY_RIDES: RidePlan[] = [fireworks, clouds, fountain, tunnelSide(8, 1), tunnelSide(11, -1)];
+diff --git a/src/worlds/wonderwhirl/rides/spinning.ts b/src/worlds/wonderwhirl/rides/spinning.ts
+new file mode 100644
+index 0000000..b8341a9
+--- /dev/null
++++ b/src/worlds/wonderwhirl/rides/spinning.ts
+@@ -0,0 +1,187 @@
++import { type RidePart, type RidePlan } from '../../building/types';
++import { pinwheelRows } from '../pinwheel';
++import { mirror, recolor, Sketch, wrap } from './sketch';
++
++/**
++ * The rides that turn: the Ferris wheel on the hill, the carousel, and the
++ * pinwheel sign over the front gate. Their pictures are drawn in code once,
++ * when the game loads; each frame only picks which picture goes where.
++ */
++const TAU = Math.PI * 2;
++
++// ---------- The Ferris wheel (7 x 7 squares on the hill) ----------
++const WHEEL = { cx: 56, cy: 50, r: 42 };
++const SPOKES = 8;
++const WHEEL_FRAMES = 6; // the spokes look the same every 1/8 turn, so 6 pictures cover a smooth turn
++const WHEEL_SPEED = TAU / 40; // one full turn every 40 seconds: slow and gentle
++
++/** The legs and base the wheel stands on (they don't move). */
++function wheelStand(): string[] {
++  const s = new Sketch(112, 112);
++  const { cx, cy } = WHEEL;
++  for (const side of [-1, 1]) {
++    s.line(cx, cy, cx + side * 30, 106, 'k', 4);
++    s.line(cx, cy, cx + side * 30, 106, 'A', 2);
++  }
++  s.rect(18, 104, 76, 6, 'k');
++  s.rect(19, 105, 74, 4, 'a');
++  return s.rows();
++}
++
++/** The wheel itself (rim, spokes, hub), turned a little more in each picture. */
++function wheelFrame(i: number): string[] {
++  const s = new Sketch(112, 112);
++  const { cx, cy, r } = WHEEL;
++  const spin = (i / WHEEL_FRAMES) * (TAU / SPOKES);
++  for (let k = 0; k < SPOKES; k++) {
++    const a = spin + (k * TAU) / SPOKES;
++    s.line(cx, cy, cx + Math.cos(a) * (r - 2), cy + Math.sin(a) * (r - 2), 'a');
++  }
++  s.ring(cx, cy, r + 1, 4, 'k');
++  s.ring(cx, cy, r, 2, 'w');
++  s.ring(cx, cy, r * 0.55, 1, 'L'); // an inner ring of lights
++  s.disc(cx, cy, 6, 'k');
++  s.disc(cx, cy, 5, 'Y');
++  s.dot(cx - 2, cy - 2, 'w');
++  return s.rows();
++}
++
++/** One cabin: it always hangs straight down, whichever way the wheel turns. */
++const CABIN = [
++  '....kk....',
++  '....kk....',
++  '.kkkkkkkk.',
++  'kBBBBBBBBk',
++  'kBUUBBUUBk',
++  'kBUUBBUUBk',
++  'kBBBBBBBBk',
++  '.kkkkkkkk.',
++];
++const CABIN_COLORS = ['r', 'u', 'Y', 'P'];
++
++const wheel: RidePlan = {
++  map: 'main', x: 5, y: 4, w: 7, h: 7,
++  sprites: {
++    stand: wheelStand(),
++    ...Object.fromEntries(Array.from({ length: WHEEL_FRAMES }, (_, i) => [`wheel${i}`, wheelFrame(i)])),
++    ...Object.fromEntries(CABIN_COLORS.map((c) => [`cabin${c}`, recolor(CABIN, { B: c })])),
++  },
++  pose(time) {
++    const angle = time * WHEEL_SPEED;
++    const step = TAU / SPOKES / WHEEL_FRAMES;
++    const parts: RidePart[] = [
++      { sprite: 'stand', x: 0, y: 0 },
++      { sprite: `wheel${Math.floor(wrap(angle, TAU / SPOKES) / step) % WHEEL_FRAMES}`, x: 0, y: 0 },
++    ];
++    for (let k = 0; k < SPOKES; k++) {
++      const a = angle + (k * TAU) / SPOKES;
++      parts.push({ sprite: `cabin${CABIN_COLORS[k % CABIN_COLORS.length]}`, x: WHEEL.cx + Math.cos(a) * WHEEL.r - 5, y: WHEEL.cy + Math.sin(a) * WHEEL.r - 1 });
++    }
++    return parts;
++  },
++};
++
++// ---------- The carousel (9 x 6 squares) ----------
++/** A carousel horse, facing right, on its own (its golden pole is drawn separately). */
++const HORSE = [
++  '...kk.........',
++  '..kHHk........',
++  '.kHHkHPk......',
++  'kHHHHHPPkkkkk.',
++  '.kkHHHHHHHHHHk',
++  '...kHHHPPPHHHP',
++  '...kHHHPPPHHkP',
++  '...kHHHHHHHHk.',
++  '...kHk....kHk.',
++  '...kk......kk.',
++];
++const HORSE_COLORS = ['w', 'L', 'U', 'y', 'w', 'p'];
++const POLE_TOP = 30;
++const CAROUSEL = { cx: 72, ry: 8, rx: 54, floor: 56, horses: 6, speed: TAU / 14 };
++
++function canopy(): string[] {
++  const s = new Sketch(144, 36);
++  // A striped cone roof, wide at the bottom, with a scalloped edge and a flag on top.
++  for (let y = 6; y < 30; y++) {
++    const half = 8 + ((y - 6) / 24) * 62;
++    for (let x = Math.round(72 - half); x <= Math.round(72 + half); x++) {
++      const stripe = Math.floor(((x - 72) / half) * 5 + 50) % 2;
++      s.dot(x, y, stripe ? 'r' : 'w');
++    }
++    s.dot(Math.round(72 - half) - 1, y, 'k');
++    s.dot(Math.round(72 + half) + 1, y, 'k');
++  }
++  s.rect(9, 30, 126, 3, 'Y');
++  for (let x = 10; x < 134; x += 8) s.disc(x + 4, 33, 2.5, 'r');
++  s.line(72, 0, 72, 6, 'k', 2);
++  s.rect(73, 0, 6, 4, 'P');
++  return s.rows();
++}
++
++function carouselDeck(): string[] {
++  const s = new Sketch(144, 40);
++  for (let y = 0; y < 26; y++) {
++    const half = 66 * Math.sqrt(Math.max(0, 1 - ((y - 13) / 13) ** 2));
++    for (let x = Math.round(72 - half); x <= Math.round(72 + half); x++) s.dot(x, y + 8, y > 18 ? 'd' : 'o');
++  }
++  s.rect(4, 22, 136, 2, 'k');
++  return s.rows();
++}
++
++function carouselCenter(): string[] {
++  const s = new Sketch(14, 50);
++  s.rect(0, 0, 14, 50, 'k');
++  for (let y = 1; y < 49; y++) s.rect(1, y, 12, 1, Math.floor(y / 4) % 2 ? 'Y' : 'R');
++  s.rect(4, 10, 6, 8, 'U'); // a little mirror on the center column
++  return s.rows();
++}
++
++const pole = (h: number) => Array.from({ length: h }, () => 'Y');
++
++const carousel: RidePlan = {
++  map: 'main', x: 9, y: 51, w: 9, h: 6,
++  sprites: {
++    canopy: canopy(),
++    deck: carouselDeck(),
++    center: carouselCenter(),
++    pole: pole(40),
++    ...Object.fromEntries(HORSE_COLORS.flatMap((c, k) => [[`horseR${k}`, recolor(HORSE, { H: c })], [`horseL${k}`, mirror(recolor(HORSE, { H: c }))]])),
++  },
++  pose(time) {
++    const { cx, rx, ry, floor, horses, speed } = CAROUSEL;
++    const back: RidePart[] = [];
++    const front: RidePart[] = [];
++    for (let k = 0; k < horses; k++) {
++      const a = time * speed + (k * TAU) / horses;
++      const depth = Math.cos(a); // > 0: in front of the center column
++      const x = cx + Math.sin(a) * rx;
++      const bob = Math.sin(time * 2.4 + k * 1.7) * 3; // up and down, like a real carousel horse
++      const y = floor + depth * ry - 14 + bob;
++      const list = depth > 0 ? front : back;
++      list.push({ sprite: 'pole', x: x, y: POLE_TOP }, { sprite: `${depth > 0 ? 'horseR' : 'horseL'}${k}`, x: x - 7, y });
++    }
++    return [
++      { sprite: 'deck', x: 0, y: 52 },
++      ...back,
++      { sprite: 'center', x: 65, y: 30 },
++      ...front,
++      { sprite: 'canopy', x: 0, y: 0 },
++    ];
++  },
++};
++
++// ---------- The pinwheel sign over the front gate (2 x 2 squares) ----------
++const SIGN_FRAMES = 16;
++const SIGN_SPEED = TAU / 6; // one turn every 6 seconds
++const SIGN_SYMMETRY = TAU / 3; // 3 colors going round twice: it looks the same every 1/3 turn
++
++const sign: RidePlan = {
++  map: 'main', x: 44, y: 69, w: 2, h: 2,
++  sprites: Object.fromEntries(Array.from({ length: SIGN_FRAMES }, (_, i) => [`spin${i}`, pinwheelRows(30, (i / SIGN_FRAMES) * SIGN_SYMMETRY, 'rYb', 'w')])),
++  pose(time) {
++    const i = Math.floor((wrap(time * SIGN_SPEED, SIGN_SYMMETRY) / SIGN_SYMMETRY) * SIGN_FRAMES) % SIGN_FRAMES;
++    return [{ sprite: `spin${i}`, x: 1, y: 1 }];
++  },
++};
++
++export const SPINNING_RIDES: RidePlan[] = [wheel, carousel, sign];
+diff --git a/src/worlds/wonderwhirl/scene.ts b/src/worlds/wonderwhirl/scene.ts
+new file mode 100644
+index 0000000..ee188dd
+--- /dev/null
++++ b/src/worlds/wonderwhirl/scene.ts
+@@ -0,0 +1,26 @@
++/**
++ * Wonderwhirl Park's picture for its world card and book tab: the Ferris wheel (with
++ * its colorful cabins) on the left, a red roller-coaster loop with a car at the top on
++ * the right, and a candy-striped fence along the bottom, under a sunny sky
++ * (letters as in render/decorArt.ts).
++ */
++export const WONDERWHIRL_SCENE = [
++  'UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU',
++  'UUUUUUkkkkkUUUUUUUwwUUUUUUUUUUUU',
++  'UUUUkkaUuUakkUUUwwwwwwkYYYYYkUUU',
++  'UUUkkUaUUaUUkkUUUUUUUUUkkkkkUUUU',
++  'UUUkYUUaUaUUPkUUUUUUUkkrrrrrkkUU',
++  'UUkkUUUaUaUUakkUUUUUUkrrUUUrrkUU',
++  'UUkUaaaUaUaaUUkUUUUUkrrUUUUUrrkU',
++  'UUkUUUUaYaUUUUkUUUUUkrUUUUUUUrkU',
++  'UUrUUaaUaUaaUUrUUUUUkrUUUUUUUrkU',
++  'UUkkaUUaUaUUakkUUUUUkrUUUUUUUrkU',
++  'UUUkUUUaUaUUUkUUUUUUkrrUUUUUrrkU',
++  'UUUkkUaUUUaUkkUUUUUUUkrrUUUrrkUU',
++  'UUUUPkaUUUakYUUUUUUUUkkrrrrrkkUU',
++  'UUUUUAkkkkkAUUrrrrrrrrrrrrrrrrrr',
++  'llllAlllulllAlkkkkkkkkkkkkkkkkkk',
++  'llllAlllllllAllllAlllAlllllllAll',
++  'wrwrwrwrwrwrwrwrwrwrwrwrwrwrwrwr',
++  'kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk',
++];
+diff --git a/src/worlds/wonderwhirl/tiles.ts b/src/worlds/wonderwhirl/tiles.ts
+new file mode 100644
+index 0000000..a08a67c
+--- /dev/null
++++ b/src/worlds/wonderwhirl/tiles.ts
+@@ -0,0 +1,340 @@
++import { NES } from '../../render/nesPalette';
++import { checker, fill, grid, planks, rect, speckle, wall } from '../building/paint';
++import { type TileCtx, type TileKind } from '../building/types';
++import { drawPinwheel } from './pinwheel';
++
++/**
++ * Wonderwhirl Park's tiles, painted in code (16x16 each). An outdoor theme park:
++ * warm paths, white picket fences and flower beds between the ride areas, and a
++ * different ground in every area so you can tell them apart. Fences, hedges and
++ * walls are darker on the corner map so the areas look outlined.
++ */
++const floor = (color: string, draw: (c: TileCtx) => void, extra: Partial<TileKind> = {}): TileKind => ({ walkable: true, color, draw, ...extra });
++const solid = (color: string, draw: (c: TileCtx) => void): TileKind => ({ walkable: false, color, draw });
++
++/** Grass with a few lighter and darker blades. */
++const grass = (c: TileCtx, base: string, light: string, dark: string, salt: number) => {
++  fill(c, base);
++  speckle(c, light, 6, salt);
++  speckle(c, dark, 4, salt + 1);
++};
++
++/** The park's paths: warm pink-and-tan paving stones. */
++const paving = (c: TileCtx) => {
++  grid(c, NES.sand, NES.yellowLight, 8);
++  if ((c.x + c.y) % 2) rect(c, 1, 1, 7, 7, NES.skin);
++  speckle(c, NES.salmon, 1, 300);
++};
++
++/** A white picket fence standing on grass. */
++const picket = (c: TileCtx) => {
++  grass(c, NES.greenBright, NES.limeLight, NES.green, 302);
++  rect(c, 0, 6, 16, 2, NES.white);
++  rect(c, 0, 11, 16, 2, NES.white);
++  for (const x of [1, 6, 11]) {
++    rect(c, x, 3, 3, 12, NES.white);
++    rect(c, x + 1, 2, 1, 1, NES.white);
++    rect(c, x + 2, 4, 1, 11, NES.grayLight); // a little shadow on one side
++  }
++};
++
++/** The park's front wall: red bricks with a gold stripe on top. */
++const brick = (c: TileCtx) => {
++  wall(c, NES.red, NES.redBright, NES.brownRed);
++  for (let row = 0; row < 4; row++) {
++    const y = row * 4 + 1;
++    for (let x = (row % 2) * 4; x < 16; x += 8) rect(c, x, y, 1, 3, NES.brownRed);
++  }
++  rect(c, 0, 0, 16, 1, NES.gold);
++};
++
++/** Stripes going across, for tents, awnings and the funhouse. */
++const stripes = (c: TileCtx, a: string, b: string, width: number) => {
++  for (let x = 0; x < 16; x++) rect(c, x, 0, 1, 16, Math.floor((x + c.x * 16) / width) % 2 ? b : a);
++};
++
++/** Is the tile next door this kind? (For tracks and rails that join up.) */
++const same = (c: TileCtx, dx: number, dy: number) => c.near(dx, dy) === c.near(0, 0);
++
++/** Water with little white sparkles. */
++const water = (c: TileCtx, base: string, sparkle: string, salt: number) => {
++  fill(c, base);
++  speckle(c, sparkle, 4, salt);
++  if ((c.x * 3 + c.y) % 4 === 0) rect(c, 4, 8, 5, 1, sparkle);
++};
++
++export const WONDERWHIRL_TILES: Record<string, TileKind> = {
++  // ---------- All over the park ----------
++  hedge: solid(NES.greenDark, (c) => {
++    fill(c, NES.greenForest);
++    speckle(c, NES.green, 10, 304);
++    speckle(c, NES.greenDark, 6, 305);
++    if ((c.x * 7 + c.y * 5) % 9 === 0) rect(c, 6, 6, 2, 2, NES.pink); // a few flowers in the hedge
++  }),
++  lawn: floor(NES.greenBright, (c) => grass(c, NES.greenBright, NES.limeLight, NES.green, 306)),
++  path: floor(NES.sand, paving),
++  /** An opening in a fence: path stones with a gatepost on each side. */
++  gap: floor(NES.sand, (c) => {
++    paving(c);
++    const across = c.near(-1, 0) === 'fence' || c.near(1, 0) === 'fence';
++    if (across) {
++      if (c.near(-1, 0) === 'fence') rect(c, 0, 2, 2, 12, NES.white);
++      if (c.near(1, 0) === 'fence') rect(c, 14, 2, 2, 12, NES.white);
++    } else {
++      if (c.near(0, -1) === 'fence') rect(c, 2, 0, 12, 2, NES.white);
++      if (c.near(0, 1) === 'fence') rect(c, 2, 14, 12, 2, NES.white);
++    }
++  }, { doorway: true }),
++  fence: solid(NES.white, picket),
++  /** A bed of flowers in every color (you can't walk on the flowers!). */
++  flowerBed: solid(NES.pink, (c) => {
++    fill(c, NES.brownRed);
++    speckle(c, NES.brownDark, 5, 308);
++    const colors = [NES.pink, NES.gold, NES.redBright, NES.lavender, NES.white];
++    for (let k = 0; k < 5; k++) {
++      const x = 1 + ((k * 5 + c.x * 3) % 12);
++      const y = 1 + ((k * 7 + c.y * 5) % 12);
++      rect(c, x, y + 1, 1, 2, NES.green);
++      rect(c, x - 1, y, 3, 1, colors[(k + c.x + c.y) % colors.length]);
++      rect(c, x, y - 1, 1, 3, colors[(k + c.x + c.y) % colors.length]);
++    }
++  }),
++  /** Gravel under a ride: nobody walks here (the ride is moving!). */
++  rideGround: solid(NES.gray, (c) => {
++    fill(c, NES.grayLight);
++    speckle(c, NES.gray, 8, 310);
++    speckle(c, NES.white, 3, 311);
++  }),
++  daySky: solid(NES.skyLight, (c) => {
++    fill(c, NES.skyLight);
++    if (c.near(0, 1) !== 'daySky') rect(c, 0, 12, 16, 4, NES.sky); // a soft blue edge where the sky meets the hill
++  }),
++  nightSky: solid(NES.blueDark, (c) => {
++    fill(c, NES.blueDark);
++    speckle(c, NES.white, 2, 312);
++    speckle(c, NES.periwinkle, 2, 313);
++    if (c.near(0, 1) !== 'nightSky') rect(c, 0, 12, 16, 4, NES.purple);
++  }),
++
++  // ---------- GATE: the front wall, the sign, main street ----------
++  gatePlaza: floor(NES.salmon, (c) => {
++    fill(c, NES.salmon);
++    for (let y = 3; y < 16; y += 4) rect(c, 0, y, 16, 1, NES.rose); // rows of red bricks
++    for (let row = 0; row < 4; row++) rect(c, (row % 2) * 8 + 4, row * 4, 1, 3, NES.rose);
++  }),
++  gateWall: solid(NES.red, brick),
++  /** The big sign over the front gate: a swirly pinwheel on a gold board (the pinwheel spins, see rides/). */
++  signBoard: solid(NES.gold, (c) => {
++    fill(c, NES.gold);
++    rect(c, 0, 0, 16, 1, NES.orange);
++    rect(c, 0, 15, 16, 1, NES.orange);
++    if (c.near(-1, 0) !== 'signBoard') rect(c, 0, 0, 1, 16, NES.orange);
++    if (c.near(1, 0) !== 'signBoard') rect(c, 15, 0, 1, 16, NES.orange);
++    // Little swirls on the board, lined up from tile to tile.
++    drawPinwheel(c, 8, 8, 5, (c.x + c.y) * 0.7, [NES.pinkLight, NES.yellowLight]);
++  }),
++  mainStreet: floor(NES.skin, (c) => {
++    fill(c, NES.skin);
++    for (let y = 0; y < 16; y += 4) for (let x = (y / 4) % 2 ? 2 : 0; x < 16; x += 4) rect(c, x, y, 3, 3, NES.sand);
++  }),
++  /** The little shops on main street, seen from above: striped awning roofs. */
++  shopRoof: solid(NES.redBright, (c) => {
++    const look = (c.y >> 2) % 3; // a different shop every few squares
++    const colors = [[NES.redBright, NES.white], [NES.sky, NES.white], [NES.gold, NES.white]][look];
++    stripes(c, colors[0], colors[1], 4);
++    if (c.near(0, 1) !== 'shopRoof' || ((c.y + 1) >> 2) % 3 !== look) {
++      // The awning's scalloped edge, where one shop ends.
++      for (let x = 0; x < 16; x += 4) rect(c, x + 1, 13, 2, 2, colors[0]);
++      rect(c, 0, 15, 16, 1, NES.black);
++    }
++  }),
++
++  // ---------- COASTER ----------
++  queuePlaza: floor(NES.pastelBlue, (c) => {
++    grid(c, NES.pastelBlue, NES.periwinkle, 8);
++    speckle(c, NES.white, 2, 314);
++  }),
++  /** Roller-coaster track: two red rails with wooden ties, joining up with the track next door. */
++  track: solid(NES.redBright, (c) => {
++    fill(c, NES.grayLight);
++    speckle(c, NES.gray, 6, 316);
++    const across = same(c, -1, 0) || same(c, 1, 0);
++    const down = same(c, 0, -1) || same(c, 0, 1);
++    if (across) {
++      const from = same(c, -1, 0) ? 0 : 3;
++      const to = same(c, 1, 0) ? 16 : 13;
++      for (let x = from; x < to; x += 3) rect(c, x, 3, 2, 10, NES.brownRed);
++      rect(c, from, 4, to - from, 2, NES.redBright);
++      rect(c, from, 10, to - from, 2, NES.redBright);
++    }
++    if (down) {
++      const from = same(c, 0, -1) ? 0 : 3;
++      const to = same(c, 0, 1) ? 16 : 13;
++      for (let y = from; y < to; y += 3) rect(c, 3, y, 10, 2, NES.brownRed);
++      rect(c, 4, from, 2, to - from, NES.redBright);
++      rect(c, 10, from, 2, to - from, NES.redBright);
++    }
++  }),
++  /** The coaster's station: a platform with a striped roof, where the cars stop. */
++  station: solid(NES.gold, (c) => {
++    stripes(c, NES.gold, NES.redBright, 4);
++    rect(c, 0, 12, 16, 4, NES.grayLight);
++    rect(c, 0, 12, 16, 1, NES.black);
++  }),
++
++  // ---------- CAROUSEL ----------
++  carouselBoards: floor(NES.orangeLight, (c) => planks(c, NES.orangeLight, NES.ochre, NES.sand)),
++  /** The carousel's round platform (the carousel itself spins on top, see rides/). */
++  carouselBase: solid(NES.gold, (c) => {
++    fill(c, NES.ochre);
++    speckle(c, NES.gold, 4, 318);
++  }),
++
++  // ---------- SPLASH ----------
++  poolDeck: floor(NES.skyLight, (c) => {
++    grid(c, NES.white, NES.skyLight, 8);
++    speckle(c, NES.mint, 2, 320);
++  }),
++  /** The lazy river (floating tubes go round it, see rides/). */
++  river: solid(NES.sky, (c) => water(c, NES.sky, NES.skyLight, 322)),
++  wavePool: solid(NES.blueMid, (c) => {
++    water(c, NES.blueMid, NES.sky, 324);
++    if (c.y % 2 === 0) for (let x = 1; x < 16; x += 5) rect(c, x, 4, 3, 1, NES.white); // little waves
++  }),
++  /** A water-slide tower in the wave pool: a yellow deck with a swirly blue-and-pink slide. */
++  slideTower: solid(NES.gold, (c) => {
++    fill(c, NES.gold);
++    rect(c, 0, 0, 16, 1, NES.orange);
++    const turn = (c.x + c.y) % 2;
++    rect(c, turn ? 2 : 8, 0, 6, 16, NES.pink);
++    rect(c, turn ? 3 : 9, 0, 2, 16, NES.pinkLight);
++    rect(c, 0, turn ? 4 : 10, 16, 4, NES.sky);
++  }),
++  /** A splash pad: little water jets come up out of the floor (walk right through them!). */
++  splashPad: floor(NES.mint, (c) => {
++    fill(c, NES.mint);
++    for (const [x, y] of [[3, 3], [11, 4], [7, 9], [3, 12], [12, 12]]) {
++      rect(c, x, y, 2, 2, NES.sky);
++      rect(c, x, y - 2, 1, 2, NES.skyLight);
++    }
++  }),
++
++  // ---------- FUNHOUSE ----------
++  /** The funhouse's walls: big rainbow stripes and a few stars. */
++  funWall: solid(NES.purple, (c) => {
++    const colors = [NES.pink, NES.gold, NES.cyan, NES.lavender];
++    for (let x = 0; x < 16; x++) rect(c, x, 0, 1, 16, colors[Math.floor((x + c.x * 16 + c.y * 4) / 4) % colors.length]);
++    if ((c.x + c.y * 3) % 4 === 0) {
++      rect(c, 6, 4, 3, 3, NES.white);
++      rect(c, 7, 3, 1, 5, NES.white);
++      rect(c, 5, 5, 5, 1, NES.white);
++    }
++    if (c.near(0, 1) !== 'funWall' && c.near(0, 1) !== 'mirrorWall') rect(c, 0, 14, 16, 2, NES.plum);
++  }),
++  /** The funhouse's front door: a big round-topped doorway with a red-and-white frame. */
++  funDoor: floor(NES.plum, (c) => {
++    fill(c, NES.plum);
++    rect(c, 2, 2, 12, 14, NES.black);
++    rect(c, 4, 1, 8, 1, NES.redBright);
++    rect(c, 1, 3, 2, 13, NES.redBright);
++    rect(c, 13, 3, 2, 13, NES.redBright);
++    rect(c, 1, 6, 2, 2, NES.white);
++    rect(c, 13, 6, 2, 2, NES.white);
++    rect(c, 1, 11, 2, 2, NES.white);
++    rect(c, 13, 11, 2, 2, NES.white);
++  }, { doorway: true }),
++  /** The way back out of the funhouse. */
++  funExit: floor(NES.gold, (c) => {
++    fill(c, NES.gold);
++    rect(c, 3, 3, 10, 10, NES.yellowLight);
++    rect(c, 7, 5, 2, 7, NES.orange); // a little arrow pointing out
++    rect(c, 5, 9, 6, 2, NES.orange);
++    rect(c, 6, 11, 4, 1, NES.orange);
++  }, { doorway: true }),
++  /** Bouncy floor: soft squishy squares in pink and purple. */
++  funFloor: floor(NES.pinkLight, (c) => {
++    checker(c, NES.pinkLight, NES.lavender, 8);
++    rect(c, 3, 3, 2, 2, NES.white); // a shiny spot on each cushion
++    rect(c, 11, 11, 2, 2, NES.white);
++  }),
++  /** A wall of wavy mirrors: silly shiny glass in a gold frame. */
++  mirrorWall: solid(NES.skyLight, (c) => {
++    fill(c, NES.gold);
++    rect(c, 2, 1, 12, 13, NES.skyLight);
++    for (let y = 2; y < 13; y++) rect(c, 3 + Math.round(Math.sin((y + c.x) * 0.9) * 1.5) + 2, y, 2, 1, NES.white);
++    rect(c, 0, 15, 16, 1, NES.ochre);
++  }),
++  /** The spinning tunnel's floor: a swirl of stripes. */
++  tunnelFloor: floor(NES.lavender, (c) => {
++    for (let x = 0; x < 16; x++) rect(c, x, 0, 1, 16, Math.floor((x + c.x * 16 + c.y * 8) / 4) % 2 ? NES.lavender : NES.white);
++  }),
++  /** The spinning tunnel's sides (stripes roll along them, see rides/). */
++  tunnelWall: solid(NES.violet, (c) => {
++    fill(c, NES.violet);
++    rect(c, 0, c.near(0, 1) === 'tunnelFloor' ? 14 : 0, 16, 2, NES.plum);
++  }),
++
++  // ---------- WHEEL ----------
++  hillGrass: floor(NES.greenSea, (c) => {
++    grass(c, NES.greenBright, NES.seafoam, NES.greenSea, 326);
++    if ((c.x * 5 + c.y * 3) % 13 === 0) rect(c, 7, 7, 2, 2, NES.white); // a tiny clover flower
++  }),
++  lookout: floor(NES.ochre, (c) => {
++    planks(c, NES.ochre, NES.brownDark, NES.orangeLight);
++    if (c.near(0, -1) !== 'lookout') rect(c, 0, 0, 16, 2, NES.brownRed); // the railing at the back
++  }),
++
++  // ---------- SNACKS ----------
++  /** Red-and-white picnic checks. */
++  snackPlaza: floor(NES.white, (c) => checker(c, NES.white, NES.pinkLight, 4)),
++
++  // ---------- BUMPER ----------
++  /** Silver diamond-plate floor around the bumper cars. */
++  bumperDeck: floor(NES.grayLight, (c) => {
++    fill(c, NES.grayLight);
++    for (let y = 1; y < 16; y += 4) for (let x = (y >> 2) % 2 ? 3 : 1; x < 16; x += 4) rect(c, x, y, 2, 1, NES.white);
++  }),
++  /** The bumper-car floor: dark, with a glowing grid (the sparks overhead light it up). */
++  arenaFloor: solid(NES.blueDark, (c) => {
++    fill(c, NES.blueDark);
++    rect(c, 0, 0, 16, 1, NES.periwinkle);
++    rect(c, 0, 0, 1, 16, NES.periwinkle);
++    rect(c, 0, 0, 2, 2, NES.skyLight);
++  }),
++  /** The soft bumper rail around the arena: black-and-yellow stripes. */
++  bumperRail: solid(NES.gold, (c) => {
++    fill(c, NES.gold);
++    for (let k = -16; k < 16; k += 6) for (let i = 0; i < 16; i++) rect(c, i, i + k, 3, 1, NES.black);
++    rect(c, 0, 0, 16, 1, NES.black);
++    rect(c, 0, 15, 16, 1, NES.black);
++  }),
++
++  // ---------- FIREWORKS ----------
++  /** The show plaza: dark blue stones with little gold stars. */
++  showPlaza: floor(NES.periwinkle, (c) => {
++    grid(c, NES.periwinkle, NES.purple, 8);
++    if ((c.x + c.y * 2) % 3 === 0) {
++      rect(c, 7, 6, 1, 3, NES.gold);
++      rect(c, 6, 7, 3, 1, NES.gold);
++    }
++  }),
++  /** The stage: wooden boards with a red curtain along the back. */
++  stage: solid(NES.red, (c) => {
++    if (c.near(0, -1) !== 'stage') {
++      for (let x = 0; x < 16; x++) rect(c, x, 0, 1, 16, x % 4 === 0 ? NES.brownRed : NES.red);
++      rect(c, 0, 0, 16, 2, NES.gold);
++      return;
++    }
++    planks(c, NES.orange, NES.brownRed, NES.orangeLight);
++    if (c.near(0, 1) !== 'stage') rect(c, 0, 12, 16, 4, NES.brownRed);
++  }),
++
++  // ---------- The fountain in the middle of the park ----------
++  fountainBasin: solid(NES.sky, (c) => {
++    water(c, NES.sky, NES.white, 328);
++    if (c.near(0, -1) !== 'fountainBasin') rect(c, 0, 0, 16, 3, NES.grayLight);
++    if (c.near(0, 1) !== 'fountainBasin') rect(c, 0, 13, 16, 3, NES.gray);
++    if (c.near(-1, 0) !== 'fountainBasin') rect(c, 0, 0, 3, 16, NES.grayLight);
++    if (c.near(1, 0) !== 'fountainBasin') rect(c, 13, 0, 3, 16, NES.grayLight);
++  }),
++};
+diff --git a/src/worlds/worldIds.ts b/src/worlds/worldIds.ts
+index f5927f3..1a4bf91 100644
+--- a/src/worlds/worldIds.ts
++++ b/src/worlds/worldIds.ts
+@@ -6,7 +6,7 @@
+  * This file has no other imports on purpose: the save code needs it, and the
+  * save code shouldn't have to load whole worlds just to check an id.
+  */
+-export const WORLD_IDS = ['island', 'home', 'woods', 'buntown', 'cherrymart', 'sunnyside', 'bigblue'] as const;
++export const WORLD_IDS = ['island', 'home', 'woods', 'buntown', 'cherrymart', 'sunnyside', 'bigblue', 'wonderwhirl'] as const;
+ export type WorldId = (typeof WORLD_IDS)[number];
+ 
+ /** The world a brand-new game starts in. */

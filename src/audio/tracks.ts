@@ -28,7 +28,7 @@ export interface Song {
   parts: Part[];
 }
 
-export type SongName = 'title' | 'explore' | 'cave' | 'catch' | 'home' | 'buntown' | 'cherrymart' | 'sunnyside' | 'bigblue';
+export type SongName = 'title' | 'explore' | 'cave' | 'catch' | 'home' | 'buntown' | 'cherrymart' | 'sunnyside' | 'bigblue' | 'wonderwhirl';
 
 export const SONGS: Record<SongName, Song> = {
   // The title screen: bright and bouncy, "let's go on an adventure!". F major, 8 bars of eighth notes.
@@ -247,6 +247,40 @@ export const SONGS: Record<SongName, Song> = {
         volume: 0.06,
         notes: `k h s h k h s h | k h s h k h s h | k h s h k h s h | k h s h s s s s
                 k h s h k h s h | k h s h k h s h | k h s h k h s h | k h s s k - - -`,
+      },
+    ],
+  },
+
+  // Wonderwhirl Park: a twirly carnival waltz, like a merry-go-round organ (oom-pah-pah). C major, 16 bars of 3/4.
+  wonderwhirl: {
+    bpm: 168,
+    stepsPerBeat: 2,
+    parts: [
+      {
+        voice: 'pulse',
+        volume: 0.13,
+        notes: `E5 . G5 . C6 . | B5 . A5 . G5 . | F5 . A5 . D6 . | C6 . . . B5 . | A5 . F5 . D5 . | G5 . F5 . E5 . | D5 . E5 . F5 . | G5 . . . - -
+                E5 . G5 . C6 . | E6 . D6 . C6 . | A5 . C6 . F6 . | E6 . . . D6 . | C6 . A5 . F5 . | E5 . G5 . B5 . | D6 . B5 . G5 . | C6 . . . - -`,
+      },
+      {
+        // The "oom": a low note on the first beat of every bar.
+        voice: 'triangle',
+        volume: 0.22,
+        notes: `C3 . - - - - | G2 . - - - - | D3 . - - - - | C3 . - - - - | D3 . - - - - | C3 . - - - - | G2 . - - - - | G2 . - - - -
+                C3 . - - - - | C3 . - - - - | F2 . - - - - | C3 . - - - - | F2 . - - - - | C3 . - - - - | G2 . - - - - | C3 . . . - -`,
+      },
+      {
+        // The "pah-pah": two short chord notes on beats two and three, like a carousel organ.
+        voice: 'square',
+        volume: 0.05,
+        notes: `- - E4 - G4 - | - - B3 - D4 - | - - F4 - A4 - | - - E4 - G4 - | - - F4 - A4 - | - - E4 - G4 - | - - B3 - F4 - | - - B3 - D4 -
+                - - E4 - G4 - | - - E4 - G4 - | - - A3 - C4 - | - - E4 - G4 - | - - A3 - C4 - | - - E4 - G4 - | - - B3 - D4 - | - - E4 - - -`,
+      },
+      {
+        voice: 'drums',
+        volume: 0.05,
+        notes: `k - h - h - | k - h - h - | k - h - h - | k - h - h - | k - h - h - | k - h - h - | k - h - h - | k - h - h -
+                k - h - h - | k - h - h - | k - h - h - | k - h - h - | k - h - h - | k - h - h - | k - h - h - | k - h - - -`,
       },
     ],
   },
