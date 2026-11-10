@@ -28,7 +28,7 @@ export interface Song {
   parts: Part[];
 }
 
-export type SongName = 'title' | 'explore' | 'cave' | 'catch' | 'home' | 'buntown';
+export type SongName = 'title' | 'explore' | 'cave' | 'catch' | 'home' | 'buntown' | 'cherrymart';
 
 export const SONGS: Record<SongName, Song> = {
   // The title screen: bright and bouncy, "let's go on an adventure!". F major, 8 bars of eighth notes.
@@ -146,6 +146,39 @@ export const SONGS: Record<SongName, Song> = {
         volume: 0.05,
         notes: `k h s h k k s h | k h s h k k s h | k h s h k k s h | k h s h k k s h
                 k h s h k k s h | k h s h k k s h | k h s h k k s h | k h s h s s s -`,
+      },
+    ],
+  },
+
+  // Cherry Mart: a bright, skippy shopping tune, like pushing a cart down a sunny aisle. G major, 8 bars.
+  cherrymart: {
+    bpm: 138,
+    stepsPerBeat: 2,
+    parts: [
+      {
+        voice: 'pulse',
+        volume: 0.13,
+        notes: `G5 . B5 . D6 . B5 . | C6 . B5 . A5 . G5 . | E5 . G5 . A5 . B5 . | A5 . . G5 F#5 . D5 .
+                G5 . B5 . D6 . E6 . | D6 . B5 . G5 . E5 . | C6 . A5 . F#5 . A5 . | G5 . . . - - - -`,
+      },
+      {
+        // Bouncy chords on the off-beats, like a cart's squeaky wheel keeping time.
+        voice: 'square',
+        volume: 0.05,
+        notes: `- B4 - B4 - D5 - D5 | - C5 - C5 - E5 - E5 | - G4 - G4 - B4 - B4 | - F#4 - F#4 - A4 - A4
+                - B4 - B4 - D5 - D5 | - G4 - G4 - B4 - B4 | - E4 - E4 - F#4 - F#4 | - B4 - B4 - - - -`,
+      },
+      {
+        voice: 'triangle',
+        volume: 0.22,
+        notes: `G2 . D3 . G2 . D3 . | C3 . G3 . C3 . G3 . | E2 . B2 . E2 . B2 . | D2 . A2 . D2 . F#2 .
+                G2 . D3 . G2 . D3 . | E2 . B2 . E2 . B2 . | C3 . C3 . D3 . D3 . | G2 . D3 . G2 . - -`,
+      },
+      {
+        voice: 'drums',
+        volume: 0.05,
+        notes: `k h s h k h s h | k h s h k h s h | k h s h k h s h | k h s h k k s h
+                k h s h k h s h | k h s h k h s h | k h s h k h s h | k h s s k - - -`,
       },
     ],
   },

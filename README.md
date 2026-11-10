@@ -2,7 +2,7 @@
 
 A gentle, NES-style pixel-art exploring game made for a 6-year-old. Layne picks
 a world, walks around it, and finds original monsters that live in the places
-that suit them. Every world has 9 realms and 108 monsters (432 so far).
+that suit them. Every world has 9 realms and 108 monsters (540 so far).
 
 - **No losing, ever.** A catch that doesn't work out just means the monster hops off to play; you can find it again.
 - **No reading needed.** Icons, pictures and a wordless how-to-play.
@@ -14,7 +14,7 @@ What's in it:
 | | |
 |---|---|
 | Worlds | See the table below. Each world has 9 realms with 12 monsters each (2 rare) |
-| Monsters | 432 original monsters, drawn from parts as 16-bit pixel art |
+| Monsters | 540 original monsters, drawn from parts as 16-bit pixel art |
 | Catching | Tap when the shrinking ring is in the green zone; 3 tries |
 | Monster Book | A tab per world, a section per realm (found / 12); silhouettes for the ones not found yet |
 | Coloring pages | Print any found monster as a line-art coloring page (US Letter), or a whole world or realm from the grown-ups area |
@@ -29,6 +29,7 @@ What's in it:
 | Island | `island` | 200×200 island from a fixed seed, 6 caves | grass, forest, desert, snow, hills, beach, swamp, volcano, cave | 108 |
 | Home Sweet Home | `home` | 90×70 house and yard (drawn as ASCII), attic and basement | kitchen, living, bath, bedroom, laundry, garage, attic, basement, yard | 108 |
 | Bun Town Burgers | `buntown` | 90×70 burger restaurant, drive-thru and back alley (drawn as ASCII), walk-in freezer | counter, grill, fries, soda, freezer, dining, play, drive, alley | 108 |
+| Cherry Mart | `cherrymart` | 90×68 department store with a red racetrack aisle, front doors and parking lot (drawn as ASCII); the holiday aisle follows the device's month | deals, toys, home, clothes, tech, cafe, grocery, beauty, holiday | 108 |
 
 New worlds are added with one checklist: see [docs/ADDING-A-WORLD.md](docs/ADDING-A-WORLD.md).
 

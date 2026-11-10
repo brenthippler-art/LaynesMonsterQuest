@@ -1,0 +1,2317 @@
+diff --git a/README.md b/README.md
+index 5b9cf2d..22e7a44 100644
+--- a/README.md
++++ b/README.md
+@@ -2,7 +2,7 @@
+ 
+ A gentle, NES-style pixel-art exploring game made for a 6-year-old. Layne picks
+ a world, walks around it, and finds original monsters that live in the places
+-that suit them. Every world has 9 realms and 108 monsters (432 so far).
++that suit them. Every world has 9 realms and 108 monsters (540 so far).
+ 
+ - **No losing, ever.** A catch that doesn't work out just means the monster hops off to play; you can find it again.
+ - **No reading needed.** Icons, pictures and a wordless how-to-play.
+@@ -14,7 +14,7 @@ What's in it:
+ | | |
+ |---|---|
+ | Worlds | See the table below. Each world has 9 realms with 12 monsters each (2 rare) |
+-| Monsters | 432 original monsters, drawn from parts as 16-bit pixel art |
++| Monsters | 540 original monsters, drawn from parts as 16-bit pixel art |
+ | Catching | Tap when the shrinking ring is in the green zone; 3 tries |
+ | Monster Book | A tab per world, a section per realm (found / 12); silhouettes for the ones not found yet |
+ | Coloring pages | Print any found monster as a line-art coloring page (US Letter), or a whole world or realm from the grown-ups area |
+@@ -29,6 +29,7 @@ What's in it:
+ | Island | `island` | 200×200 island from a fixed seed, 6 caves | grass, forest, desert, snow, hills, beach, swamp, volcano, cave | 108 |
+ | Home Sweet Home | `home` | 90×70 house and yard (drawn as ASCII), attic and basement | kitchen, living, bath, bedroom, laundry, garage, attic, basement, yard | 108 |
+ | Bun Town Burgers | `buntown` | 90×70 burger restaurant, drive-thru and back alley (drawn as ASCII), walk-in freezer | counter, grill, fries, soda, freezer, dining, play, drive, alley | 108 |
++| Cherry Mart | `cherrymart` | 90×68 department store with a red racetrack aisle, front doors and parking lot (drawn as ASCII); the holiday aisle follows the device's month | deals, toys, home, clothes, tech, cafe, grocery, beauty, holiday | 108 |
+ 
+ New worlds are added with one checklist: see [docs/ADDING-A-WORLD.md](docs/ADDING-A-WORLD.md).
+ 
+diff --git a/src/audio/tracks.ts b/src/audio/tracks.ts
+index eabda91..d8ce910 100644
+--- a/src/audio/tracks.ts
++++ b/src/audio/tracks.ts
+@@ -28,7 +28,7 @@ export interface Song {
+   parts: Part[];
+ }
+ 
+-export type SongName = 'title' | 'explore' | 'cave' | 'catch' | 'home' | 'buntown';
++export type SongName = 'title' | 'explore' | 'cave' | 'catch' | 'home' | 'buntown' | 'cherrymart';
+ 
+ export const SONGS: Record<SongName, Song> = {
+   // The title screen: bright and bouncy, "let's go on an adventure!". F major, 8 bars of eighth notes.
+@@ -150,6 +150,39 @@ export const SONGS: Record<SongName, Song> = {
+     ],
+   },
+ 
++  // Cherry Mart: a bright, skippy shopping tune, like pushing a cart down a sunny aisle. G major, 8 bars.
++  cherrymart: {
++    bpm: 138,
++    stepsPerBeat: 2,
++    parts: [
++      {
++        voice: 'pulse',
++        volume: 0.13,
++        notes: `G5 . B5 . D6 . B5 . | C6 . B5 . A5 . G5 . | E5 . G5 . A5 . B5 . | A5 . . G5 F#5 . D5 .
++                G5 . B5 . D6 . E6 . | D6 . B5 . G5 . E5 . | C6 . A5 . F#5 . A5 . | G5 . . . - - - -`,
++      },
++      {
++        // Bouncy chords on the off-beats, like a cart's squeaky wheel keeping time.
++        voice: 'square',
++        volume: 0.05,
++        notes: `- B4 - B4 - D5 - D5 | - C5 - C5 - E5 - E5 | - G4 - G4 - B4 - B4 | - F#4 - F#4 - A4 - A4
++                - B4 - B4 - D5 - D5 | - G4 - G4 - B4 - B4 | - E4 - E4 - F#4 - F#4 | - B4 - B4 - - - -`,
++      },
++      {
++        voice: 'triangle',
++        volume: 0.22,
++        notes: `G2 . D3 . G2 . D3 . | C3 . G3 . C3 . G3 . | E2 . B2 . E2 . B2 . | D2 . A2 . D2 . F#2 .
++                G2 . D3 . G2 . D3 . | E2 . B2 . E2 . B2 . | C3 . C3 . D3 . D3 . | G2 . D3 . G2 . - -`,
++      },
++      {
++        voice: 'drums',
++        volume: 0.05,
++        notes: `k h s h k h s h | k h s h k h s h | k h s h k h s h | k h s h k k s h
++                k h s h k h s h | k h s h k h s h | k h s h k h s h | k h s s k - - -`,
++      },
++    ],
++  },
++
+   // Mysterious, not scary: slow, quiet and echoey, like exploring a big hall of crystals. A minor.
+   cave: {
+     bpm: 76,
+diff --git a/src/monsters/worlds/cherrymart.ts b/src/monsters/worlds/cherrymart.ts
+new file mode 100644
+index 0000000..a53c4ea
+--- /dev/null
++++ b/src/monsters/worlds/cherrymart.ts
+@@ -0,0 +1,795 @@
++import { NES as C } from '../../render/nesPalette';
++import { type MonsterData, worldMonsters } from '../monsterTypes';
++
++/**
++ * CHERRY MART's monsters: 12 per realm (2 rare, 4 uncommon, 6 common), 108 in total.
++ *
++ * Rules (checked on /gallery, see newWorldRules.ts):
++ *   - every id and name unique across ALL worlds; names one word, 2-4 syllables, no "-mon",
++ *     and no real brand, product, store or mascot names
++ *   - per realm, besides the 2 rares: at least 4 creatures and 2 living objects,
++ *     at most 4 round/blob bodies, at least 5 different body shapes
++ *   - ability name 2-3 words, description under 12 words; fact one sentence under 15 words
++ *   - every monster is an ORIGINAL design and clearly belongs in its department
++ *
++ * `habitat` is one of the realm ids in src/worlds/cherrymart/realms.ts.
++ * `look` picks one part of each kind; see src/monsters/art/ for the options.
++ */
++const LIST: MonsterData[] = [
++  // ───────────── DEALS ─────────────
++  {
++    id: 'tagglet', name: 'Tagglet', habitat: 'deals', type: 'Toy', rarity: 'common', size: 'small',
++    ability: { name: 'Tag Flip', description: 'Flips its tag to show a shiny gold star!' },
++    fact: 'Tagglet sticks itself on anything it thinks is extra special.',
++    colors: { main: C.redBright, accent: C.white, belly: C.sand, wing: C.pinkLight },
++    look: { body: 'drop', eyes: 'round', mouth: 'smile', top: 'antennae', tail: 'none', feet: 'stubs', arms: 'insect', pattern: 'none', cheeks: true },
++  },
++  {
++    id: 'beepwren', name: 'Beepwren', habitat: 'deals', type: 'Zap', rarity: 'common', size: 'tiny',
++    ability: { name: 'Checkout Song', description: 'Beeps a cheery song at every checkout lane!' },
++    fact: 'Beepwren can beep twelve different happy tunes.',
++    colors: { main: C.sky, accent: C.blueDark, belly: C.white, wing: C.blue },
++    look: { body: 'bird', eyes: 'round', mouth: 'beak', top: 'tuft', tail: 'none', feet: 'stubs', arms: 'bird', pattern: 'stripes', belly: true },
++  },
++  {
++    id: 'wickerpup', name: 'Wickerpup', habitat: 'deals', type: 'Fluff', rarity: 'common', size: 'small',
++    ability: { name: 'Basket Carry', description: 'Carries baskets for shoppers with full hands!' },
++    fact: 'Wickerpup naps curled up inside an empty basket.',
++    colors: { main: C.ochre, accent: C.brownDark, belly: C.sand },
++    look: { body: 'beast', eyes: 'happy', mouth: 'snout', top: 'round', tail: 'curl', feet: 'paws', arms: 'none', pattern: 'checks', cheeks: true },
++  },
++  {
++    id: 'cartsy', name: 'Cartsy', habitat: 'deals', type: 'Gear', rarity: 'common', size: 'small',
++    ability: { name: 'Squeaky Roll', description: 'Rolls around with one funny squeaky wheel!' },
++    fact: 'Cartsy always wants to give little kids a ride.',
++    colors: { main: C.grayLight, accent: C.redBright, belly: C.white },
++    look: { body: 'cart', eyes: 'round', mouth: 'grin', top: 'none', tail: 'none', feet: 'wheels', arms: 'nubs', pattern: 'none' },
++  },
++  {
++    id: 'grabbag', name: 'Grabbag', habitat: 'deals', type: 'Toy', rarity: 'common', size: 'small',
++    ability: { name: 'Surprise Pull', description: 'Pulls a surprise toy out of its tummy!' },
++    fact: 'Nobody knows what Grabbag has inside, not even Grabbag.',
++    colors: { main: C.purple, accent: C.gold, belly: C.lavender },
++    look: { body: 'pear', eyes: 'happy', mouth: 'open', top: 'tuft', tail: 'none', feet: 'stubs', arms: 'nubs', pattern: 'spots' },
++  },
++  {
++    id: 'stickerbug', name: 'Stickerbug', habitat: 'deals', type: 'Sparkle', rarity: 'common', size: 'tiny',
++    ability: { name: 'Sticker Shine', description: 'Leaves shiny star stickers wherever it lands!' },
++    fact: "Stickerbug's wings are covered in sparkly stickers.",
++    colors: { main: C.yellowLight, accent: C.pink, belly: C.white, wing: C.skyLight },
++    look: { body: 'round', eyes: 'big', mouth: 'smile', top: 'antennae', tail: 'none', feet: 'stubs', arms: 'insect', pattern: 'sprinkles' },
++  },
++  {
++    id: 'snipsnake', name: 'Snipsnake', habitat: 'deals', type: 'Sparkle', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Dotted Line', description: 'Wiggles along dotted lines to snip out coupons!' },
++    fact: 'Snipsnake keeps the best coupons tucked under its chin.',
++    colors: { main: C.sand, accent: C.redBright, belly: C.white },
++    look: { body: 'serpent', eyes: 'happy', mouth: 'smile', top: 'none', tail: 'serpent', feet: 'none', arms: 'none', pattern: 'stripes', belly: true },
++  },
++  {
++    id: 'bargabox', name: 'Bargabox', habitat: 'deals', type: 'Toy', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Box Rattle', description: 'Rattles the fun toys hiding inside its box!' },
++    fact: 'Bargabox loves being picked last, because then it gets hugged.',
++    colors: { main: C.orangeLight, accent: C.redBright, belly: C.sand },
++    look: { body: 'square', eyes: 'round', mouth: 'grin', top: 'none', tail: 'none', feet: 'stubs', arms: 'nubs', pattern: 'patches' },
++  },
++  {
++    id: 'jinglejar', name: 'Jinglejar', habitat: 'deals', type: 'Sparkle', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Coin Jingle', description: 'Jingles its coins to make a happy little song!' },
++    fact: 'Jinglejar saves every penny it finds on the floor.',
++    colors: { main: C.skyLight, accent: C.gold, belly: C.white },
++    look: { body: 'bowl', eyes: 'happy', mouth: 'o', top: 'lid', tail: 'none', feet: 'none', arms: 'nubs', pattern: 'spots', cheeks: true },
++  },
++  {
++    id: 'dealadillo', name: 'Dealadillo', habitat: 'deals', type: 'Stone', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Bargain Roll', description: 'Rolls into a ball and bowls between the bins!' },
++    fact: "Dealadillo's shell looks just like a bargain bin.",
++    colors: { main: C.orange, accent: C.brownRed, belly: C.sand },
++    look: { body: 'long', eyes: 'round', mouth: 'smile', top: 'round', tail: 'long', feet: 'four', arms: 'none', pattern: 'scales', belly: true },
++  },
++  {
++    id: 'couponix', name: 'Couponix', habitat: 'deals', type: 'Sparkle', rarity: 'rare', size: 'large',
++    ability: { name: 'Coupon Flutter', description: 'Flutters feathers that snip into lucky coupons!' },
++    fact: 'Couponix glows brightest on the very best bargain days.',
++    colors: { main: C.gold, accent: C.redBright, belly: C.yellowLight, wing: C.white },
++    look: { body: 'bird', eyes: 'big', mouth: 'beak', top: 'crown', extraTop: 'tuft', tail: 'plume', feet: 'stubs', arms: 'feathers', pattern: 'stripes', belly: true, cheeks: true },
++  },
++  {
++    id: 'pennydrake', name: 'Pennydrake', habitat: 'deals', type: 'Sparkle', rarity: 'rare', size: 'large',
++    ability: { name: 'Piggy Jingle', description: 'Jingles its tummy full of shiny pennies!' },
++    fact: 'Pennydrake has a coin slot on its back for saving.',
++    colors: { main: C.pinkLight, accent: C.gold, belly: C.pink, wing: C.pink },
++    look: { body: 'dragon', eyes: 'big', mouth: 'snout', top: 'crown', extraTop: 'round', tail: 'curl', feet: 'claws', arms: 'dragonwings', pattern: 'spots', belly: true, cheeks: true },
++  },
++
++  // ───────────── TOYS ─────────────
++  {
++    id: 'plushpaw', name: 'Plushpaw', habitat: 'toys', type: 'Fluff', rarity: 'common', size: 'small',
++    ability: { name: 'Teddy Squeeze', description: 'Gives the softest squeeze a teddy can give!' },
++    fact: 'Plushpaw has a little heart stitched on its tummy.',
++    colors: { main: C.brownRed, accent: C.sand, belly: C.orangeLight },
++    look: { body: 'beast', eyes: 'round', mouth: 'snout', top: 'round', tail: 'puff', feet: 'paws', arms: 'none', pattern: 'patches', belly: true, cheeks: true },
++  },
++  {
++    id: 'boingle', name: 'Boingle', habitat: 'toys', type: 'Toy', rarity: 'common', size: 'tiny',
++    ability: { name: 'Super Boing', description: 'Bounces higher and higher until it nearly touches the sky!' },
++    fact: 'Boingle can bounce all the way across the toy aisle.',
++    colors: { main: C.orange, accent: C.white, belly: C.yellowLight },
++    look: { body: 'round', eyes: 'happy', mouth: 'open', top: 'none', tail: 'none', feet: 'none', arms: 'none', pattern: 'stripes' },
++  },
++  {
++    id: 'speedlet', name: 'Speedlet', habitat: 'toys', type: 'Gear', rarity: 'common', size: 'small',
++    ability: { name: 'Zoom Lap', description: 'Zooms one speedy lap around the racetrack aisle!' },
++    fact: 'Speedlet makes its own vroom sounds as it goes.',
++    colors: { main: C.blue, accent: C.gold, belly: C.skyLight },
++    look: { body: 'cart', eyes: 'round', mouth: 'grin', top: 'none', tail: 'none', feet: 'wheels', arms: 'none', pattern: 'stripes' },
++  },
++  {
++    id: 'glidewing', name: 'Glidewing', habitat: 'toys', type: 'Toy', rarity: 'common', size: 'small',
++    ability: { name: 'Paper Glide', description: 'Glides in loops like a paper airplane!' },
++    fact: 'Glidewing folds its wings flat when it wants a nap.',
++    colors: { main: C.white, accent: C.sky, belly: C.skyLight, wing: C.skyLight },
++    look: { body: 'bird', eyes: 'round', mouth: 'beak', top: 'none', tail: 'plume', feet: 'stubs', arms: 'bird', pattern: 'none', belly: true },
++  },
++  {
++    id: 'chooby', name: 'Chooby', habitat: 'toys', type: 'Gear', rarity: 'common', size: 'small',
++    ability: { name: 'Choo Choo', description: 'Toots a happy whistle and chugs in circles!' },
++    fact: 'Chooby goes around the train table about a thousand times a day.',
++    colors: { main: C.greenBright, accent: C.redBright, belly: C.yellowLight },
++    look: { body: 'long', eyes: 'round', mouth: 'smile', top: 'none', tail: 'none', feet: 'wheels', arms: 'none', pattern: 'stripes' },
++  },
++  {
++    id: 'blockbug', name: 'Blockbug', habitat: 'toys', type: 'Toy', rarity: 'common', size: 'tiny',
++    ability: { name: 'Block Stack', description: 'Stacks blocks into tall, wobbly towers!' },
++    fact: "Blockbug's favorite sound is a tower tumbling down.",
++    colors: { main: C.gold, accent: C.blue, belly: C.yellowLight, wing: C.redBright },
++    look: { body: 'square', eyes: 'dot', mouth: 'smile', top: 'antennae', tail: 'none', feet: 'stubs', arms: 'insect', pattern: 'checks' },
++  },
++  {
++    id: 'springbox', name: 'Springbox', habitat: 'toys', type: 'Toy', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Pop Surprise', description: 'Pops out of its box with a giggle!' },
++    fact: 'Springbox hums a little tune before every pop.',
++    colors: { main: C.purple, accent: C.gold, belly: C.lavender },
++    look: { body: 'appliance', eyes: 'happy', mouth: 'grin', top: 'tuft', tail: 'none', feet: 'none', arms: 'nubs', pattern: 'spots' },
++  },
++  {
++    id: 'squeakle', name: 'Squeakle', habitat: 'toys', type: 'Toy', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Rubber Squeak', description: 'Squeaks a silly squeak every time you squeeze it!' },
++    fact: 'Squeakle is a bath toy that ran off to the toy aisle.',
++    colors: { main: C.lime, accent: C.orange, belly: C.limeLight },
++    look: { body: 'serpent', eyes: 'round', mouth: 'open', top: 'spikes', tail: 'serpent', feet: 'none', arms: 'none', pattern: 'spots', belly: true },
++  },
++  {
++    id: 'twirltop', name: 'Twirltop', habitat: 'toys', type: 'Toy', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Top Spin', description: 'Spins and spins without ever getting dizzy!' },
++    fact: 'Twirltop makes a soft humming sound while it spins.',
++    colors: { main: C.pink, accent: C.sky, belly: C.pinkLight },
++    look: { body: 'drop', eyes: 'happy', mouth: 'smile', top: 'none', tail: 'none', feet: 'none', arms: 'nubs', pattern: 'stripes' },
++  },
++  {
++    id: 'windfin', name: 'Windfin', habitat: 'toys', type: 'Splash', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Key Swim', description: 'Turns its key and paddles in happy circles!' },
++    fact: 'Windfin swims best in a bathtub full of bubbles.',
++    colors: { main: C.skyLight, accent: C.orange, belly: C.white },
++    look: { body: 'tall', eyes: 'big', mouth: 'o', top: 'fins', tail: 'fish', feet: 'none', arms: 'flippers', pattern: 'none' },
++  },
++  {
++    id: 'brickwyrm', name: 'Brickwyrm', habitat: 'toys', type: 'Toy', rarity: 'rare', size: 'large',
++    ability: { name: 'Block Rebuild', description: 'Falls apart into blocks, then builds itself again!' },
++    fact: 'Brickwyrm is never the same shape two days in a row.',
++    colors: { main: C.redBright, accent: C.blue, belly: C.gold, wing: C.gold },
++    look: { body: 'dragon', eyes: 'big', mouth: 'snout', top: 'crown', extraTop: 'dragonhorns', tail: 'dragon', feet: 'claws', arms: 'dragonwings', pattern: 'checks', belly: true, cheeks: true },
++  },
++  {
++    id: 'robogriff', name: 'Robogriff', habitat: 'toys', type: 'Gear', rarity: 'rare', size: 'large',
++    ability: { name: 'Wind Up Flight', description: 'Turns its key and flies in a happy loop!' },
++    fact: 'Robogriff ticks softly, like a friendly little clock.',
++    colors: { main: C.grayLight, accent: C.gold, belly: C.white, wing: C.skyLight },
++    look: { body: 'beast', eyes: 'big', mouth: 'beak', top: 'crown', extraTop: 'antennae', tail: 'long', feet: 'claws', arms: 'feathers', pattern: 'glow', belly: true },
++  },
++
++  // ───────────── HOME ─────────────
++  {
++    id: 'cushy', name: 'Cushy', habitat: 'home', type: 'Fluff', rarity: 'common', size: 'small',
++    ability: { name: 'Pillow Flop', description: 'Flops down so you always have a soft landing!' },
++    fact: 'Cushy is the comfiest seat in the whole store.',
++    colors: { main: C.lavender, accent: C.purple, belly: C.white },
++    look: { body: 'square', eyes: 'sleepy', mouth: 'smile', top: 'none', tail: 'none', feet: 'none', arms: 'nubs', pattern: 'checks', cheeks: true },
++  },
++  {
++    id: 'lampkin', name: 'Lampkin', habitat: 'home', type: 'Sparkle', rarity: 'common', size: 'small',
++    ability: { name: 'Warm Light', description: 'Glows a cozy yellow so nobody feels scared!' },
++    fact: 'Lampkin clicks itself off when it gets sleepy.',
++    colors: { main: C.yellowLight, accent: C.ochre, belly: C.white },
++    look: { body: 'tall', eyes: 'round', mouth: 'smile', top: 'lid', tail: 'none', feet: 'stubs', arms: 'none', pattern: 'glow' },
++  },
++  {
++    id: 'ruggle', name: 'Ruggle', habitat: 'home', type: 'Fluff', rarity: 'common', size: 'small',
++    ability: { name: 'Rug Roll', description: 'Rolls itself up and unrolls with a happy flump!' },
++    fact: 'Ruggle loves when kids sit on it for story time.',
++    colors: { main: C.red, accent: C.gold, belly: C.salmon },
++    look: { body: 'long', eyes: 'happy', mouth: 'smile', top: 'tuft', tail: 'fluffy', feet: 'four', arms: 'none', pattern: 'stripes' },
++  },
++  {
++    id: 'waxwren', name: 'Waxwren', habitat: 'home', type: 'Sparkle', rarity: 'common', size: 'tiny',
++    ability: { name: 'Tail Glow', description: 'Its tail tip glows softly like a tiny night light.' },
++    fact: 'Waxwren smells a little bit like vanilla cookies.',
++    colors: { main: C.sand, accent: C.orange, belly: C.white, wing: C.ochre },
++    look: { body: 'bird', eyes: 'dot', mouth: 'beak', top: 'tuft', tail: 'flame', feet: 'stubs', arms: 'bird', pattern: 'none', belly: true },
++  },
++  {
++    id: 'framey', name: 'Framey', habitat: 'home', type: 'Stone', rarity: 'common', size: 'small',
++    ability: { name: 'Picture Pose', description: 'Strikes a pose so every picture looks great!' },
++    fact: 'Framey has a new favorite picture every single day.',
++    colors: { main: C.ochre, accent: C.gold, belly: C.skyLight },
++    look: { body: 'square', eyes: 'round', mouth: 'grin', top: 'none', tail: 'none', feet: 'stubs', arms: 'nubs', pattern: 'patches', belly: true },
++  },
++  {
++    id: 'purrlow', name: 'Purrlow', habitat: 'home', type: 'Fluff', rarity: 'common', size: 'small',
++    ability: { name: 'Cozy Purr', description: 'Purrs so softly that everyone nearby feels calm.' },
++    fact: 'Purrlow naps on a different pillow every hour.',
++    colors: { main: C.orangeLight, accent: C.orange, belly: C.yellowLight },
++    look: { body: 'beast', eyes: 'sleepy', mouth: 'cat', top: 'cat', tail: 'curl', feet: 'paws', arms: 'none', pattern: 'stripes', belly: true },
++  },
++  {
++    id: 'vaselle', name: 'Vaselle', habitat: 'home', type: 'Leaf', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Flower Pop', description: 'Pops fresh flowers out of its top!' },
++    fact: 'Vaselle drinks one glass of water every morning.',
++    colors: { main: C.teal, accent: C.pink, belly: C.mint },
++    look: { body: 'bowl', eyes: 'happy', mouth: 'o', top: 'leaf', tail: 'none', feet: 'none', arms: 'none', pattern: 'spots' },
++  },
++  {
++    id: 'tasselle', name: 'Tasselle', habitat: 'home', type: 'Fluff', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Tassel Twirl', description: 'Twirls its tassels like a happy little dancer!' },
++    fact: 'Tasselle lives on the edge of the fanciest rug.',
++    colors: { main: C.gold, accent: C.redBright, belly: C.yellowLight },
++    look: { body: 'serpent', eyes: 'round', mouth: 'smile', top: 'tuft', tail: 'serpent', feet: 'none', arms: 'none', pattern: 'stripes', belly: true },
++  },
++  {
++    id: 'snugglet', name: 'Snugglet', habitat: 'home', type: 'Fluff', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Blanket Hug', description: 'Wraps around you like a warm, fuzzy blanket.' },
++    fact: 'Snugglet is softest right after it comes out of the dryer.',
++    colors: { main: C.pinkLight, accent: C.rose, belly: C.white },
++    look: { body: 'cloud', eyes: 'sleepy', mouth: 'smile', top: 'none', tail: 'none', feet: 'none', arms: 'nubs', pattern: 'none', cheeks: true },
++  },
++  {
++    id: 'chimefly', name: 'Chimefly', habitat: 'home', type: 'Sparkle', rarity: 'uncommon', size: 'tiny',
++    ability: { name: 'Wind Chime', description: 'Tinkles a sweet song whenever the breeze blows.' },
++    fact: 'Chimefly can play three songs and a sneeze.',
++    colors: { main: C.skyLight, accent: C.grayLight, belly: C.white, wing: C.white },
++    look: { body: 'drop', eyes: 'dot', mouth: 'o', top: 'antennae', tail: 'none', feet: 'none', arms: 'insect', pattern: 'stripes' },
++  },
++  {
++    id: 'carpetwyrm', name: 'Carpetwyrm', habitat: 'home', type: 'Sparkle', rarity: 'rare', size: 'large',
++    ability: { name: 'Carpet Ride', description: 'Gives friends a gentle ride around the ceiling!' },
++    fact: 'Carpetwyrm always wipes its feet, even though it has none.',
++    colors: { main: C.purple, accent: C.gold, belly: C.redBright },
++    look: { body: 'serpent', eyes: 'big', mouth: 'smile', top: 'crown', tail: 'serpent', feet: 'none', arms: 'none', pattern: 'patches', belly: true, cheeks: true },
++  },
++  {
++    id: 'candlecorn', name: 'Candlecorn', habitat: 'home', type: 'Sparkle', rarity: 'rare', size: 'large',
++    ability: { name: 'Horn Glow', description: 'Its candle horn glows warm, but it is never hot.' },
++    fact: 'Candlecorn makes the whole room feel like a birthday.',
++    colors: { main: C.white, accent: C.gold, belly: C.yellowLight, eye: C.orange },
++    look: { body: 'beast', eyes: 'big', mouth: 'snout', top: 'unihorn', extraTop: 'mane', tail: 'plume', feet: 'hooves', arms: 'none', pattern: 'glow', belly: true },
++  },
++
++  // ───────────── CLOTHES ─────────────
++  {
++    id: 'sockling', name: 'Sockling', habitat: 'clothes', type: 'Fluff', rarity: 'common', size: 'small',
++    ability: { name: 'Sock Wiggle', description: 'Wiggles into any sock and keeps your toes toasty!' },
++    fact: 'Sockling is where all the lost socks go to play.',
++    colors: { main: C.redBright, accent: C.white, belly: C.pinkLight },
++    look: { body: 'serpent', eyes: 'round', mouth: 'smile', top: 'none', tail: 'serpent', feet: 'none', arms: 'none', pattern: 'stripes', belly: true },
++  },
++  {
++    id: 'buttonbug', name: 'Buttonbug', habitat: 'clothes', type: 'Toy', rarity: 'common', size: 'tiny',
++    ability: { name: 'Button Pop', description: 'Pops buttons into their holes in a flash!' },
++    fact: 'Buttonbug has four little holes, just like a real button.',
++    colors: { main: C.blue, accent: C.skyLight, belly: C.white, wing: C.skyLight },
++    look: { body: 'round', eyes: 'dot', mouth: 'smile', top: 'antennae', tail: 'none', feet: 'stubs', arms: 'insect', pattern: 'spots' },
++  },
++  {
++    id: 'scarfinch', name: 'Scarfinch', habitat: 'clothes', type: 'Frost', rarity: 'common', size: 'tiny',
++    ability: { name: 'Scarf Swish', description: 'Swishes its long scarf to keep friends warm!' },
++    fact: 'Scarfinch knits a new stripe on its scarf every winter.',
++    colors: { main: C.greenBright, accent: C.redBright, belly: C.limeLight, wing: C.green },
++    look: { body: 'bird', eyes: 'round', mouth: 'beak', top: 'none', tail: 'plume', feet: 'stubs', arms: 'bird', pattern: 'stripes', belly: true },
++  },
++  {
++    id: 'capling', name: 'Capling', habitat: 'clothes', type: 'Toy', rarity: 'common', size: 'tiny',
++    ability: { name: 'Pom Bounce', description: 'Bounces its pom-pom hat up and down!' },
++    fact: 'Capling wears its hat even in the bathtub.',
++    colors: { main: C.orange, accent: C.white, belly: C.orangeLight },
++    look: { body: 'pear', eyes: 'happy', mouth: 'smile', top: 'tuft', tail: 'none', feet: 'stubs', arms: 'nubs', pattern: 'stripes', cheeks: true },
++  },
++  {
++    id: 'sneakbox', name: 'Sneakbox', habitat: 'clothes', type: 'Toy', rarity: 'common', size: 'small',
++    ability: { name: 'Lace Up', description: 'Ties shoelaces into perfect bunny-ear bows!' },
++    fact: 'Sneakbox squeaks happily on shiny floors.',
++    colors: { main: C.white, accent: C.redBright, belly: C.grayLight },
++    look: { body: 'square', eyes: 'round', mouth: 'grin', top: 'none', tail: 'none', feet: 'stubs', arms: 'none', pattern: 'stripes' },
++  },
++  {
++    id: 'posella', name: 'Posella', habitat: 'clothes', type: 'Sparkle', rarity: 'common', size: 'medium',
++    ability: { name: 'Strike Pose', description: 'Stands super still in the coolest outfits!' },
++    fact: 'Posella stays frozen until the store lights go off.',
++    colors: { main: C.skin, accent: C.purple, belly: C.white },
++    look: { body: 'tall', eyes: 'sleepy', mouth: 'smile', top: 'none', tail: 'none', feet: 'stubs', arms: 'nubs', pattern: 'none' },
++  },
++  {
++    id: 'peekbooth', name: 'Peekbooth', habitat: 'clothes', type: 'Shadow', rarity: 'uncommon', size: 'medium',
++    ability: { name: 'Curtain Peek', description: 'Peeks out from its curtain and says peekaboo!' },
++    fact: 'Peekbooth always knocks before anyone opens its curtain.',
++    colors: { main: C.lavender, accent: C.violet, belly: C.white },
++    look: { body: 'appliance', eyes: 'big', mouth: 'o', top: 'none', tail: 'none', feet: 'none', arms: 'none', pattern: 'stripes' },
++  },
++  {
++    id: 'scarfox', name: 'Scarfox', habitat: 'clothes', type: 'Fluff', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Cozy Wrap', description: 'Wraps its fluffy tail around chilly necks.' },
++    fact: 'Scarfox picks out its own outfit every morning.',
++    colors: { main: C.salmon, accent: C.white, belly: C.orangeLight },
++    look: { body: 'beast', eyes: 'round', mouth: 'cat', top: 'cat', tail: 'fluffy', feet: 'paws', arms: 'none', pattern: 'none', belly: true },
++  },
++  {
++    id: 'ribbonfin', name: 'Ribbonfin', habitat: 'clothes', type: 'Splash', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Ribbon Swim', description: 'Swims through the air trailing pretty ribbons!' },
++    fact: 'Ribbonfin ties a bow on anything that stands still.',
++    colors: { main: C.pink, accent: C.sky, belly: C.pinkLight },
++    look: { body: 'tall', eyes: 'round', mouth: 'o', top: 'fins', tail: 'fish', feet: 'none', arms: 'flippers', pattern: 'stripes' },
++  },
++  {
++    id: 'zipling', name: 'Zipling', habitat: 'clothes', type: 'Gear', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Zip Zoom', description: 'Zooms up and down like a speedy zipper!' },
++    fact: 'Zipling makes a zzzip sound when it runs.',
++    colors: { main: C.gray, accent: C.gold, belly: C.grayLight },
++    look: { body: 'long', eyes: 'dot', mouth: 'grin', top: 'spikes', tail: 'zigzag', feet: 'four', arms: 'none', pattern: 'none' },
++  },
++  {
++    id: 'hangerhydra', name: 'Hangerhydra', habitat: 'clothes', type: 'Gear', rarity: 'rare', size: 'large',
++    ability: { name: 'Triple Hang', description: 'Holds three outfits at once with its hanger heads!' },
++    fact: 'Hangerhydra keeps the whole clothes rack neat and tidy.',
++    colors: { main: C.teal, accent: C.grayLight, belly: C.mint },
++    look: { body: 'serpent', eyes: 'round', mouth: 'smile', top: 'crown', tail: 'serpent', feet: 'none', arms: 'none', pattern: 'glow', belly: true, heads: 3 },
++  },
++  {
++    id: 'sweaterdrake', name: 'Sweaterdrake', habitat: 'clothes', type: 'Fluff', rarity: 'rare', size: 'large',
++    ability: { name: 'Knit Hug', description: 'Gives the coziest knitted hug in the whole world!' },
++    fact: 'Sweaterdrake has a pocket full of warm mittens.',
++    colors: { main: C.rose, accent: C.gold, belly: C.pinkLight, wing: C.white },
++    look: { body: 'dragon', eyes: 'happy', mouth: 'snout', top: 'crown', extraTop: 'dragonhorns', tail: 'dragon', feet: 'claws', arms: 'dragonwings', pattern: 'stripes', belly: true, cheeks: true },
++  },
++
++  // ───────────── TECH ─────────────
++  {
++    id: 'screenie', name: 'Screenie', habitat: 'tech', type: 'Zap', rarity: 'common', size: 'small',
++    ability: { name: 'Cartoon Show', description: 'Plays a funny cartoon right on its tummy!' },
++    fact: 'Screenie only shows cartoons with happy endings.',
++    colors: { main: C.blueDark, accent: C.cyan, belly: C.skyLight },
++    look: { body: 'appliance', eyes: 'round', mouth: 'smile', top: 'antennae', tail: 'none', feet: 'stubs', arms: 'none', pattern: 'none', belly: true },
++  },
++  {
++    id: 'tabbit', name: 'Tabbit', habitat: 'tech', type: 'Zap', rarity: 'common', size: 'small',
++    ability: { name: 'Swipe Hop', description: 'Hops to the next page with one swipe!' },
++    fact: 'Tabbit has a game of hide and seek built inside.',
++    colors: { main: C.periwinkle, accent: C.pinkLight, belly: C.skyLight },
++    look: { body: 'square', eyes: 'round', mouth: 'smile', top: 'bunny', tail: 'puff', feet: 'stubs', arms: 'none', pattern: 'none', belly: true },
++  },
++  {
++    id: 'beatbear', name: 'Beatbear', habitat: 'tech', type: 'Toy', rarity: 'common', size: 'small',
++    ability: { name: 'Beat Bop', description: 'Bops its head to a bouncy beat!' },
++    fact: 'Beatbear wears headphones even while it sleeps.',
++    colors: { main: C.purple, accent: C.gold, belly: C.lavender },
++    look: { body: 'beast', eyes: 'happy', mouth: 'grin', top: 'round', tail: 'puff', feet: 'paws', arms: 'none', pattern: 'none', belly: true },
++  },
++  {
++    id: 'scrollie', name: 'Scrollie', habitat: 'tech', type: 'Gear', rarity: 'common', size: 'tiny',
++    ability: { name: 'Click Click', description: 'Clicks its tail like a tiny computer mouse!' },
++    fact: 'Scrollie loves chasing the little arrow on the screen.',
++    colors: { main: C.grayLight, accent: C.redBright, belly: C.white },
++    look: { body: 'long', eyes: 'dot', mouth: 'smile', top: 'round', tail: 'long', feet: 'four', arms: 'none', pattern: 'none', belly: true },
++  },
++  {
++    id: 'pingwing', name: 'Pingwing', habitat: 'tech', type: 'Zap', rarity: 'common', size: 'tiny',
++    ability: { name: 'Signal Flap', description: 'Flaps its wings to help the signal reach you!' },
++    fact: 'Pingwing goes ping every time it says hello.',
++    colors: { main: C.cyan, accent: C.white, belly: C.skyLight, wing: C.blueMid },
++    look: { body: 'bird', eyes: 'round', mouth: 'beak', top: 'antennae', tail: 'plume', feet: 'stubs', arms: 'bird', pattern: 'none', belly: true },
++  },
++  {
++    id: 'joybug', name: 'Joybug', habitat: 'tech', type: 'Toy', rarity: 'common', size: 'tiny',
++    ability: { name: 'Button Mash', description: 'Taps its buttons super fast to win the game!' },
++    fact: 'Joybug always lets its friends have a turn.',
++    colors: { main: C.redBright, accent: C.gold, belly: C.white, wing: C.gray },
++    look: { body: 'drop', eyes: 'round', mouth: 'grin', top: 'antennae', tail: 'none', feet: 'none', arms: 'insect', pattern: 'spots' },
++  },
++  {
++    id: 'glowchip', name: 'Glowchip', habitat: 'tech', type: 'Zap', rarity: 'uncommon', size: 'tiny',
++    ability: { name: 'Chip Glow', description: 'Blinks its little lights in a happy pattern!' },
++    fact: 'Glowchip is the smartest thing in the tech aisle.',
++    colors: { main: C.green, accent: C.gold, belly: C.limeLight },
++    look: { body: 'crystal', eyes: 'dot', mouth: 'smile', top: 'none', tail: 'none', feet: 'none', arms: 'none', pattern: 'glow' },
++  },
++  {
++    id: 'plugsnake', name: 'Plugsnake', habitat: 'tech', type: 'Zap', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Plug In', description: 'Plugs in tired gadgets so they wake up happy.' },
++    fact: 'Plugsnake curls up neatly so nobody trips on it.',
++    colors: { main: C.gray, accent: C.white, belly: C.grayLight },
++    look: { body: 'serpent', eyes: 'round', mouth: 'smile', top: 'horns', tail: 'serpent', feet: 'none', arms: 'none', pattern: 'none', belly: true },
++  },
++  {
++    id: 'hoverbee', name: 'Hoverbee', habitat: 'tech', type: 'Gear', rarity: 'uncommon', size: 'tiny',
++    ability: { name: 'Hover Buzz', description: 'Hovers in place and takes cheery pictures!' },
++    fact: 'Hoverbee buzzes like a bee but never stings.',
++    colors: { main: C.gold, accent: C.black, belly: C.yellowLight, wing: C.skyLight },
++    look: { body: 'tall', eyes: 'big', mouth: 'smile', top: 'antennae', tail: 'none', feet: 'none', arms: 'insect', pattern: 'stripes' },
++  },
++  {
++    id: 'woofer', name: 'Woofer', habitat: 'tech', type: 'Toy', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Big Bass', description: 'Hums a deep, wiggly beat you can feel!' },
++    fact: 'Woofer makes the popcorn dance across the room.',
++    colors: { main: C.violet, accent: C.gray, belly: C.lavender },
++    look: { body: 'bowl', eyes: 'happy', mouth: 'open', top: 'none', tail: 'none', feet: 'stubs', arms: 'none', pattern: 'spots' },
++  },
++  {
++    id: 'pixelwyrm', name: 'Pixelwyrm', habitat: 'tech', type: 'Zap', rarity: 'rare', size: 'large',
++    ability: { name: 'Pixel Shift', description: 'Rearranges its glowing pixels into any color!' },
++    fact: 'Pixelwyrm looks blocky up close and smooth far away.',
++    colors: { main: C.sky, accent: C.greenBright, belly: C.cyan, wing: C.pink },
++    look: { body: 'dragon', eyes: 'big', mouth: 'snout', top: 'crown', extraTop: 'dragonhorns', tail: 'dragon', feet: 'claws', arms: 'dragonwings', pattern: 'checks', belly: true },
++  },
++  {
++    id: 'chargecorn', name: 'Chargecorn', habitat: 'tech', type: 'Zap', rarity: 'rare', size: 'large',
++    ability: { name: 'Full Charge', description: 'Shares its energy so every gadget feels full!' },
++    fact: 'Chargecorn gets sleepy when its tail light turns red.',
++    colors: { main: C.blueMid, accent: C.limeLight, belly: C.skyLight, eye: C.cyan },
++    look: { body: 'beast', eyes: 'big', mouth: 'snout', top: 'unihorn', extraTop: 'mane', tail: 'long', feet: 'hooves', arms: 'none', pattern: 'glow', belly: true },
++  },
++
++  // ───────────── CAFE ─────────────
++  {
++    id: 'pretzling', name: 'Pretzling', habitat: 'cafe', type: 'Snack', rarity: 'common', size: 'small',
++    ability: { name: 'Twisty Knot', description: 'Twists itself into a perfect pretzel shape!' },
++    fact: 'Pretzling has little salt sparkles all over its back.',
++    colors: { main: C.ochre, accent: C.white, belly: C.sand },
++    look: { body: 'serpent', eyes: 'happy', mouth: 'smile', top: 'none', tail: 'curl', feet: 'none', arms: 'none', pattern: 'sprinkles', belly: true },
++  },
++  {
++    id: 'cocomug', name: 'Cocomug', habitat: 'cafe', type: 'Snack', rarity: 'common', size: 'small',
++    ability: { name: 'Cocoa Warm', description: 'Warms chilly hands with a cozy cocoa hug!' },
++    fact: 'Cocomug always saves the last marshmallow for a friend.',
++    colors: { main: C.red, accent: C.white, belly: C.brownRed },
++    look: { body: 'bowl', eyes: 'happy', mouth: 'smile', top: 'tuft', tail: 'none', feet: 'none', arms: 'nubs', pattern: 'none', cheeks: true },
++  },
++  {
++    id: 'mallowby', name: 'Mallowby', habitat: 'cafe', type: 'Snack', rarity: 'common', size: 'tiny',
++    ability: { name: 'Marshmallow Float', description: 'Floats on top of cocoa like a tiny boat!' },
++    fact: 'Mallowby is squishy, bouncy and a little bit sticky.',
++    colors: { main: C.pinkLight, accent: C.white, belly: C.yellowLight },
++    look: { body: 'cloud', eyes: 'sleepy', mouth: 'o', top: 'none', tail: 'none', feet: 'none', arms: 'none', pattern: 'none', cheeks: true },
++  },
++  {
++    id: 'sipwren', name: 'Sipwren', habitat: 'cafe', type: 'Splash', rarity: 'common', size: 'tiny',
++    ability: { name: 'Straw Sip', description: 'Sips juice through its long beak with a slurp!' },
++    fact: 'Sipwren blows bubbles in its drink when nobody is looking.',
++    colors: { main: C.pink, accent: C.lime, belly: C.pinkLight, wing: C.rose },
++    look: { body: 'bird', eyes: 'round', mouth: 'beak', top: 'tuft', tail: 'plume', feet: 'stubs', arms: 'bird', pattern: 'none', belly: true },
++  },
++  {
++    id: 'kernelly', name: 'Kernelly', habitat: 'cafe', type: 'Snack', rarity: 'common', size: 'small',
++    ability: { name: 'Kernel Pop', description: 'Pops out a fluffy kernel for every friend!' },
++    fact: 'Kernelly smells like a movie night.',
++    colors: { main: C.yellowLight, accent: C.redBright, belly: C.white },
++    look: { body: 'square', eyes: 'round', mouth: 'open', top: 'tuft', tail: 'none', feet: 'stubs', arms: 'nubs', pattern: 'stripes' },
++  },
++  {
++    id: 'cinnapup', name: 'Cinnapup', habitat: 'cafe', type: 'Snack', rarity: 'common', size: 'small',
++    ability: { name: 'Swirl Roll', description: 'Rolls into a swirly ball and giggles!' },
++    fact: 'Cinnapup has a sweet swirl on the end of its tail.',
++    colors: { main: C.orangeLight, accent: C.brownRed, belly: C.white },
++    look: { body: 'beast', eyes: 'round', mouth: 'smile', top: 'round', tail: 'curl', feet: 'paws', arms: 'none', pattern: 'spots', belly: true },
++  },
++  {
++    id: 'frothbot', name: 'Frothbot', habitat: 'cafe', type: 'Gear', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Froth Swirl', description: 'Whirs up a fluffy foam cloud for warm drinks!' },
++    fact: 'Frothbot hums its favorite song while it works.',
++    colors: { main: C.gray, accent: C.skyLight, belly: C.white },
++    look: { body: 'appliance', eyes: 'round', mouth: 'grin', top: 'lid', tail: 'none', feet: 'stubs', arms: 'nubs', pattern: 'none' },
++  },
++  {
++    id: 'sugarling', name: 'Sugarling', habitat: 'cafe', type: 'Sparkle', rarity: 'uncommon', size: 'tiny',
++    ability: { name: 'Sugar Sparkle', description: 'Sprinkles a little sparkle on every treat!' },
++    fact: 'Sugarling is a sugar cube that learned to wink.',
++    colors: { main: C.skyLight, accent: C.white, belly: C.pinkLight },
++    look: { body: 'crystal', eyes: 'happy', mouth: 'smile', top: 'none', tail: 'none', feet: 'none', arms: 'none', pattern: 'glow' },
++  },
++  {
++    id: 'cocofin', name: 'Cocofin', habitat: 'cafe', type: 'Splash', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Cocoa Dive', description: 'Dives into cocoa and pops up with a marshmallow!' },
++    fact: 'Cocofin thinks hot cocoa is the best ocean ever.',
++    colors: { main: C.brownDark, accent: C.white, belly: C.orangeLight },
++    look: { body: 'tall', eyes: 'round', mouth: 'o', top: 'fins', tail: 'fish', feet: 'none', arms: 'flippers', pattern: 'spots' },
++  },
++  {
++    id: 'crumblet', name: 'Crumblet', habitat: 'cafe', type: 'Snack', rarity: 'uncommon', size: 'tiny',
++    ability: { name: 'Crumb Trail', description: 'Leaves a trail of crumbs for friends to follow.' },
++    fact: 'Crumblet sweeps up its own crumbs before it goes home.',
++    colors: { main: C.sand, accent: C.brownRed, belly: C.yellowLight },
++    look: { body: 'long', eyes: 'dot', mouth: 'smile', top: 'round', tail: 'long', feet: 'four', arms: 'none', pattern: 'spots', belly: true },
++  },
++  {
++    id: 'steamwyvern', name: 'Steamwyvern', habitat: 'cafe', type: 'Snack', rarity: 'rare', size: 'large',
++    ability: { name: 'Steam Puff', description: 'Puffs warm, chocolatey steam clouds shaped like hearts!' },
++    fact: 'Steamwyvern is a hot cocoa mug that grew wings.',
++    colors: { main: C.brownRed, accent: C.white, belly: C.orangeLight, wing: C.white },
++    look: { body: 'dragon', eyes: 'happy', mouth: 'snout', top: 'crown', extraTop: 'dragonhorns', tail: 'dragon', feet: 'claws', arms: 'dragonwings', pattern: 'glow', belly: true, cheeks: true },
++  },
++  {
++    id: 'popcornix', name: 'Popcornix', habitat: 'cafe', type: 'Snack', rarity: 'rare', size: 'large',
++    ability: { name: 'Happy Pop', description: 'Pops fluffy popcorn every time it feels happy!' },
++    fact: 'Popcornix gets very happy, so it is always popping.',
++    colors: { main: C.white, accent: C.gold, belly: C.yellowLight, wing: C.redBright },
++    look: { body: 'bird', eyes: 'big', mouth: 'beak', top: 'crown', extraTop: 'tuft', tail: 'plume', feet: 'claws', arms: 'feathers', pattern: 'sprinkles', belly: true },
++  },
++
++  // ───────────── GROCERY ─────────────
++  {
++    id: 'appling', name: 'Appling', habitat: 'grocery', type: 'Leaf', rarity: 'common', size: 'tiny',
++    ability: { name: 'Apple Roll', description: 'Rolls down the aisle and lands in your basket!' },
++    fact: 'Appling is shiny because it polishes itself every morning.',
++    colors: { main: C.redBright, accent: C.green, belly: C.salmon },
++    look: { body: 'round', eyes: 'round', mouth: 'smile', top: 'leaf', tail: 'none', feet: 'none', arms: 'none', pattern: 'none', cheeks: true },
++  },
++  {
++    id: 'bananook', name: 'Bananook', habitat: 'grocery', type: 'Snack', rarity: 'common', size: 'small',
++    ability: { name: 'Peel Slide', description: 'Slides across the floor on a giggly peel!' },
++    fact: 'Bananook gets little brown freckles when it is happy.',
++    colors: { main: C.yellowLight, accent: C.brownRed, belly: C.white },
++    look: { body: 'beast', eyes: 'happy', mouth: 'grin', top: 'tuft', tail: 'curl', feet: 'paws', arms: 'none', pattern: 'spots', belly: true },
++  },
++  {
++    id: 'moobox', name: 'Moobox', habitat: 'grocery', type: 'Snack', rarity: 'common', size: 'small',
++    ability: { name: 'Milk Splash', description: 'Pours cold milk into every cereal bowl!' },
++    fact: 'Moobox says moo whenever someone opens its top.',
++    colors: { main: C.white, accent: C.black, belly: C.skyLight },
++    look: { body: 'square', eyes: 'round', mouth: 'o', top: 'horns', tail: 'none', feet: 'stubs', arms: 'none', pattern: 'patches' },
++  },
++  {
++    id: 'frigglet', name: 'Frigglet', habitat: 'grocery', type: 'Frost', rarity: 'common', size: 'small',
++    ability: { name: 'Cool Breeze', description: 'Blows a cool breeze to keep the yogurt happy.' },
++    fact: 'Frigglet hums a quiet hmmm all night long.',
++    colors: { main: C.skyLight, accent: C.white, belly: C.pastelBlue },
++    look: { body: 'appliance', eyes: 'round', mouth: 'smile', top: 'none', tail: 'none', feet: 'stubs', arms: 'none', pattern: 'none', belly: true },
++  },
++  {
++    id: 'grapefly', name: 'Grapefly', habitat: 'grocery', type: 'Leaf', rarity: 'common', size: 'tiny',
++    ability: { name: 'Grape Buzz', description: 'Buzzes around and drops grapes in fruit bowls!' },
++    fact: 'Grapefly only eats one grape a day, slowly.',
++    colors: { main: C.purple, accent: C.green, belly: C.lavender, wing: C.limeLight },
++    look: { body: 'drop', eyes: 'dot', mouth: 'smile', top: 'leaf', tail: 'none', feet: 'none', arms: 'insect', pattern: 'spots' },
++  },
++  {
++    id: 'peachick', name: 'Peachick', habitat: 'grocery', type: 'Fluff', rarity: 'common', size: 'tiny',
++    ability: { name: 'Fuzzy Peep', description: 'Peeps a sweet song from inside the fruit bin.' },
++    fact: 'Peachick is as fuzzy as a peach and twice as sweet.',
++    colors: { main: C.orangeLight, accent: C.salmon, belly: C.yellowLight, wing: C.salmon },
++    look: { body: 'bird', eyes: 'round', mouth: 'beak', top: 'leaf', tail: 'puff', feet: 'stubs', arms: 'bird', pattern: 'none', belly: true, cheeks: true },
++  },
++  {
++    id: 'loafy', name: 'Loafy', habitat: 'grocery', type: 'Snack', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Bread Nap', description: 'Naps so cozy that the whole aisle yawns.' },
++    fact: 'Loafy smells like fresh toast when it wakes up.',
++    colors: { main: C.sand, accent: C.ochre, belly: C.white },
++    look: { body: 'long', eyes: 'sleepy', mouth: 'smile', top: 'round', tail: 'puff', feet: 'four', arms: 'none', pattern: 'none', belly: true },
++  },
++  {
++    id: 'crunchkin', name: 'Crunchkin', habitat: 'grocery', type: 'Snack', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Cereal Shake', description: 'Shakes out exactly one bowl of crunchy cereal!' },
++    fact: 'Crunchkin rattles like a maraca when it dances.',
++    colors: { main: C.orange, accent: C.blue, belly: C.yellowLight },
++    look: { body: 'tall', eyes: 'round', mouth: 'grin', top: 'none', tail: 'none', feet: 'stubs', arms: 'nubs', pattern: 'sprinkles' },
++  },
++  {
++    id: 'spikapple', name: 'Spikapple', habitat: 'grocery', type: 'Leaf', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Spiky Hug', description: 'Gives very careful, very gentle spiky hugs!' },
++    fact: 'Spikapple wears its leaves like a funny hairdo.',
++    colors: { main: C.gold, accent: C.green, belly: C.yellowLight },
++    look: { body: 'spiky', eyes: 'happy', mouth: 'smile', top: 'leaf', tail: 'none', feet: 'stubs', arms: 'none', pattern: 'checks' },
++  },
++  {
++    id: 'toteling', name: 'Toteling', habitat: 'grocery', type: 'Leaf', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Bag Carry', description: 'Carries the groceries so your arms can rest!' },
++    fact: 'Toteling can be used again and again and again.',
++    colors: { main: C.greenBright, accent: C.white, belly: C.limeLight },
++    look: { body: 'bowl', eyes: 'round', mouth: 'smile', top: 'none', tail: 'none', feet: 'none', arms: 'nubs', pattern: 'stripes' },
++  },
++  {
++    id: 'cartimera', name: 'Cartimera', habitat: 'grocery', type: 'Gear', rarity: 'rare', size: 'large',
++    ability: { name: 'Cart Parade', description: 'Rolls three-headed through the store in a cheery parade!' },
++    fact: 'Cartimera always returns itself to the cart corral.',
++    colors: { main: C.grayLight, accent: C.redBright, belly: C.white },
++    look: { body: 'beast', eyes: 'round', mouth: 'grin', top: 'crown', extraTop: 'mane', tail: 'long', feet: 'wheels', arms: 'none', pattern: 'checks', belly: true, heads: 3 },
++  },
++  {
++    id: 'cerealwyrm', name: 'Cerealwyrm', habitat: 'grocery', type: 'Snack', rarity: 'rare', size: 'large',
++    ability: { name: 'Crunch Wave', description: 'Waves its long body and sprinkles crunchy loops!' },
++    fact: 'Cerealwyrm has a surprise toy hidden somewhere inside.',
++    colors: { main: C.blue, accent: C.gold, belly: C.yellowLight },
++    look: { body: 'serpent', eyes: 'big', mouth: 'grin', top: 'crown', tail: 'serpent', feet: 'none', arms: 'none', pattern: 'sprinkles', belly: true, cheeks: true },
++  },
++
++  // ───────────── BEAUTY ─────────────
++  {
++    id: 'balmy', name: 'Balmy', habitat: 'beauty', type: 'Bubble', rarity: 'common', size: 'tiny',
++    ability: { name: 'Smooth Shine', description: 'Makes dry, chilly hands feel soft again!' },
++    fact: 'Balmy smells a little like strawberries.',
++    colors: { main: C.salmon, accent: C.white, belly: C.pinkLight },
++    look: { body: 'bowl', eyes: 'happy', mouth: 'smile', top: 'lid', tail: 'none', feet: 'none', arms: 'none', pattern: 'none', cheeks: true },
++  },
++  {
++    id: 'reflecta', name: 'Reflecta', habitat: 'beauty', type: 'Sparkle', rarity: 'common', size: 'small',
++    ability: { name: 'Mirror Wink', description: 'Winks back at you and shows your best smile!' },
++    fact: 'Reflecta thinks everyone who looks at it is wonderful.',
++    colors: { main: C.skyLight, accent: C.gold, belly: C.white },
++    look: { body: 'square', eyes: 'round', mouth: 'smile', top: 'none', tail: 'none', feet: 'stubs', arms: 'none', pattern: 'glow', belly: true },
++  },
++  {
++    id: 'foamsy', name: 'Foamsy', habitat: 'beauty', type: 'Bubble', rarity: 'common', size: 'small',
++    ability: { name: 'Foam Fluff', description: 'Fluffs up a giant mountain of bath bubbles!' },
++    fact: 'Foamsy gets bigger every time you splash it.',
++    colors: { main: C.pastelBlue, accent: C.white, belly: C.skyLight },
++    look: { body: 'cloud', eyes: 'happy', mouth: 'open', top: 'none', tail: 'none', feet: 'none', arms: 'none', pattern: 'spots' },
++  },
++  {
++    id: 'brushhog', name: 'Brushhog', habitat: 'beauty', type: 'Fluff', rarity: 'common', size: 'small',
++    ability: { name: 'Hair Brush', description: 'Brushes out tangles without a single ouch!' },
++    fact: 'Brushhog has a hundred bristles and knows each one by name.',
++    colors: { main: C.sand, accent: C.brownRed, belly: C.yellowLight },
++    look: { body: 'beast', eyes: 'dot', mouth: 'smile', top: 'spikes', tail: 'puff', feet: 'paws', arms: 'none', pattern: 'none', belly: true },
++  },
++  {
++    id: 'glossbug', name: 'Glossbug', habitat: 'beauty', type: 'Sparkle', rarity: 'common', size: 'tiny',
++    ability: { name: 'Nail Paint', description: 'Paints tiny rainbows on every fingernail!' },
++    fact: 'Glossbug has a different color on each of its toes.',
++    colors: { main: C.rose, accent: C.gold, belly: C.pinkLight, wing: C.white },
++    look: { body: 'drop', eyes: 'round', mouth: 'smile', top: 'antennae', tail: 'none', feet: 'none', arms: 'insect', pattern: 'glow' },
++  },
++  {
++    id: 'swanelle', name: 'Swanelle', habitat: 'beauty', type: 'Splash', rarity: 'common', size: 'small',
++    ability: { name: 'Graceful Glide', description: 'Glides so gracefully that everyone starts to dance.' },
++    fact: 'Swanelle fluffs its feathers before every bath.',
++    colors: { main: C.white, accent: C.orange, belly: C.pastelBlue, wing: C.pinkLight },
++    look: { body: 'bird', eyes: 'sleepy', mouth: 'beak', top: 'tuft', tail: 'plume', feet: 'flippers', arms: 'bird', pattern: 'none', belly: true },
++  },
++  {
++    id: 'combsnake', name: 'Combsnake', habitat: 'beauty', type: 'Fluff', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Comb Through', description: 'Combs hair into neat, shiny rows!' },
++    fact: 'Combsnake has teeth, but only for combing hair.',
++    colors: { main: C.pink, accent: C.white, belly: C.pinkLight },
++    look: { body: 'serpent', eyes: 'round', mouth: 'smile', top: 'spikes', tail: 'serpent', feet: 'none', arms: 'none', pattern: 'stripes', belly: true },
++  },
++  {
++    id: 'blowzy', name: 'Blowzy', habitat: 'beauty', type: 'Gear', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Warm Whoosh', description: 'Whooshes warm air to dry wet hair fast!' },
++    fact: 'Blowzy makes everyone it touches look extra fluffy.',
++    colors: { main: C.purple, accent: C.grayLight, belly: C.lavender },
++    look: { body: 'appliance', eyes: 'round', mouth: 'o', top: 'none', tail: 'zigzag', feet: 'none', arms: 'nubs', pattern: 'none' },
++  },
++  {
++    id: 'glitterling', name: 'Glitterling', habitat: 'beauty', type: 'Sparkle', rarity: 'uncommon', size: 'tiny',
++    ability: { name: 'Glitter Toss', description: 'Tosses glitter that floats down like snow!' },
++    fact: 'Glitterling leaves a little sparkle wherever it sits.',
++    colors: { main: C.gold, accent: C.pink, belly: C.yellowLight },
++    look: { body: 'crystal', eyes: 'happy', mouth: 'smile', top: 'none', tail: 'none', feet: 'none', arms: 'none', pattern: 'sprinkles' },
++  },
++  {
++    id: 'spafin', name: 'Spafin', habitat: 'beauty', type: 'Splash', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Spa Splash', description: 'Splashes warm, bubbly water for a relaxing soak.' },
++    fact: 'Spafin wears tiny cucumber slices when it naps.',
++    colors: { main: C.mint, accent: C.lime, belly: C.white },
++    look: { body: 'tall', eyes: 'sleepy', mouth: 'smile', top: 'fins', tail: 'fish', feet: 'none', arms: 'flippers', pattern: 'spots' },
++  },
++  {
++    id: 'glamicorn', name: 'Glamicorn', habitat: 'beauty', type: 'Sparkle', rarity: 'rare', size: 'large',
++    ability: { name: 'Glitter Gallop', description: 'Gallops in circles and leaves a glitter rainbow!' },
++    fact: 'Glamicorn brushes its mane one hundred times a day.',
++    colors: { main: C.pinkLight, accent: C.violet, belly: C.white, eye: C.purple },
++    look: { body: 'beast', eyes: 'big', mouth: 'snout', top: 'unihorn', extraTop: 'mane', tail: 'plume', feet: 'hooves', arms: 'none', pattern: 'sprinkles', belly: true, cheeks: true },
++  },
++  {
++    id: 'perfumix', name: 'Perfumix', habitat: 'beauty', type: 'Sparkle', rarity: 'rare', size: 'large',
++    ability: { name: 'Flower Breeze', description: 'Flaps its wings and the air smells like flowers!' },
++    fact: 'Perfumix makes the whole store smell like a garden.',
++    colors: { main: C.lavender, accent: C.gold, belly: C.white, wing: C.pink },
++    look: { body: 'bird', eyes: 'big', mouth: 'beak', top: 'crown', extraTop: 'tuft', tail: 'plume', feet: 'claws', arms: 'feathers', pattern: 'glow', belly: true },
++  },
++
++  // ───────────── HOLIDAY ─────────────
++  // The seasonal aisle: these monsters stay all year, while the decorations change with the month.
++  {
++    id: 'giftly', name: 'Giftly', habitat: 'holiday', type: 'Toy', rarity: 'common', size: 'small',
++    ability: { name: 'Bow Pop', description: 'Pops its bow open to share a surprise!' },
++    fact: 'Giftly is never sure what is inside itself.',
++    colors: { main: C.redBright, accent: C.gold, belly: C.white },
++    look: { body: 'square', eyes: 'happy', mouth: 'grin', top: 'tuft', tail: 'none', feet: 'stubs', arms: 'none', pattern: 'stripes' },
++  },
++  {
++    id: 'baublet', name: 'Baublet', habitat: 'holiday', type: 'Sparkle', rarity: 'common', size: 'tiny',
++    ability: { name: 'Ornament Shine', description: 'Shines so bright it lights up the whole tree!' },
++    fact: 'Baublet likes to hang upside down from branches.',
++    colors: { main: C.green, accent: C.gold, belly: C.limeLight },
++    look: { body: 'round', eyes: 'round', mouth: 'smile', top: 'lid', tail: 'none', feet: 'none', arms: 'none', pattern: 'glow' },
++  },
++  {
++    id: 'candycoil', name: 'Candycoil', habitat: 'holiday', type: 'Snack', rarity: 'common', size: 'small',
++    ability: { name: 'Minty Swirl', description: 'Swirls around and makes the air smell minty!' },
++    fact: 'Candycoil hooks itself onto branches to take naps.',
++    colors: { main: C.white, accent: C.redBright, belly: C.pinkLight },
++    look: { body: 'serpent', eyes: 'round', mouth: 'smile', top: 'none', tail: 'curl', feet: 'none', arms: 'none', pattern: 'stripes', belly: true },
++  },
++  {
++    id: 'pumpkitty', name: 'Pumpkitty', habitat: 'holiday', type: 'Leaf', rarity: 'common', size: 'small',
++    ability: { name: 'Pumpkin Purr', description: 'Purrs a cozy fall song in the hay!' },
++    fact: 'Pumpkitty has a leafy stem right between its ears.',
++    colors: { main: C.orange, accent: C.green, belly: C.orangeLight },
++    look: { body: 'beast', eyes: 'happy', mouth: 'cat', top: 'cat', tail: 'curl', feet: 'paws', arms: 'none', pattern: 'stripes', belly: true },
++  },
++  {
++    id: 'snowbuddy', name: 'Snowbuddy', habitat: 'holiday', type: 'Frost', rarity: 'common', size: 'medium',
++    ability: { name: 'Snowy Wave', description: 'Waves hello with its twiggy little arm!' },
++    fact: 'Snowbuddy keeps a carrot nose in its pocket, just in case.',
++    colors: { main: C.pastelBlue, accent: C.orange, belly: C.white },
++    look: { body: 'tall', eyes: 'dot', mouth: 'smile', top: 'tuft', tail: 'none', feet: 'none', arms: 'leaves', pattern: 'spots', cheeks: true },
++  },
++  {
++    id: 'heartwing', name: 'Heartwing', habitat: 'holiday', type: 'Sparkle', rarity: 'common', size: 'tiny',
++    ability: { name: 'Heart Flutter', description: 'Flutters around leaving little paper hearts!' },
++    fact: 'Heartwing delivers friendship cards to every shelf.',
++    colors: { main: C.rose, accent: C.white, belly: C.pinkLight, wing: C.pink },
++    look: { body: 'bird', eyes: 'happy', mouth: 'beak', top: 'tuft', tail: 'plume', feet: 'stubs', arms: 'bird', pattern: 'spots', belly: true, cheeks: true },
++  },
++  {
++    id: 'egglet', name: 'Egglet', habitat: 'holiday', type: 'Toy', rarity: 'uncommon', size: 'tiny',
++    ability: { name: 'Egg Hide', description: 'Hides somewhere silly so you can find it!' },
++    fact: 'Egglet is painted with every color of springtime.',
++    colors: { main: C.lavender, accent: C.limeLight, belly: C.pinkLight },
++    look: { body: 'drop', eyes: 'round', mouth: 'smile', top: 'none', tail: 'none', feet: 'stubs', arms: 'none', pattern: 'stripes' },
++  },
++  {
++    id: 'twinklebug', name: 'Twinklebug', habitat: 'holiday', type: 'Sparkle', rarity: 'uncommon', size: 'tiny',
++    ability: { name: 'Light String', description: 'Holds hands with friends to make a string of lights!' },
++    fact: 'Twinklebug blinks slowly when it gets sleepy.',
++    colors: { main: C.gold, accent: C.redBright, belly: C.yellowLight, wing: C.skyLight },
++    look: { body: 'round', eyes: 'dot', mouth: 'smile', top: 'antennae', tail: 'none', feet: 'none', arms: 'insect', pattern: 'glow' },
++  },
++  {
++    id: 'sleighby', name: 'Sleighby', habitat: 'holiday', type: 'Gear', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Jingle Glide', description: 'Glides along with a jingly bell song!' },
++    fact: 'Sleighby gives the best rides down snowy hills.',
++    colors: { main: C.red, accent: C.gold, belly: C.white },
++    look: { body: 'cart', eyes: 'round', mouth: 'grin', top: 'none', tail: 'none', feet: 'wheels', arms: 'none', pattern: 'stripes' },
++  },
++  {
++    id: 'beachfin', name: 'Beachfin', habitat: 'holiday', type: 'Splash', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Beach Splash', description: 'Splashes a cool wave on hot summer days!' },
++    fact: 'Beachfin keeps sand in its fins as a souvenir.',
++    colors: { main: C.sky, accent: C.yellowLight, belly: C.white },
++    look: { body: 'tall', eyes: 'round', mouth: 'o', top: 'fins', tail: 'fish', feet: 'none', arms: 'flippers', pattern: 'spots' },
++  },
++  {
++    id: 'tinselwyrm', name: 'Tinselwyrm', habitat: 'holiday', type: 'Sparkle', rarity: 'rare', size: 'large',
++    ability: { name: 'Tinsel Shimmer', description: 'Shimmers so brightly the whole aisle sparkles!' },
++    fact: 'Tinselwyrm is shiny all year, not just for parties.',
++    colors: { main: C.grayLight, accent: C.gold, belly: C.white, wing: C.greenBright },
++    look: { body: 'dragon', eyes: 'big', mouth: 'snout', top: 'crown', extraTop: 'dragonhorns', tail: 'dragon', feet: 'claws', arms: 'dragonwings', pattern: 'glow', belly: true },
++  },
++  {
++    id: 'globesphinx', name: 'Globesphinx', habitat: 'holiday', type: 'Frost', rarity: 'rare', size: 'large',
++    ability: { name: 'Snow Shake', description: 'Shakes gently and makes a tiny snowfall!' },
++    fact: 'Globesphinx has a tiny snowy village inside its tummy.',
++    colors: { main: C.skyLight, accent: C.gold, belly: C.white, wing: C.white },
++    look: { body: 'beast', eyes: 'big', mouth: 'cat', top: 'crown', extraTop: 'mane', tail: 'long', feet: 'paws', arms: 'feathers', pattern: 'spots', belly: true },
++  },
++];
++
++export const CHERRYMART_MONSTERS = worldMonsters('cherrymart', LIST);
+diff --git a/src/monsters/worlds/index.ts b/src/monsters/worlds/index.ts
+index 86df2f4..1df0761 100644
+--- a/src/monsters/worlds/index.ts
++++ b/src/monsters/worlds/index.ts
+@@ -1,6 +1,7 @@
+ import { type WorldId } from '../../worlds/worldIds';
+ import { type Monster } from '../monsterTypes';
+ import { BUNTOWN_MONSTERS } from './buntown';
++import { CHERRYMART_MONSTERS } from './cherrymart';
+ import { HOME_MONSTERS } from './home';
+ import { ISLAND_MONSTERS } from './island';
+ import { WOODS_MONSTERS } from '../data/woods';
+@@ -10,7 +11,7 @@ import { WOODS_MONSTERS } from '../data/woods';
+  * Ids are unique across ALL worlds, so the save can keep one collection.
+  * To add a world's monsters: make a file like island.ts and add it here.
+  */
+-export const MONSTERS: Monster[] = [...ISLAND_MONSTERS, ...HOME_MONSTERS, ...WOODS_MONSTERS, ...BUNTOWN_MONSTERS];
++export const MONSTERS: Monster[] = [...ISLAND_MONSTERS, ...HOME_MONSTERS, ...WOODS_MONSTERS, ...BUNTOWN_MONSTERS, ...CHERRYMART_MONSTERS];
+ 
+ /** One world's monsters. */
+ export function monstersOf(world: WorldId): Monster[] {
+diff --git a/src/worlds/cherrymart/decor/dealsToys.ts b/src/worlds/cherrymart/decor/dealsToys.ts
+new file mode 100644
+index 0000000..e7e060a
+--- /dev/null
++++ b/src/worlds/cherrymart/decor/dealsToys.ts
+@@ -0,0 +1,205 @@
++import { type DecorKind } from '../../building/types';
++
++/**
++ * Deals and toys things (pixel art, one character = one pixel).
++ * Letters are the decoration colors from render/decorArt.ts:
++ *   k black  w white  a light gray  A gray  r red  R dark red  O orange  o light orange
++ *   Y gold  y light yellow  n brown  N dark brown  u sky  U light blue  b blue  B dark blue
++ *   g green  l light green  G dark green  p light pink  P pink  s sand  d ochre  v purple  L lavender
++ */
++export const DEALS_TOYS: Record<string, DecorKind> = {
++  // A red price tag on a stand, with a gold star on it (the DEALS sign: no numbers or words).
++  priceSign: {
++    solid: true,
++    on: ['dealsFloor'],
++    place: 'wall',
++    sprite: [
++      '...kkkkkkkkkkk',
++      '..krrrrrrrrrrk',
++      '.krrrrrrYrrrrk',
++      'krwwrrrYYYrrrk',
++      'krwwrrYYYYYrrk',
++      '.krrrrrYYYrrrk',
++      '..krrrrYrYrrrk',
++      '...kkkkkkkkkkk',
++      '.......kk.....',
++      '.......kk.....',
++      '.......kk.....',
++      '.....kkkkkk...',
++    ],
++  },
++  // A wire bargain bin heaped with colorful odds and ends.
++  bargainBin: {
++    solid: true,
++    on: ['dealsFloor'],
++    place: 'open',
++    sprite: [
++      '..r.bY.lP.rO..',
++      '.YbrlPOYrbllP.',
++      'kkkkkkkkkkkkkk',
++      'kAaAaAaAaAaAak',
++      'kaAaAaAaAaAaAk',
++      'kAaAaAaAaAaAak',
++      'kaAaAaAaAaAaAk',
++      'kkkkkkkkkkkkkk',
++      '.kk........kk.',
++    ],
++  },
++  // A red shopping basket with a handle.
++  basket: {
++    solid: false,
++    on: ['dealsFloor'],
++    sprite: [
++      '..kkkkkkkk..',
++      '.k........k.',
++      '.k........k.',
++      'kkkkkkkkkkkk',
++      'krrrrrrrrrrk',
++      'krwrwrwrwrrk',
++      'krrrrrrrrrrk',
++      '.krrrrrrrrk.',
++      '..kkkkkkkk..',
++    ],
++  },
++  // A red shopping cart (used in the deals area and the grocery).
++  cart: {
++    solid: true,
++    on: ['dealsFloor', 'groceryFloor', 'lot'],
++    place: 'open',
++    sprite: [
++      'rr..............',
++      '.rk.............',
++      '..kkkkkkkkkkkkk.',
++      '..krwrwrwrwrwrk.',
++      '..kwrwrwrwrwrwk.',
++      '...krwrwrwrwrk..',
++      '...kkkkkkkkkkk..',
++      '....A.......A...',
++      '..AAAAAAAAAAAA..',
++      '...kk......kk...',
++    ],
++  },
++  // The cart corral in the parking lot: a metal rail with carts tucked inside.
++  cartCorral: {
++    solid: true,
++    sprite: [
++      'aaaaaaaaaaaaaaaa',
++      'a..............a',
++      'a.rrrrrrrrrrrr.a',
++      'a.rwrwrwrwrwrr.a',
++      'a..rrrrrrrrrr..a',
++      'a..k..k..k..k..a',
++      'aaaaaaaaaaaaaaaa',
++      'a..............a',
++      'a..............a',
++      'A..............A',
++    ],
++  },
++  // The tall sign out front: Cherry Mart's two cherries on a pole.
++  cherrySign: {
++    solid: true,
++    sprite: [
++      '..kkkkkkkkkkkk..',
++      '.kwwwwwwwwwwwwk.',
++      '.kwwwwwgGGwwwwk.',
++      '.kwwwwwgwwwwwwk.',
++      '.kwwwwgwgwwwwwk.',
++      '.kwwwgwwwgwwwwk.',
++      '.kwwrrrwwrrrwwk.',
++      '.kwwrwrwwrwrwwk.',
++      '.kwwrrrwwrrrwwk.',
++      '.kwwwRwwwwRwwwk.',
++      '.kwwwwwwwwwwwwk.',
++      '..kkkkkkkkkkkk..',
++      '.......aA.......',
++      '.......aA.......',
++      '.......aA.......',
++      '......kkkk......',
++    ],
++  },
++
++  // ---------- Toys ----------
++  // A tower of wooden toy blocks (the TOYS sign).
++  blockTower: {
++    solid: true,
++    on: ['toysFloor'],
++    place: 'open',
++    sprite: [
++      '....kkkk....',
++      '....kYYk....',
++      '....kYYk....',
++      '..kkkkkkkk..',
++      '..kbbkkrrk..',
++      '..kbbkkrrk..',
++      'kkkkkkkkkkkk',
++      'kllkkPPkkOOk',
++      'kllkkPPkkOOk',
++      'kkkkkkkkkkkk',
++    ],
++  },
++  // A soft teddy bear.
++  plushie: {
++    solid: false,
++    on: ['toysFloor'],
++    sprite: [
++      '.nn....nn.',
++      'nPnnnnnnPn',
++      '.nnnnnnnn.',
++      '.nnknnknn.',
++      '.nnnssnnn.',
++      '..nnkknn..',
++      '.nnnnnnnn.',
++      'nnnssssnnn',
++      'nn.ssss.nn',
++      '..nn..nn..',
++    ],
++  },
++  toyBall: {
++    solid: false,
++    on: ['toysFloor'],
++    sprite: [
++      '..kkkk..',
++      '.krrrYk.',
++      'krrrYYYk',
++      'kwwwwwwk',
++      'kbbbbllk',
++      'kbbblllk',
++      '.kbbllk.',
++      '..kkkk..',
++    ],
++  },
++  toyCar: {
++    solid: false,
++    on: ['toysFloor'],
++    sprite: [
++      '...kkkkkk...',
++      '..kuukruuk..',
++      '.krrrrrrrrk.',
++      'krrrrrrrrrrk',
++      'kYrrrrrrrrOk',
++      'kkkkkkkkkkkk',
++      '.kak....kak.',
++      '..k......k..',
++    ],
++  },
++  // The demo train table: a loop of track with a little train on it.
++  trainTable: {
++    solid: true,
++    on: ['toysFloor'],
++    place: 'open',
++    sprite: [
++      '.kkkkkkkkkkkkkk.',
++      'kGGGGGGGGGGGGGGk',
++      'kGaarrrkbbbaaaGk',
++      'kGaGGGGGGGGGGaGk',
++      'kGaGGGGGGGGGGaGk',
++      'kGaaaaaaaaaaaaGk',
++      'kGGGGGGGGGGGGGGk',
++      'kkkkkkkkkkkkkkkk',
++      '.kn..........nk.',
++      '.kn..........nk.',
++      '.kn..........nk.',
++      '.kk..........kk.',
++    ],
++  },
++};
+diff --git a/src/worlds/cherrymart/decor/groceryBeauty.ts b/src/worlds/cherrymart/decor/groceryBeauty.ts
+new file mode 100644
+index 0000000..cec21a2
+--- /dev/null
++++ b/src/worlds/cherrymart/decor/groceryBeauty.ts
+@@ -0,0 +1,129 @@
++import { type DecorKind } from '../../building/types';
++
++/** Grocery and beauty things (letters: see dealsToys.ts). Plain boxes and bottles, no brands. */
++export const GROCERY_BEAUTY: Record<string, DecorKind> = {
++  // A shelf of cereal boxes in every color.
++  cerealShelf: {
++    solid: true,
++    on: ['groceryFloor'],
++    place: 'wall',
++    sprite: [
++      'kkkkkkkkkkkkkkkk',
++      'kOOkbbkYYkrrkllk',
++      'kOwkbwkYwkrwklwk',
++      'kOOkbbkYYkrrkllk',
++      'kOOkbbkYYkrrkllk',
++      'kkkkkkkkkkkkkkkk',
++      'kPPkuukddkggkRRk',
++      'kPwkuwkdwkgwkRwk',
++      'kPPkuukddkggkRRk',
++      'kPPkuukddkggkRRk',
++      'kkkkkkkkkkkkkkkk',
++      '.k............k.',
++    ],
++  },
++  // A wooden bin heaped with apples, bananas, limes and oranges (the GROCERY sign).
++  fruitBin: {
++    solid: true,
++    on: ['groceryFloor'],
++    place: 'open',
++    sprite: [
++      '.rrr.YYY.lll.OOO',
++      'rrrrYYYYllllOOOO',
++      'kkkkkkkkkkkkkkkk',
++      'knnnnnnnnnnnnnnk',
++      'knNnnNnnNnnNnnnk',
++      'knnnnnnnnnnnnnnk',
++      'kkkkkkkkkkkkkkkk',
++      '.kk..........kk.',
++    ],
++  },
++  // A glass-door fridge full of drinks.
++  fridge: {
++    solid: true,
++    on: ['groceryFloor'],
++    place: 'wall',
++    sprite: [
++      'kkkkkkkkkkkkkk',
++      'kUUUUUUkUUUUUk',
++      'kUbrlUUkUYOgUk',
++      'kUbrlUUkUYOgUk',
++      'kaaaaaakaaaaak',
++      'kUwwPUUkUruwUk',
++      'kUwwPUUkUruwUk',
++      'kaaaaaakaaaaak',
++      'kUlYrUUkUbbOUk',
++      'kUlYrUUkUbbOUk',
++      'kaaaaaakaaaaak',
++      'kkkkkkkkkkkkkk',
++    ],
++  },
++
++  // ---------- Beauty ----------
++  // A round mirror on a pink counter.
++  vanityMirror: {
++    solid: true,
++    on: ['beautyFloor'],
++    place: 'wall',
++    sprite: [
++      '....kkkkkk....',
++      '...kwUUUUwk...',
++      '..kUUwUUUUUk..',
++      '..kUwUUUUUUk..',
++      '..kUUUUUUUUk..',
++      '...kUUUUUUk...',
++      '....kkkkkk....',
++      'kkkkkkkkkkkkkk',
++      'kPPPPPPPPPPPPk',
++      'kPPPYPPPPYPPPk',
++      'kPPPPPPPPPPPPk',
++      'kkkkkkkkkkkkkk',
++      '.k..........k.',
++      '.k..........k.',
++    ],
++  },
++  // A rainbow row of nail polish bottles.
++  nailPolish: {
++    solid: false,
++    on: ['beautyFloor'],
++    sprite: [
++      '.k..k..k..k.',
++      'kkkkkkkkkkkk',
++      'rwrYwYlwlbwb',
++      'rrrYYYlllbbb',
++      'rrrYYYlllbbb',
++    ],
++  },
++  // A bottle of bubble bath with bubbles floating up.
++  bubbleBath: {
++    solid: false,
++    on: ['beautyFloor'],
++    sprite: [
++      '.u..U...',
++      'U..u..U.',
++      '..kkk...',
++      '..kak...',
++      '.kkkkk..',
++      '.kmmmk..',
++      '.kmwmk..',
++      '.kmmmk..',
++      '.kkkkk..',
++    ],
++  },
++  // A fancy perfume bottle (the BEAUTY sign).
++  perfume: {
++    solid: false,
++    on: ['beautyFloor'],
++    sprite: [
++      '...kk...',
++      '...kk...',
++      '..kkkk..',
++      '.kLLLLk.',
++      'kLLwLLLk',
++      'kLLLLvLk',
++      'kLLLLLLk',
++      '.kLLLLk.',
++      '..kkkk..',
++    ],
++  },
++};
+diff --git a/src/worlds/cherrymart/decor/holiday.ts b/src/worlds/cherrymart/decor/holiday.ts
+new file mode 100644
+index 0000000..f3a3217
+--- /dev/null
++++ b/src/worlds/cherrymart/decor/holiday.ts
+@@ -0,0 +1,181 @@
++import { type DecorKind } from '../../building/types';
++import { SEASON_NOW, type Season } from '../season';
++
++/**
++ * The holiday aisle's decorations change with the season (see season.ts).
++ * There are always three of them, with the same names all year:
++ *   seasonBit    a small thing on the floor (pumpkin, snowflake, heart, flower, beach ball)
++ *   seasonBig    a big display (pumpkins on hay, a snowman, heart balloons, tulips, a sandcastle)
++ *   seasonShelf  a shelf of round things in the season's two colors
++ * Only their pictures change, so the map, the save and everything else stay the same.
++ * (Letters: see dealsToys.ts.)
++ */
++const BIT: Record<Season, string[]> = {
++  fall: [
++    '...Gk...',
++    '..kGk...',
++    '.kOOOOk.',
++    'kOoOOoOk',
++    'kOoOOoOk',
++    'kOoOOoOk',
++    '.kOOOOk.',
++    '..kkkk..',
++  ],
++  winter: [
++    '...w....',
++    '.w.w.w..',
++    '..www...',
++    'wwwUwww.',
++    '..www...',
++    '.w.w.w..',
++    '...w....',
++  ],
++  hearts: [
++    '.rr.rr..',
++    'rwrrrrr.',
++    'rrrrrrr.',
++    '.rrrrr..',
++    '..rrr...',
++    '...r....',
++  ],
++  spring: [
++    '..f.f...',
++    '.fffff..',
++    '..fYf...',
++    '.fffff..',
++    '..fgf...',
++    '...g.l..',
++    '.l.gl...',
++    '..lg....',
++  ],
++  summer: [
++    '..kkkk..',
++    '.krwwbk.',
++    'krrwwbbk',
++    'kYYwwuuk',
++    'kYYwwuuk',
++    '.kYwwuk.',
++    '..kkkk..',
++  ],
++};
++
++const BIG: Record<Season, string[]> = {
++  // A big pumpkin on a hay bale.
++  fall: [
++    '.....GG.....',
++    '.....kG.....',
++    '..kkkOOkkk..',
++    '.kOOoOOoOOk.',
++    'kOOoOOOOoOOk',
++    'kOoOOOOOOoOk',
++    'kOoOOOOOOoOk',
++    'kOOoOOOOoOOk',
++    '.kOOoOOoOOk.',
++    '..kkkkkkkk..',
++    'kdydydydydyk',
++    'kydydydydydk',
++    'kkkkkkkkkkkk',
++  ],
++  // A snowman with a red scarf.
++  winter: [
++    '...kkkkkk...',
++    '...kkkkkk...',
++    '.kkkkkkkkkk.',
++    '..kwwwwwwk..',
++    '..kwkwwkwk..',
++    '..kwwOOwwk..',
++    '...kwwwwk...',
++    '..rrrrrrrr..',
++    '.kwwwwwwwwk.',
++    'kwwwwkkwwwwk',
++    'kwwwwwwwwwwk',
++    'kwwwwkkwwwwk',
++    '.kwwwwwwwwk.',
++    '..kkkkkkkk..',
++  ],
++  // Two heart balloons tied to a little weight.
++  hearts: [
++    '.rr.rr..PP.PP.',
++    'rwrrrrrPwPPPPP',
++    'rrrrrrrPPPPPPP',
++    '.rrrrr..PPPPP.',
++    '..rrr....PPP..',
++    '...r......P...',
++    '...k......k...',
++    '....k....k....',
++    '.....k..k.....',
++    '......kk......',
++    '......kk......',
++    '....kkkkkk....',
++    '....kAAAAk....',
++    '....kkkkkk....',
++  ],
++  // A pot of tulips.
++  spring: [
++    '.ff...ff...ff.',
++    'ffff.ffff.ffff',
++    '.ff...ff...ff.',
++    '..g....g...g..',
++    '..gl...g..lg..',
++    '...g...g..g...',
++    '.kkkkkkkkkkkk.',
++    '.kOOOOOOOOOOk.',
++    '..kOOOOOOOOk..',
++    '..kOOOOOOOOk..',
++    '...kOOOOOOk...',
++    '...kkkkkkkk...',
++  ],
++  // A sandcastle with two little flags.
++  summer: [
++    '..r........r..',
++    '..k........k..',
++    '.kkk......kkk.',
++    '.ksk......ksk.',
++    '.kskkkkkkkksk.',
++    '.kssssssssssk.',
++    '.kssskkkksssk.',
++    '.ksssNNNNsssk.',
++    '.ksssNNNNsssk.',
++    '.kkkkkkkkkkkk.',
++    'yyyyyyyyyyyyyy',
++  ],
++};
++
++/** A store shelf; 1 and 2 are swapped for the season's two colors. */
++const SHELF = [
++  'kkkkkkkkkkkkkkkk',
++  'kaaaaaaaaaaaaaak',
++  'ka11A22A11A22Aak',
++  'ka11A22A11A22Aak',
++  'kaaaaaaaaaaaaaak',
++  'ka22A11A22A11Aak',
++  'ka22A11A22A11Aak',
++  'kaaaaaaaaaaaaaak',
++  'ka11A22A11A22Aak',
++  'ka11A22A11A22Aak',
++  'kaaaaaaaaaaaaaak',
++  'kkkkkkkkkkkkkkkk',
++];
++const SHELF_COLORS: Record<Season, [string, string]> = {
++  fall: ['O', 'N'],
++  winter: ['w', 'u'],
++  hearts: ['r', 'P'],
++  spring: ['P', 'Y'],
++  summer: ['b', 'Y'],
++};
++const shelfFor = (season: Season) => {
++  const [one, two] = SHELF_COLORS[season];
++  return SHELF.map((row) => row.replaceAll('1', one).replaceAll('2', two));
++};
++
++/** The holiday aisle's three decorations for one season. */
++export function holidayDecor(season: Season): Record<string, DecorKind> {
++  return {
++    seasonBit: { solid: false, on: ['holidayFloor'], sprite: BIT[season] },
++    seasonBig: { solid: true, place: 'open', on: ['holidayFloor'], sprite: BIG[season] },
++    seasonShelf: { solid: true, place: 'wall', on: ['holidayFloor'], sprite: shelfFor(season) },
++  };
++}
++
++/** This season's holiday decorations (picked once, when the game loads). */
++export const HOLIDAY = holidayDecor(SEASON_NOW);
+diff --git a/src/worlds/cherrymart/decor/homeClothes.ts b/src/worlds/cherrymart/decor/homeClothes.ts
+new file mode 100644
+index 0000000..ed5deed
+--- /dev/null
++++ b/src/worlds/cherrymart/decor/homeClothes.ts
+@@ -0,0 +1,158 @@
++import { type DecorKind } from '../../building/types';
++
++/** Home and clothes things (letters: see dealsToys.ts). */
++export const HOME_CLOTHES: Record<string, DecorKind> = {
++  // A floor lamp with a warm yellow shade (the HOME sign).
++  lamp: {
++    solid: true,
++    on: ['homeFloor'],
++    sprite: [
++      '...kkkkkk...',
++      '..kyyyyyyk..',
++      '.kyyyyyyyyk.',
++      'kyyyyyyyyyyk',
++      'kkkkkkkkkkkk',
++      '.....kk.....',
++      '.....nn.....',
++      '.....nn.....',
++      '.....nn.....',
++      '.....nn.....',
++      '...kkkkkk...',
++      '..knnnnnnk..',
++    ],
++  },
++  pillow: {
++    solid: false,
++    on: ['homeFloor'],
++    sprite: [
++      '.kkkkkkkkkk.',
++      'kvLLLLLLLLvk',
++      'kLLvLLLLvLLk',
++      'kLLLLvvLLLLk',
++      'kLLvLLLLvLLk',
++      'kvLLLLLLLLvk',
++      '.kkkkkkkkkk.',
++    ],
++  },
++  // A striped rug with fringe on the ends.
++  rug: {
++    solid: false,
++    on: ['homeFloor'],
++    place: 'open',
++    sprite: [
++      'w.w.w.w.w.w.w.w.',
++      'RRRRRRRRRRRRRRRR',
++      'RYYYYYYYYYYYYYYR',
++      'RYrrYrrYrrYrrYYR',
++      'RYYYYYYYYYYYYYYR',
++      'RRRRRRRRRRRRRRRR',
++      'w.w.w.w.w.w.w.w.',
++    ],
++  },
++  // A candle in a pink jar.
++  candle: {
++    solid: false,
++    on: ['homeFloor'],
++    sprite: [
++      '...yy...',
++      '..yOOy..',
++      '...OO...',
++      '...kk...',
++      '.kkkkkk.',
++      '.kppppk.',
++      '.kpPPpk.',
++      '.kppppk.',
++      '.kkkkkk.',
++    ],
++  },
++  // A picture frame with a sunny hill painted inside.
++  pictureFrame: {
++    solid: true,
++    on: ['homeFloor'],
++    place: 'wall',
++    sprite: [
++      'kkkkkkkkkkkk',
++      'kddddddddddk',
++      'kduuuuuuYYdk',
++      'kduuuuuuYYdk',
++      'kduuuuuuuudk',
++      'kdlllluulldk',
++      'kdlllllllldk',
++      'kddddddddddk',
++      'kkkkkkkkkkkk',
++    ],
++  },
++
++  // ---------- Clothes ----------
++  // A clothing rack with shirts in five colors.
++  clothesRack: {
++    solid: true,
++    on: ['clothesFloor'],
++    place: 'open',
++    sprite: [
++      'aaaaaaaaaaaaaaaa',
++      'a.k..k..k..k..ka',
++      'arrrbbblllPPPYYa',
++      'arrrbbblllPPPYYa',
++      'arRrbBblLlPpPYya',
++      'a..............a',
++      'a..............a',
++      'kk............kk',
++    ],
++  },
++  // A coat hanger (the CLOTHES sign).
++  hanger: {
++    solid: false,
++    on: ['clothesFloor'],
++    sprite: [
++      '....kk....',
++      '.....k....',
++      '....k.....',
++      '...aaaa...',
++      '.aa....aa.',
++      'aaaaaaaaaa',
++    ],
++  },
++  // A fitting room with a purple curtain.
++  fittingRoom: {
++    solid: true,
++    on: ['clothesFloor'],
++    place: 'wall',
++    sprite: [
++      'kkkkkkkkkkkkkk',
++      'kaaaaaaaaaaaak',
++      'kvLvLvLvLvLvLk',
++      'kvLvLvLvLvLvLk',
++      'kvLvLvLvLvLvLk',
++      'kvLvLvLvLvLvLk',
++      'kvLvLvLvLvLvLk',
++      'kvLvLvLvLvLvLk',
++      'kvLvLvLvLvLvLk',
++      'kvLvLvLvLvLvLk',
++      'kvLvLvLvLvLvLk',
++      'kvLvLvLvLvLvLk',
++      'kkkkkkkkkkkkkk',
++    ],
++  },
++  // A store mannequin in a pink shirt.
++  mannequin: {
++    solid: true,
++    on: ['clothesFloor'],
++    sprite: [
++      '...kkkk...',
++      '...kwwk...',
++      '...kwwk...',
++      '....kk....',
++      '.kkkkkkkk.',
++      'kPPPPPPPPk',
++      'kPPPPPPPPk',
++      '.kPPPPPPk.',
++      '..kPPPPk..',
++      '..kvvvvk..',
++      '..kvvvvk..',
++      '..kv..vk..',
++      '....kk....',
++      '..kkkkkk..',
++    ],
++  },
++};
+diff --git a/src/worlds/cherrymart/decor/techCafe.ts b/src/worlds/cherrymart/decor/techCafe.ts
+new file mode 100644
+index 0000000..6973439
+--- /dev/null
++++ b/src/worlds/cherrymart/decor/techCafe.ts
+@@ -0,0 +1,138 @@
++import { type DecorKind } from '../../building/types';
++
++/** Tech and cafe things (letters: see dealsToys.ts). No real brands: just shapes and colors. */
++export const TECH_CAFE: Record<string, DecorKind> = {
++  // A big TV showing a sunny cartoon sky.
++  tvWall: {
++    solid: true,
++    on: ['techFloor'],
++    place: 'wall',
++    sprite: [
++      'kkkkkkkkkkkkkkkk',
++      'kuuuuuuuuuuuuuuk',
++      'kuuuuuuuuuuYYuuk',
++      'kuuwwuuuuuuYYuuk',
++      'kuwwwwuuuuuuuuuk',
++      'kuuuuuuuuuuuuuuk',
++      'kllllllllllllllk',
++      'kllllllllllllllk',
++      'kkkkkkkkkkkkkkkk',
++      '.......kk.......',
++      '.....kkkkkk.....',
++    ],
++  },
++  tablet: {
++    solid: false,
++    on: ['techFloor'],
++    sprite: [
++      'kkkkkkkk',
++      'kuuuuuuk',
++      'kuYuuuuk',
++      'kullluuk',
++      'kuuuuuuk',
++      'kkkwkkkk',
++      '..kkkk..',
++    ],
++  },
++  // Headphones with red ear cups (the TECH sign).
++  headphones: {
++    solid: false,
++    on: ['techFloor'],
++    sprite: [
++      '..kkkkkk..',
++      '.k......k.',
++      'k........k',
++      'k........k',
++      'kk......kk',
++      'krk....krk',
++      'krk....krk',
++      'kk......kk',
++    ],
++  },
++  // A game console box and its controller.
++  gameConsole: {
++    solid: false,
++    on: ['techFloor'],
++    sprite: [
++      'kkkkkkkkkkkk',
++      'kAAAAAAAAuAk',
++      'kaaaaaaaaaak',
++      'kkkkkkkkkkkk',
++      '............',
++      '.kkkkkkkkkk.',
++      'kaAaaaaaarak',
++      'kAAAaaaabaak',
++      '.kkkkkkkkkk.',
++    ],
++  },
++
++  // ---------- Cafe ----------
++  // A little round cafe table with two stools.
++  cafeTable: {
++    solid: true,
++    on: ['cafeFloor'],
++    place: 'open',
++    sprite: [
++      '....kkkkkkkk....',
++      '...kwwwwwwwwk...',
++      '...kwwwwwwwwk...',
++      '....kkkkkkkk....',
++      '.kk....kk....kk.',
++      'krrk...kk...krrk',
++      '.kk....kk....kk.',
++      '.kk....kk....kk.',
++      '.kk...kkkk...kk.',
++    ],
++  },
++  // A mug of hot cocoa with steam (the CAFE sign).
++  cocoaMug: {
++    solid: false,
++    on: ['cafeFloor'],
++    sprite: [
++      '..w.w...',
++      '...w.w..',
++      '.kkkkk..',
++      '.kNNNkk.',
++      '.krrrk.k',
++      '.krwrkk.',
++      '.krrrk..',
++      '..kkk...',
++    ],
++  },
++  // A red popcorn cart with a glass box full of popcorn.
++  popcornMachine: {
++    solid: true,
++    on: ['cafeFloor'],
++    place: 'wall',
++    sprite: [
++      '....kkkkkk....',
++      '...krrrrrrk...',
++      '..kkkkkkkkkk..',
++      '..kwywywywyk..',
++      '..kywwywwywk..',
++      '..kwywwywwyk..',
++      '..kuuuuuuuuk..',
++      '..kkkkkkkkkk..',
++      '..krrrrrrrrk..',
++      '..krrYYrrrrk..',
++      '..krrrrrrrrk..',
++      '..kkkkkkkkkk..',
++      '...k......k...',
++      '..kkk....kkk..',
++    ],
++  },
++  // A soft pretzel with salt.
++  pretzel: {
++    solid: false,
++    on: ['cafeFloor'],
++    sprite: [
++      '.dd....dd.',
++      'dwod..dowd',
++      'd...dd...d',
++      '.d..dd..d.',
++      '..dd..dd..',
++      '..dw..wd..',
++      '...dddd...',
++    ],
++  },
++};
+diff --git a/src/worlds/cherrymart/index.ts b/src/worlds/cherrymart/index.ts
+new file mode 100644
+index 0000000..8a2c3ce
+--- /dev/null
++++ b/src/worlds/cherrymart/index.ts
+@@ -0,0 +1,29 @@
++import { makeBuildingWorld } from '../building';
++import { DEALS_TOYS } from './decor/dealsToys';
++import { GROCERY_BEAUTY } from './decor/groceryBeauty';
++import { HOLIDAY } from './decor/holiday';
++import { HOME_CLOTHES } from './decor/homeClothes';
++import { TECH_CAFE } from './decor/techCafe';
++import { CHERRYMART_MAPS, LEGEND } from './layout';
++import { CHERRYMART_REALMS } from './realms';
++import { CHERRYMART_SCENE } from './scene';
++import { CHERRYMART_TILES } from './tiles';
++
++/**
++ * Cherry Mart: a big, bright, tidy department store (an original one: its own
++ * two-cherries sign, no real logos, mascots or brands). One big map: the sliding
++ * doors and cart corral at the bottom, a red racetrack aisle looping through the
++ * store, departments all around it, and a cafe by the front. Layne starts just
++ * inside the front doors. The holiday aisle changes with the month (season.ts).
++ */
++export const CHERRYMART = makeBuildingWorld({
++  id: 'cherrymart',
++  name: 'Cherry Mart',
++  seed: 2626,
++  scene: CHERRYMART_SCENE,
++  tiles: CHERRYMART_TILES,
++  decor: { ...DEALS_TOYS, ...HOME_CLOTHES, ...TECH_CAFE, ...GROCERY_BEAUTY, ...HOLIDAY },
++  legend: LEGEND,
++  maps: CHERRYMART_MAPS,
++  realms: CHERRYMART_REALMS,
++});
+diff --git a/src/worlds/cherrymart/layout.ts b/src/worlds/cherrymart/layout.ts
+new file mode 100644
+index 0000000..262fe78
+--- /dev/null
++++ b/src/worlds/cherrymart/layout.ts
+@@ -0,0 +1,201 @@
++import { type LegendEntry, type MapPlan } from '../building/types';
++
++/**
++ * Cherry Mart, drawn as ASCII: one character per 16x16 tile.
++ * Change the store by retyping characters (every row must stay the same length).
++ *
++ * LEGEND (what each character is)
++ *   H hedge (the edge of the world)   s sidewalk   a parking lot   | parking-lot stripe
++ *   # wall   W window   $ the two-cherries sign   D sliding front doors
++ *   = tall shelves between departments   o opening between departments
++ *   r the red racetrack aisle that loops around the store
++ *   e deals floor   t toys floor   h home floor   c clothes carpet   v tech floor
++ *   f cafe floor    g grocery floor   b beauty floor   y holiday floor
++ *   @ the start (just inside the front doors)
++ *   C the cart corral   7 the big cherry sign out front
++ *
++ * ZONES (which realm each tile is in; '.' = none: walls, shelves and openings)
++ *   D deals  T toys  H home  C clothes  E tech  F cafe  G grocery  B beauty  Y holiday
++ *   The racetrack aisle counts as the department right next to it, so the corner sign
++ *   always names the department you're walking past. The sidewalk and the parking lot
++ *   count as DEALS (the bargain area by the doors).
++ */
++export const LEGEND: Record<string, LegendEntry> = {
++  H: { tile: 'hedge' },
++  s: { tile: 'sidewalk' },
++  a: { tile: 'lot' },
++  '|': { tile: 'lotStripe' },
++  '#': { tile: 'wall' },
++  W: { tile: 'window' },
++  $: { tile: 'signWall' },
++  D: { tile: 'slideDoor' },
++  '=': { tile: 'shelf' },
++  o: { tile: 'doorway' },
++  r: { tile: 'aisle' },
++  e: { tile: 'dealsFloor' },
++  t: { tile: 'toysFloor' },
++  h: { tile: 'homeFloor' },
++  c: { tile: 'clothesFloor' },
++  v: { tile: 'techFloor' },
++  f: { tile: 'cafeFloor' },
++  g: { tile: 'groceryFloor' },
++  b: { tile: 'beautyFloor' },
++  y: { tile: 'holidayFloor' },
++  '@': { tile: 'dealsFloor', spawn: true },
++  C: { tile: 'lot', decor: 'cartCorral' },
++  '7': { tile: 'lot', decor: 'cherrySign' },
++};
++
++/**
++ * The whole store (90 x 68). The sliding doors and the parking lot are at the bottom.
++ * Back wall, left to right: grocery, home, beauty. Left side: toys. Right side: tech.
++ * Inside the racetrack loop: clothes and the holiday aisle. By the front: the cafe
++ * and the deals area.
++ */
++const MAIN: MapPlan = {
++  name: 'main',
++  outside: 'hedge',
++  rows: [
++    '##########################################################################################',
++    '#ggggggggggggggggggggggggggggg=hhhhhhhhhhhhhhhhhhhhhhhhhhhh=bbbbbbbbbbbbbbbbbbbbbbbbbbbbb#',
++    '#ggggggggggggggggggggggggggggg=hhhhhhhhhhhhhhhhhhhhhhhhhhhh=bbbbbbbbbbbbbbbbbbbbbbbbbbbbb#',
++    '#ggggggggggggggggggggggggggggg=hhhhhhhhhhhhhhhhhhhhhhhhhhhh=bbbbbbbbbbbbbbbbbbbbbbbbbbbbb#',
++    '#ggggggggggggggggggggggggggggg=hhhhhhhhhhhhhhhhhhhhhhhhhhhh=bbbbbbbbbbbbbbbbbbbbbbbbbbbbb#',
++    '#ggggggggggggggggggggggggggggg=hhhhhhhhhhhhhhhhhhhhhhhhhhhh=bbbbbbbbbbbbbbbbbbbbbbbbbbbbb#',
++    '#ggggggggggggggggggggggggggggg=hhhhhhhhhhhhhhhhhhhhhhhhhhhh=bbbbbbbbbbbbbbbbbbbbbbbbbbbbb#',
++    '#ggggggggggggggggggggggggggggg=hhhhhhhhhhhhhhhhhhhhhhhhhhhh=bbbbbbbbbbbbbbbbbbbbbbbbbbbbb#',
++    '#ggggggggggggggggggggggggggggg=hhhhhhhhhhhhhhhhhhhhhhhhhhhh=bbbbbbbbbbbbbbbbbbbbbbbbbbbbb#',
++    '#ggggggggggggggggggggggggggggg=hhhhhhhhhhhhhhhhhhhhhhhhhhhh=bbbbbbbbbbbbbbbbbbbbbbbbbbbbb#',
++    '#ggggggggggggggggggggggggggggg=hhhhhhhhhhhhhhhhhhhhhhhhhhhh=bbbbbbbbbbbbbbbbbbbbbbbbbbbbb#',
++    '#ggggggggggggggggggggggggggggg=hhhhhhhhhhhhhhhhhhhhhhhhhhhh=bbbbbbbbbbbbbbbbbbbbbbbbbbbbb#',
++    '#ggggggggggggggggggggggggggggg=hhhhhhhhhhhhhhhhhhhhhhhhhhhh=bbbbbbbbbbbbbbbbbbbbbbbbbbbbb#',
++    '#ggggggggggggggggggggggggggggg=hhhhhhhhhhhhhhhhhhhhhhhhhhhh=bbbbbbbbbbbbbbbbbbbbbbbbbbbbb#',
++    '#====================oooooo===============oooooo===============oooooo====================#',
++    '#tttttttttttttttt=rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr=vvvvvvvvvvvvvvvv#',
++    '#tttttttttttttttt=rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr=vvvvvvvvvvvvvvvv#',
++    '#tttttttttttttttt=rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr=vvvvvvvvvvvvvvvv#',
++    '#tttttttttttttttt=rrr=========oooooo=================================rrr=vvvvvvvvvvvvvvvv#',
++    '#tttttttttttttttt=rrr=cccccccccccccccccccccc=yyyyyyyyyyyyyyyyyyyyyyy=rrr=vvvvvvvvvvvvvvvv#',
++    '#tttttttttttttttt=rrr=cccccccccccccccccccccc=yyyyyyyyyyyyyyyyyyyyyyy=rrr=vvvvvvvvvvvvvvvv#',
++    '#tttttttttttttttt=rrr=cccccccccccccccccccccc=yyyyyyyyyyyyyyyyyyyyyyy=rrr=vvvvvvvvvvvvvvvv#',
++    '#tttttttttttttttt=rrr=cccccccccccccccccccccc=yyyyyyyyyyyyyyyyyyyyyyy=rrr=vvvvvvvvvvvvvvvv#',
++    '#tttttttttttttttt=rrr=cccccccccccccccccccccc=yyyyyyyyyyyyyyyyyyyyyyy=rrr=vvvvvvvvvvvvvvvv#',
++    '#tttttttttttttttt=rrr=cccccccccccccccccccccc=yyyyyyyyyyyyyyyyyyyyyyy=rrr=vvvvvvvvvvvvvvvv#',
++    '#tttttttttttttttt=rrr=cccccccccccccccccccccc=yyyyyyyyyyyyyyyyyyyyyyy=rrr=vvvvvvvvvvvvvvvv#',
++    '#tttttttttttttttt=rrr=cccccccccccccccccccccc=yyyyyyyyyyyyyyyyyyyyyyy=rrr=vvvvvvvvvvvvvvvv#',
++    '#ttttttttttttttttorrrocccccccccccccccccccccc=yyyyyyyyyyyyyyyyyyyyyyyorrrovvvvvvvvvvvvvvvv#',
++    '#ttttttttttttttttorrrocccccccccccccccccccccc=yyyyyyyyyyyyyyyyyyyyyyyorrrovvvvvvvvvvvvvvvv#',
++    '#ttttttttttttttttorrrocccccccccccccccccccccc=yyyyyyyyyyyyyyyyyyyyyyyorrrovvvvvvvvvvvvvvvv#',
++    '#ttttttttttttttttorrrocccccccccccccccccccccc=yyyyyyyyyyyyyyyyyyyyyyyorrrovvvvvvvvvvvvvvvv#',
++    '#ttttttttttttttttorrrocccccccccccccccccccccc=yyyyyyyyyyyyyyyyyyyyyyyorrrovvvvvvvvvvvvvvvv#',
++    '#ttttttttttttttttorrrocccccccccccccccccccccc=yyyyyyyyyyyyyyyyyyyyyyyorrrovvvvvvvvvvvvvvvv#',
++    '#tttttttttttttttt=rrr=cccccccccccccccccccccc=yyyyyyyyyyyyyyyyyyyyyyy=rrr=vvvvvvvvvvvvvvvv#',
++    '#tttttttttttttttt=rrr=cccccccccccccccccccccc=yyyyyyyyyyyyyyyyyyyyyyy=rrr=vvvvvvvvvvvvvvvv#',
++    '#tttttttttttttttt=rrr=cccccccccccccccccccccc=yyyyyyyyyyyyyyyyyyyyyyy=rrr=vvvvvvvvvvvvvvvv#',
++    '#tttttttttttttttt=rrr=cccccccccccccccccccccc=yyyyyyyyyyyyyyyyyyyyyyy=rrr=vvvvvvvvvvvvvvvv#',
++    '#tttttttttttttttt=rrr=cccccccccccccccccccccc=yyyyyyyyyyyyyyyyyyyyyyy=rrr=vvvvvvvvvvvvvvvv#',
++    '#tttttttttttttttt=rrr=cccccccccccccccccccccc=yyyyyyyyyyyyyyyyyyyyyyy=rrr=vvvvvvvvvvvvvvvv#',
++    '#tttttttttttttttt=rrr=cccccccccccccccccccccc=yyyyyyyyyyyyyyyyyyyyyyy=rrr=vvvvvvvvvvvvvvvv#',
++    '#tttttttttttttttt=rrr=cccccccccccccccccccccc=yyyyyyyyyyyyyyyyyyyyyyy=rrr=vvvvvvvvvvvvvvvv#',
++    '#tttttttttttttttt=rrr=cccccccccccccccccccccc=yyyyyyyyyyyyyyyyyyyyyyy=rrr=vvvvvvvvvvvvvvvv#',
++    '#tttttttttttttttt=rrr=================================oooooo=========rrr=vvvvvvvvvvvvvvvv#',
++    '#tttttttttttttttt=rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr=vvvvvvvvvvvvvvvv#',
++    '#tttttttttttttttt=rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr=vvvvvvvvvvvvvvvv#',
++    '#tttttttttttttttt=rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr=vvvvvvvvvvvvvvvv#',
++    '#=================ooo============oooooooooooooooooooooooo================vvvvvvvvvvvvvvvv#',
++    '#ffffffffffffffffffffffff=eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee=vvvvvvvvvvvvvvvv#',
++    '#ffffffffffffffffffffffff=eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee=vvvvvvvvvvvvvvvv#',
++    '#ffffffffffffffffffffffff=eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeovvvvvvvvvvvvvvvv#',
++    '#ffffffffffffffffffffffffoeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeovvvvvvvvvvvvvvvv#',
++    '#ffffffffffffffffffffffffoeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeovvvvvvvvvvvvvvvv#',
++    '#ffffffffffffffffffffffffoeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeovvvvvvvvvvvvvvvv#',
++    '#ffffffffffffffffffffffffoeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeovvvvvvvvvvvvvvvv#',
++    '#ffffffffffffffffffffffff=eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee=vvvvvvvvvvvvvvvv#',
++    '#ffffffffffffffffffffffff=eeeeeeeeeeeeeeeeee@eeeeeeeeeeeeeeeeeeeeeeeeeee=vvvvvvvvvvvvvvvv#',
++    '####W####W####W####W####W####W####W#####$##DDDD##$#####W####W####W####W####W####W####W####',
++    'HssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssH',
++    'Haaaaaaaaaaaaaaaaaaa7aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa7aaaaaaaaaaaaaaaaaaaH',
++    'Haaaaa|aaaa|aaaa|aaaa|aaaa|aaaa|aaaaaaaaaaaaaaaaaaaaaaa|aaaa|aaaa|aaaa|aaaa|aaaa|aaaa|aaaH',
++    'Haaaaa|aaaa|aaaa|aaaa|aaaa|aaaa|aaaaCCCCaaaaaaaaaaaaaaa|aaaa|aaaa|aaaa|aaaa|aaaa|aaaa|aaaH',
++    'Haaaaa|aaaa|aaaa|aaaa|aaaa|aaaa|aaaaaaaaaaaaaaaaaaaaaaa|aaaa|aaaa|aaaa|aaaa|aaaa|aaaa|aaaH',
++    'Haaaaa|aaaa|aaaa|aaaa|aaaa|aaaa|aaaaaaaaaaaaaaaaaaaaaaa|aaaa|aaaa|aaaa|aaaa|aaaa|aaaa|aaaH',
++    'Haaaaa|aaaa|aaaa|aaaa|aaaa|aaaa|aaaaaaaaaaaaaaaaaaaaaaa|aaaa|aaaa|aaaa|aaaa|aaaa|aaaa|aaaH',
++    'HaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaH',
++    'HaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaH',
++    'HaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaH',
++    'HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH',
++  ],
++  zones: [
++    '..........................................................................................',
++    '.GGGGGGGGGGGGGGGGGGGGGGGGGGGGG.HHHHHHHHHHHHHHHHHHHHHHHHHHHH.BBBBBBBBBBBBBBBBBBBBBBBBBBBBB.',
++    '.GGGGGGGGGGGGGGGGGGGGGGGGGGGGG.HHHHHHHHHHHHHHHHHHHHHHHHHHHH.BBBBBBBBBBBBBBBBBBBBBBBBBBBBB.',
++    '.GGGGGGGGGGGGGGGGGGGGGGGGGGGGG.HHHHHHHHHHHHHHHHHHHHHHHHHHHH.BBBBBBBBBBBBBBBBBBBBBBBBBBBBB.',
++    '.GGGGGGGGGGGGGGGGGGGGGGGGGGGGG.HHHHHHHHHHHHHHHHHHHHHHHHHHHH.BBBBBBBBBBBBBBBBBBBBBBBBBBBBB.',
++    '.GGGGGGGGGGGGGGGGGGGGGGGGGGGGG.HHHHHHHHHHHHHHHHHHHHHHHHHHHH.BBBBBBBBBBBBBBBBBBBBBBBBBBBBB.',
++    '.GGGGGGGGGGGGGGGGGGGGGGGGGGGGG.HHHHHHHHHHHHHHHHHHHHHHHHHHHH.BBBBBBBBBBBBBBBBBBBBBBBBBBBBB.',
++    '.GGGGGGGGGGGGGGGGGGGGGGGGGGGGG.HHHHHHHHHHHHHHHHHHHHHHHHHHHH.BBBBBBBBBBBBBBBBBBBBBBBBBBBBB.',
++    '.GGGGGGGGGGGGGGGGGGGGGGGGGGGGG.HHHHHHHHHHHHHHHHHHHHHHHHHHHH.BBBBBBBBBBBBBBBBBBBBBBBBBBBBB.',
++    '.GGGGGGGGGGGGGGGGGGGGGGGGGGGGG.HHHHHHHHHHHHHHHHHHHHHHHHHHHH.BBBBBBBBBBBBBBBBBBBBBBBBBBBBB.',
++    '.GGGGGGGGGGGGGGGGGGGGGGGGGGGGG.HHHHHHHHHHHHHHHHHHHHHHHHHHHH.BBBBBBBBBBBBBBBBBBBBBBBBBBBBB.',
++    '.GGGGGGGGGGGGGGGGGGGGGGGGGGGGG.HHHHHHHHHHHHHHHHHHHHHHHHHHHH.BBBBBBBBBBBBBBBBBBBBBBBBBBBBB.',
++    '.GGGGGGGGGGGGGGGGGGGGGGGGGGGGG.HHHHHHHHHHHHHHHHHHHHHHHHHHHH.BBBBBBBBBBBBBBBBBBBBBBBBBBBBB.',
++    '.GGGGGGGGGGGGGGGGGGGGGGGGGGGGG.HHHHHHHHHHHHHHHHHHHHHHHHHHHH.BBBBBBBBBBBBBBBBBBBBBBBBBBBBB.',
++    '..........................................................................................',
++    '.TTTTTTTTTTTTTTTT.GGGGGGGGGGGGGHHHHHHHHHHHHHHHHHHHHHHHHHHHHBBBBBBBBBBBBB.EEEEEEEEEEEEEEEE.',
++    '.TTTTTTTTTTTTTTTT.GGGGGGGGGGGGGHHHHHHHHHHHHHHHHHHHHHHHHHHHHBBBBBBBBBBBBB.EEEEEEEEEEEEEEEE.',
++    '.TTTTTTTTTTTTTTTT.GGGGGGGGGGGGGHHHHHHHHHHHHHHHHHHHHHHHHHHHHBBBBBBBBBBBBB.EEEEEEEEEEEEEEEE.',
++    '.TTTTTTTTTTTTTTTT.TTT................................................EEE.EEEEEEEEEEEEEEEE.',
++    '.TTTTTTTTTTTTTTTT.TTT.CCCCCCCCCCCCCCCCCCCCCC.YYYYYYYYYYYYYYYYYYYYYYY.EEE.EEEEEEEEEEEEEEEE.',
++    '.TTTTTTTTTTTTTTTT.TTT.CCCCCCCCCCCCCCCCCCCCCC.YYYYYYYYYYYYYYYYYYYYYYY.EEE.EEEEEEEEEEEEEEEE.',
++    '.TTTTTTTTTTTTTTTT.TTT.CCCCCCCCCCCCCCCCCCCCCC.YYYYYYYYYYYYYYYYYYYYYYY.EEE.EEEEEEEEEEEEEEEE.',
++    '.TTTTTTTTTTTTTTTT.TTT.CCCCCCCCCCCCCCCCCCCCCC.YYYYYYYYYYYYYYYYYYYYYYY.EEE.EEEEEEEEEEEEEEEE.',
++    '.TTTTTTTTTTTTTTTT.TTT.CCCCCCCCCCCCCCCCCCCCCC.YYYYYYYYYYYYYYYYYYYYYYY.EEE.EEEEEEEEEEEEEEEE.',
++    '.TTTTTTTTTTTTTTTT.TTT.CCCCCCCCCCCCCCCCCCCCCC.YYYYYYYYYYYYYYYYYYYYYYY.EEE.EEEEEEEEEEEEEEEE.',
++    '.TTTTTTTTTTTTTTTT.TTT.CCCCCCCCCCCCCCCCCCCCCC.YYYYYYYYYYYYYYYYYYYYYYY.EEE.EEEEEEEEEEEEEEEE.',
++    '.TTTTTTTTTTTTTTTT.TTT.CCCCCCCCCCCCCCCCCCCCCC.YYYYYYYYYYYYYYYYYYYYYYY.EEE.EEEEEEEEEEEEEEEE.',
++    '.TTTTTTTTTTTTTTTT.TTT.CCCCCCCCCCCCCCCCCCCCCC.YYYYYYYYYYYYYYYYYYYYYYY.EEE.EEEEEEEEEEEEEEEE.',
++    '.TTTTTTTTTTTTTTTT.TTT.CCCCCCCCCCCCCCCCCCCCCC.YYYYYYYYYYYYYYYYYYYYYYY.EEE.EEEEEEEEEEEEEEEE.',
++    '.TTTTTTTTTTTTTTTT.TTT.CCCCCCCCCCCCCCCCCCCCCC.YYYYYYYYYYYYYYYYYYYYYYY.EEE.EEEEEEEEEEEEEEEE.',
++    '.TTTTTTTTTTTTTTTT.TTT.CCCCCCCCCCCCCCCCCCCCCC.YYYYYYYYYYYYYYYYYYYYYYY.EEE.EEEEEEEEEEEEEEEE.',
++    '.TTTTTTTTTTTTTTTT.TTT.CCCCCCCCCCCCCCCCCCCCCC.YYYYYYYYYYYYYYYYYYYYYYY.EEE.EEEEEEEEEEEEEEEE.',
++    '.TTTTTTTTTTTTTTTT.TTT.CCCCCCCCCCCCCCCCCCCCCC.YYYYYYYYYYYYYYYYYYYYYYY.EEE.EEEEEEEEEEEEEEEE.',
++    '.TTTTTTTTTTTTTTTT.TTT.CCCCCCCCCCCCCCCCCCCCCC.YYYYYYYYYYYYYYYYYYYYYYY.EEE.EEEEEEEEEEEEEEEE.',
++    '.TTTTTTTTTTTTTTTT.TTT.CCCCCCCCCCCCCCCCCCCCCC.YYYYYYYYYYYYYYYYYYYYYYY.EEE.EEEEEEEEEEEEEEEE.',
++    '.TTTTTTTTTTTTTTTT.TTT.CCCCCCCCCCCCCCCCCCCCCC.YYYYYYYYYYYYYYYYYYYYYYY.EEE.EEEEEEEEEEEEEEEE.',
++    '.TTTTTTTTTTTTTTTT.TTT.CCCCCCCCCCCCCCCCCCCCCC.YYYYYYYYYYYYYYYYYYYYYYY.EEE.EEEEEEEEEEEEEEEE.',
++    '.TTTTTTTTTTTTTTTT.TTT.CCCCCCCCCCCCCCCCCCCCCC.YYYYYYYYYYYYYYYYYYYYYYY.EEE.EEEEEEEEEEEEEEEE.',
++    '.TTTTTTTTTTTTTTTT.TTT.CCCCCCCCCCCCCCCCCCCCCC.YYYYYYYYYYYYYYYYYYYYYYY.EEE.EEEEEEEEEEEEEEEE.',
++    '.TTTTTTTTTTTTTTTT.TTT.CCCCCCCCCCCCCCCCCCCCCC.YYYYYYYYYYYYYYYYYYYYYYY.EEE.EEEEEEEEEEEEEEEE.',
++    '.TTTTTTTTTTTTTTTT.TTT.CCCCCCCCCCCCCCCCCCCCCC.YYYYYYYYYYYYYYYYYYYYYYY.EEE.EEEEEEEEEEEEEEEE.',
++    '.TTTTTTTTTTTTTTTT.TTT.CCCCCCCCCCCCCCCCCCCCCC.YYYYYYYYYYYYYYYYYYYYYYY.EEE.EEEEEEEEEEEEEEEE.',
++    '.TTTTTTTTTTTTTTTT.TTT................................................EEE.EEEEEEEEEEEEEEEE.',
++    '.TTTTTTTTTTTTTTTT.TTTDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDEEE.EEEEEEEEEEEEEEEE.',
++    '.TTTTTTTTTTTTTTTT.TTTDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDEEE.EEEEEEEEEEEEEEEE.',
++    '.TTTTTTTTTTTTTTTT.TTTDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDEEE.EEEEEEEEEEEEEEEE.',
++    '.........................................................................EEEEEEEEEEEEEEEE.',
++    '.FFFFFFFFFFFFFFFFFFFFFFFF.DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD.EEEEEEEEEEEEEEEE.',
++    '.FFFFFFFFFFFFFFFFFFFFFFFF.DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD.EEEEEEEEEEEEEEEE.',
++    '.FFFFFFFFFFFFFFFFFFFFFFFF.DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD.EEEEEEEEEEEEEEEE.',
++    '.FFFFFFFFFFFFFFFFFFFFFFFF.DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD.EEEEEEEEEEEEEEEE.',
++    '.FFFFFFFFFFFFFFFFFFFFFFFF.DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD.EEEEEEEEEEEEEEEE.',
++    '.FFFFFFFFFFFFFFFFFFFFFFFF.DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD.EEEEEEEEEEEEEEEE.',
++    '.FFFFFFFFFFFFFFFFFFFFFFFF.DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD.EEEEEEEEEEEEEEEE.',
++    '.FFFFFFFFFFFFFFFFFFFFFFFF.DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD.EEEEEEEEEEEEEEEE.',
++    '.FFFFFFFFFFFFFFFFFFFFFFFF.DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD.EEEEEEEEEEEEEEEE.',
++    '..........................................................................................',
++    '.DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD.',
++    '.DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD.',
++    '.DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD.',
++    '.DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD.',
++    '.DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD.',
++    '.DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD.',
++    '.DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD.',
++    '.DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD.',
++    '.DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD.',
++    '.DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD.',
++    '..........................................................................................',
++  ],
++};
++
++/** Cherry Mart is one big map. */
++export const CHERRYMART_MAPS: MapPlan[] = [MAIN];
+diff --git a/src/worlds/cherrymart/realms.ts b/src/worlds/cherrymart/realms.ts
+new file mode 100644
+index 0000000..4cf3c3d
+--- /dev/null
++++ b/src/worlds/cherrymart/realms.ts
+@@ -0,0 +1,63 @@
++import { type RealmPlan } from '../building/types';
++
++/**
++ * Cherry Mart's 9 realms (departments), in Monster Book order. `zone` is the
++ * realm's letter in layout.ts; `scatter` is what gets sprinkled around (and how much).
++ * The holiday aisle's seasonBit, seasonBig and seasonShelf change with the month (see season.ts).
++ */
++export const CHERRYMART_REALMS: RealmPlan[] = [
++  {
++    id: 'deals', label: 'DEALS', zone: 'D', icon: 'priceSign', music: 'cherrymart',
++    scatter: { bargainBin: 6, priceSign: 5, basket: 8, cart: 6 },
++    scene: { wall: 'window', floor: 'dealsFloor', decor: ['priceSign', 'bargainBin', 'cart'] },
++    printDecor: ['priceSign', 'bargainBin', 'basket', 'cart', 'cherrySign'],
++  },
++  {
++    id: 'toys', label: 'TOYS', zone: 'T', icon: 'blockTower', music: 'cherrymart',
++    scatter: { blockTower: 5, trainTable: 2, plushie: 8, toyBall: 8, toyCar: 6 },
++    scene: { wall: 'shelf', floor: 'toysFloor', decor: ['blockTower', 'trainTable', 'plushie'] },
++    printDecor: ['blockTower', 'trainTable', 'plushie', 'toyBall', 'toyCar'],
++  },
++  {
++    id: 'home', label: 'HOME', zone: 'H', icon: 'lamp', music: 'cherrymart',
++    scatter: { lamp: 5, pictureFrame: 6, pillow: 6, rug: 4, candle: 6 },
++    scene: { wall: 'shelf', floor: 'homeFloor', decor: ['lamp', 'pictureFrame', 'candle'] },
++    printDecor: ['lamp', 'pillow', 'rug', 'candle', 'pictureFrame'],
++  },
++  {
++    id: 'clothes', label: 'CLOTHES', zone: 'C', icon: 'hanger', music: 'cherrymart',
++    scatter: { clothesRack: 7, fittingRoom: 3, mannequin: 4, hanger: 6 },
++    scene: { wall: 'shelf', floor: 'clothesFloor', decor: ['mannequin', 'clothesRack', 'fittingRoom'] },
++    printDecor: ['clothesRack', 'hanger', 'fittingRoom', 'mannequin', 'pillow'],
++  },
++  {
++    id: 'tech', label: 'TECH', zone: 'E', icon: 'headphones', music: 'cherrymart',
++    scatter: { tvWall: 7, gameConsole: 5, tablet: 6, headphones: 6 },
++    scene: { wall: 'shelf', floor: 'techFloor', decor: ['headphones', 'tvWall', 'gameConsole'] },
++    printDecor: ['tvWall', 'tablet', 'headphones', 'gameConsole', 'toyCar'],
++  },
++  {
++    id: 'cafe', label: 'CAFE', zone: 'F', icon: 'cocoaMug', music: 'cherrymart',
++    scatter: { cafeTable: 6, popcornMachine: 2, cocoaMug: 5, pretzel: 5 },
++    scene: { wall: 'window', floor: 'cafeFloor', decor: ['cocoaMug', 'cafeTable', 'popcornMachine'] },
++    printDecor: ['cafeTable', 'cocoaMug', 'popcornMachine', 'pretzel', 'cherrySign'],
++  },
++  {
++    id: 'grocery', label: 'GROCERY', zone: 'G', icon: 'fruitBin', music: 'cherrymart',
++    scatter: { cerealShelf: 6, fridge: 5, fruitBin: 5, cart: 3 },
++    scene: { wall: 'shelf', floor: 'groceryFloor', decor: ['cerealShelf', 'fruitBin', 'fridge'] },
++    printDecor: ['cerealShelf', 'fruitBin', 'fridge', 'cart', 'basket'],
++  },
++  {
++    id: 'beauty', label: 'BEAUTY', zone: 'B', icon: 'perfume', music: 'cherrymart',
++    scatter: { vanityMirror: 6, nailPolish: 6, bubbleBath: 6, perfume: 6 },
++    scene: { wall: 'shelf', floor: 'beautyFloor', decor: ['perfume', 'vanityMirror', 'nailPolish'] },
++    printDecor: ['vanityMirror', 'nailPolish', 'bubbleBath', 'perfume', 'candle'],
++  },
++  {
++    id: 'holiday', label: 'HOLIDAY', zone: 'Y', icon: 'seasonBit', music: 'cherrymart',
++    scatter: { seasonShelf: 6, seasonBig: 5, seasonBit: 12 },
++    scene: { wall: 'shelf', floor: 'holidayFloor', decor: ['seasonBit', 'seasonBig', 'seasonShelf'] },
++    printDecor: ['seasonBit', 'seasonBig', 'seasonShelf', 'cherrySign', 'basket'],
++  },
++];
+diff --git a/src/worlds/cherrymart/scene.ts b/src/worlds/cherrymart/scene.ts
+new file mode 100644
+index 0000000..28403b3
+--- /dev/null
++++ b/src/worlds/cherrymart/scene.ts
+@@ -0,0 +1,24 @@
++/**
++ * Cherry Mart's picture for its world card and book tab: a red-and-white store
++ * with its own two-cherries sign on the roof (letters as in render/decorArt.ts).
++ */
++export const CHERRYMART_SCENE = [
++  '..........kkkkkkkkkkkk..........',
++  '..........kwwwwwgGwwwk..........',
++  '..........kwwwwgwgwwwk..........',
++  '..........kwwwgwwwgwwk..........',
++  '..........kwwrrrwrrrwk..........',
++  '..........kwwrwrwrwrwk..........',
++  '..........kwwrrrwrrrwk..........',
++  '..........kkkkkkkkkkkk..........',
++  '.kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk.',
++  '.krrrrrrrrrrrrrrrrrrrrrrrrrrrrk.',
++  '.krrrrrrrrrrrrrrrrrrrrrrrrrrrrk.',
++  '.kwwwwwwwwwwwwwwwwwwwwwwwwwwwwk.',
++  '.kwwwUUUUwwwwkUUUUkwwwwUUUUwwwk.',
++  '.kwwwUUUUwwwwkUUUUkwwwwUUUUwwwk.',
++  '.kwwwwwwwwwwwkUUUUkwwwwwwwwwwwk.',
++  '.krrrrrrrrrrrkUUUUkrrrrrrrrrrrk.',
++  'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
++  'AAAAwAAAAwAAAAwAAAAwAAAAwAAAAwAA',
++];
+diff --git a/src/worlds/cherrymart/season.ts b/src/worlds/cherrymart/season.ts
+new file mode 100644
+index 0000000..3927cf4
+--- /dev/null
++++ b/src/worlds/cherrymart/season.ts
+@@ -0,0 +1,25 @@
++/**
++ * Cherry Mart's holiday aisle changes with the real month. The month comes from
++ * the device's own clock (new Date()), so no internet is needed. To see a
++ * different season, change the computer's date and reload the page.
++ *
++ *   December, January          winter   snowflakes and snowmen
++ *   February                   hearts   hearts and heart balloons
++ *   March, April, May          spring   flowers and tulip pots
++ *   June, July, August         summer   beach balls and sandcastles
++ *   September, October, Nov.   fall     pumpkins
++ */
++export type Season = 'winter' | 'hearts' | 'spring' | 'summer' | 'fall';
++
++/** Which season a date is in. getMonth() counts from 0: January = 0 ... December = 11. */
++export function seasonFor(date: Date): Season {
++  const month = date.getMonth();
++  if (month === 1) return 'hearts';
++  if (month >= 2 && month <= 4) return 'spring';
++  if (month >= 5 && month <= 7) return 'summer';
++  if (month >= 8 && month <= 10) return 'fall';
++  return 'winter';
++}
++
++/** The season right now, read once when the game loads. */
++export const SEASON_NOW: Season = seasonFor(new Date());
+diff --git a/src/worlds/cherrymart/tiles.ts b/src/worlds/cherrymart/tiles.ts
+new file mode 100644
+index 0000000..a8b0234
+--- /dev/null
++++ b/src/worlds/cherrymart/tiles.ts
+@@ -0,0 +1,161 @@
++import { hash2 } from '../../core/rng';
++import { NES } from '../../render/nesPalette';
++import { checker, fill, grid, planks, rect, speckle, wall } from '../building/paint';
++import { type TileCtx, type TileKind } from '../building/types';
++
++/**
++ * Cherry Mart's tiles, painted in code (16x16 each). The store is red and white:
++ * red-topped walls with a white front and a red stripe, a wide red racetrack
++ * aisle, and tall shelves between the departments. Walls and shelves are dark
++ * on the corner map so the departments look outlined.
++ */
++const floor = (color: string, draw: (c: TileCtx) => void, extra: Partial<TileKind> = {}): TileKind => ({ walkable: true, color, draw, ...extra });
++const solid = (color: string, draw: (c: TileCtx) => void): TileKind => ({ walkable: false, color, draw });
++
++/** Red on top, a white front with a red stripe (only where the front shows). */
++const storeWall = (c: TileCtx) => {
++  wall(c, NES.red, NES.white, NES.black);
++  if (c.near(0, 1) !== c.near(0, 0)) rect(c, 0, 12, 16, 2, NES.redBright);
++};
++const asphalt = (c: TileCtx) => {
++  fill(c, NES.gray);
++  speckle(c, NES.grayLight, 5, 120);
++  speckle(c, NES.black, 3, 121);
++};
++/** Shiny white store tiles (the deals area and the doorways). */
++const whiteTiles = (c: TileCtx) => {
++  grid(c, NES.white, NES.grayLight, 8);
++  speckle(c, NES.skyLight, 2, 122);
++};
++
++/** Cherry Mart's own sign: two red cherries on green stems (no letters, no logo of any real store). */
++const CHERRIES = [
++  '....gGG...',
++  '....g.....',
++  '...g.g....',
++  '..g...g...',
++  '.g.....g..',
++  'rrr...rrr.',
++  'rwrr..rwrr',
++  'rrrr..rrrr',
++  '.RR....RR.',
++];
++const CHERRY_COLORS: Record<string, string> = { g: NES.green, G: NES.greenForest, r: NES.redBright, R: NES.red, w: NES.white };
++const twoCherries = (c: TileCtx, x: number, y: number) => {
++  CHERRIES.forEach((row, dy) => {
++    for (let dx = 0; dx < row.length; dx++) if (row[dx] !== '.') rect(c, x + dx, y + dy, 1, 1, CHERRY_COLORS[row[dx]]);
++  });
++};
++
++/** Colorful boxes on a store shelf: each box's color is picked from the tile's spot, so it never changes. */
++const BOX_COLORS = [NES.redBright, NES.sky, NES.gold, NES.greenBright, NES.pink, NES.orange, NES.lavender, NES.white];
++const productBoxes = (c: TileCtx, y: number, salt: number) => {
++  for (let k = 0; k < 4; k++) {
++    const color = BOX_COLORS[Math.floor(hash2(c.x * 4 + k, c.y, salt) * BOX_COLORS.length)];
++    rect(c, k * 4 + 1, y, 3, 4, color);
++  }
++};
++
++export const CHERRYMART_TILES: Record<string, TileKind> = {
++  // ---------- Outside ----------
++  hedge: solid(NES.greenDark, (c) => {
++    fill(c, NES.greenForest);
++    speckle(c, NES.green, 10, 123);
++    speckle(c, NES.greenDark, 6, 124);
++  }),
++  lot: floor(NES.gray, asphalt),
++  lotStripe: floor(NES.gray, (c) => {
++    asphalt(c);
++    rect(c, 7, 0, 2, 16, NES.white);
++  }),
++  sidewalk: floor(NES.grayLight, (c) => {
++    grid(c, NES.grayLight, NES.gray, 8);
++    speckle(c, NES.white, 3, 125);
++  }),
++
++  // ---------- Walls, shelves and doors ----------
++  wall: solid(NES.brownRed, storeWall),
++  window: solid(NES.brownRed, (c) => {
++    storeWall(c);
++    rect(c, 2, 2, 12, 9, NES.white);
++    rect(c, 3, 3, 10, 7, NES.skyLight);
++    rect(c, 4, 4, 1, 2, NES.white);
++    rect(c, 5, 4, 1, 1, NES.white);
++  }),
++  /** The store's own sign on the front wall: two cherries on a white circle-ish board. */
++  signWall: solid(NES.brownRed, (c) => {
++    storeWall(c);
++    rect(c, 1, 0, 14, 12, NES.black);
++    rect(c, 2, 1, 12, 10, NES.white);
++    twoCherries(c, 3, 2);
++  }),
++  /** Glass sliding doors: two panes with a gap down the middle. */
++  slideDoor: floor(NES.skyLight, (c) => {
++    whiteTiles(c);
++    rect(c, 0, 1, 16, 14, NES.gray);
++    rect(c, 1, 2, 6, 12, NES.skyLight);
++    rect(c, 9, 2, 6, 12, NES.skyLight);
++    rect(c, 2, 3, 1, 4, NES.white);
++    rect(c, 10, 3, 1, 4, NES.white);
++  }, { doorway: true }),
++  /** The tall shelves between departments, seen from above, with boxes on the front. */
++  shelf: solid(NES.gray, (c) => {
++    fill(c, NES.grayLight);
++    rect(c, 0, 0, 16, 1, NES.gray);
++    if (c.near(0, 1) !== c.near(0, 0)) {
++      rect(c, 0, 6, 16, 10, NES.white);
++      productBoxes(c, 7, 126);
++      rect(c, 0, 11, 16, 1, NES.gray);
++      productBoxes(c, 12, 127);
++    } else {
++      productBoxes(c, 3, 128);
++      productBoxes(c, 9, 129);
++    }
++    rect(c, 0, 15, 16, 1, NES.gray);
++  }),
++  doorway: floor(NES.white, whiteTiles, { doorway: true }),
++
++  // ---------- The red racetrack aisle ----------
++  /** Red floor with a white line along each edge, so it looks like a racetrack around the store. */
++  aisle: floor(NES.redBright, (c) => {
++    fill(c, NES.redBright);
++    speckle(c, NES.salmon, 3, 130);
++    const edge = (dx: number, dy: number) => c.near(dx, dy) !== 'aisle';
++    if (edge(0, -1)) rect(c, 0, 1, 16, 2, NES.white);
++    if (edge(0, 1)) rect(c, 0, 13, 16, 2, NES.white);
++    if (edge(-1, 0)) rect(c, 1, 0, 2, 16, NES.white);
++    if (edge(1, 0)) rect(c, 13, 0, 2, 16, NES.white);
++  }),
++
++  // ---------- Floors (one per department) ----------
++  dealsFloor: floor(NES.white, whiteTiles),
++  toysFloor: floor(NES.sky, (c) => {
++    grid(c, NES.skyLight, NES.sky, 8);
++    const dots = [NES.gold, NES.pink, NES.greenBright, NES.redBright];
++    rect(c, 3, 3, 2, 2, dots[(c.x + c.y) % 4]);
++    rect(c, 11, 11, 2, 2, dots[(c.x + c.y + 2) % 4]);
++  }),
++  homeFloor: floor(NES.ochre, (c) => planks(c, NES.orangeLight, NES.ochre, NES.yellowLight)),
++  clothesFloor: floor(NES.lavender, (c) => {
++    fill(c, NES.lavender);
++    speckle(c, NES.pastelBlue, 6, 131);
++    speckle(c, NES.white, 3, 132);
++  }),
++  techFloor: floor(NES.blue, (c) => {
++    grid(c, NES.blueMid, NES.sky, 8);
++    speckle(c, NES.cyan, 2, 133);
++  }),
++  cafeFloor: floor(NES.redBright, (c) => checker(c, NES.white, NES.redBright, 8)),
++  groceryFloor: floor(NES.mint, (c) => {
++    grid(c, NES.mint, NES.seafoam, 8);
++    speckle(c, NES.white, 3, 134);
++  }),
++  beautyFloor: floor(NES.pinkLight, (c) => {
++    grid(c, NES.pinkLight, NES.pink, 8);
++    speckle(c, NES.white, 4, 135);
++  }),
++  holidayFloor: floor(NES.gold, (c) => {
++    grid(c, NES.yellowLight, NES.gold, 8);
++    speckle(c, NES.white, 3, 136);
++  }),
++};
+diff --git a/src/worlds/index.ts b/src/worlds/index.ts
+index 278386a..d94ed19 100644
+--- a/src/worlds/index.ts
++++ b/src/worlds/index.ts
+@@ -1,5 +1,6 @@
+ import { type Monster } from '../monsters/monsterTypes';
+ import { BUNTOWN } from './buntown';
++import { CHERRYMART } from './cherrymart';
+ import { HOME } from './home';
+ import { ISLAND } from './island';
+ import { WOODS } from './woods';
+@@ -15,6 +16,7 @@ export const WORLDS: Record<WorldId, WorldDef> = {
+   home: HOME,
+   woods: WOODS,
+   buntown: BUNTOWN,
++  cherrymart: CHERRYMART,
+ };
+ 
+ /** All worlds, in order (for the title screen and /gallery). */
+diff --git a/src/worlds/worldIds.ts b/src/worlds/worldIds.ts
+index 1377770..f0ee6d5 100644
+--- a/src/worlds/worldIds.ts
++++ b/src/worlds/worldIds.ts
+@@ -6,7 +6,7 @@
+  * This file has no other imports on purpose: the save code needs it, and the
+  * save code shouldn't have to load whole worlds just to check an id.
+  */
+-export const WORLD_IDS = ['island', 'home', 'woods', 'buntown'] as const;
++export const WORLD_IDS = ['island', 'home', 'woods', 'buntown', 'cherrymart'] as const;
+ export type WorldId = (typeof WORLD_IDS)[number];
+ 
+ /** The world a brand-new game starts in. */
