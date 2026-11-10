@@ -1,4 +1,5 @@
 import { type Monster } from '../monsters/monsterTypes';
+import { BIGBLUE } from './bigblue';
 import { BUNTOWN } from './buntown';
 import { CHERRYMART } from './cherrymart';
 import { HOME } from './home';
@@ -19,6 +20,7 @@ export const WORLDS: Record<WorldId, WorldDef> = {
   buntown: BUNTOWN,
   cherrymart: CHERRYMART,
   sunnyside: SUNNYSIDE,
+  bigblue: BIGBLUE,
 };
 
 /** All worlds, in order (for the title screen and /gallery). */

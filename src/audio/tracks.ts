@@ -28,7 +28,7 @@ export interface Song {
   parts: Part[];
 }
 
-export type SongName = 'title' | 'explore' | 'cave' | 'catch' | 'home' | 'buntown' | 'cherrymart' | 'sunnyside';
+export type SongName = 'title' | 'explore' | 'cave' | 'catch' | 'home' | 'buntown' | 'cherrymart' | 'sunnyside' | 'bigblue';
 
 export const SONGS: Record<SongName, Song> = {
   // The title screen: bright and bouncy, "let's go on an adventure!". F major, 8 bars of eighth notes.
@@ -212,6 +212,41 @@ export const SONGS: Record<SongName, Song> = {
         volume: 0.05,
         notes: `k h s h k h s h | k h s h k h s h | k h s h k h s h | k h s h k k s h
                 k h s h k h s h | k h s h k h s h | k h s h k h s h | k h s h k - - -`,
+      },
+    ],
+  },
+
+  // Big Blue Mart: a big, proud marching tune, like a parade through the giant store. Bb major, 8 bars.
+  bigblue: {
+    bpm: 116,
+    stepsPerBeat: 2,
+    parts: [
+      {
+        voice: 'pulse',
+        volume: 0.13,
+        notes: `F5 . . F5 F5 . Bb5 . | A5 . G5 . F5 . D5 . | Eb5 . G5 . F5 . Eb5 . | C5 . . . F5 . . .
+                F5 . . F5 F5 . Bb5 . | C6 . Bb5 . A5 . F5 . | F5 . A5 . C6 . A5 . | Bb5 . . . - - - -`,
+      },
+      {
+        // A second horn a little lower, playing along in harmony like a marching band.
+        voice: 'square',
+        volume: 0.05,
+        notes: `D5 . . D5 D5 . F5 . | F5 . D5 . D5 . Bb4 . | G4 . Bb4 . Bb4 . G4 . | A4 . . . C5 . . .
+                D5 . . D5 D5 . F5 . | A5 . G5 . F5 . C5 . | C5 . F5 . A5 . F5 . | D5 . . . - - - -`,
+      },
+      {
+        // "Oom-pah" bass, like a big tuba: low note, high note, low note, high note.
+        voice: 'triangle',
+        volume: 0.22,
+        notes: `Bb2 . F2 . Bb2 . F2 . | G2 . D3 . G2 . D3 . | Eb2 . Bb2 . Eb2 . Bb2 . | F2 . C3 . F2 . C3 .
+                Bb2 . F2 . Bb2 . F2 . | F2 . C3 . F2 . A2 . | F2 . C3 . F2 . C3 . | Bb2 . F2 . Bb2 . - -`,
+      },
+      {
+        // Marching drums, with a snare roll at the end of each half.
+        voice: 'drums',
+        volume: 0.06,
+        notes: `k h s h k h s h | k h s h k h s h | k h s h k h s h | k h s h s s s s
+                k h s h k h s h | k h s h k h s h | k h s h k h s h | k h s s k - - -`,
       },
     ],
   },

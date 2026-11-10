@@ -42,6 +42,7 @@ export class WorldSession {
   ) {
     this.world = new World(def);
     this.player = new Player(this.world.spawn.x + 0.5, this.world.spawn.y + 0.5);
+    if (this.world.spawn.facing) this.player.facing = this.world.spawn.facing;
     // Put Layne back where he left off: same map, same spot, facing the same way.
     // (If that spot isn't valid anymore, he just starts at the beginning.)
     const savedMap = spot ? this.world.maps.get(spot.map) : undefined;

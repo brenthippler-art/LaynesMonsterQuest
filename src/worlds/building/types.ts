@@ -58,6 +58,8 @@ export interface LegendEntry {
   arrive?: 'up' | 'down' | 'left' | 'right';
   /** Where Layne starts on his very first visit. */
   spawn?: boolean;
+  /** With `spawn`: which way Layne looks when he first arrives (default: down, toward the screen). */
+  face?: 'up' | 'down' | 'left' | 'right';
 }
 
 export interface MapPlan {

@@ -13,7 +13,7 @@ import { type BuildingPlan } from './types';
  */
 export interface ParsedMaps {
   maps: TileMap[];
-  spawn: { map: string; x: number; y: number };
+  spawn: { map: string; x: number; y: number; facing?: Side };
   /** Where each map can be walked into from: the spawn and every door's arrival square. */
   entries: Map<TileMap, Point[]>;
 }
@@ -47,7 +47,7 @@ export function parseMaps(plan: BuildingPlan, look: MapLook, tileIds: Map<string
           if (plan.decor[entry.decor].solid) map.solid[i] = 1;
         }
         if (entry.link) links.set(entry.link, [...(links.get(entry.link) ?? []), { map, x, y, arrive: entry.arrive }]);
-        if (entry.spawn) spawn = { map: map.id, x, y };
+        if (entry.spawn) spawn = { map: map.id, x, y, facing: entry.face };
         const z = mp.zones[y][x];
         if (z !== '.') map.biome[i] = zoneOf.get(z) ?? fail(`zone letter "${z}" at ${x},${y} isn't a realm.`);
       }

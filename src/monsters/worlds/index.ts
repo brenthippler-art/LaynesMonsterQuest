@@ -1,5 +1,6 @@
 import { type WorldId } from '../../worlds/worldIds';
 import { type Monster } from '../monsterTypes';
+import { BIGBLUE_MONSTERS } from './bigblue';
 import { BUNTOWN_MONSTERS } from './buntown';
 import { CHERRYMART_MONSTERS } from './cherrymart';
 import { HOME_MONSTERS } from './home';
@@ -12,7 +13,7 @@ import { WOODS_MONSTERS } from '../data/woods';
  * Ids are unique across ALL worlds, so the save can keep one collection.
  * To add a world's monsters: make a file like island.ts and add it here.
  */
-export const MONSTERS: Monster[] = [...ISLAND_MONSTERS, ...HOME_MONSTERS, ...WOODS_MONSTERS, ...BUNTOWN_MONSTERS, ...CHERRYMART_MONSTERS, ...SUNNYSIDE_MONSTERS];
+export const MONSTERS: Monster[] = [...ISLAND_MONSTERS, ...HOME_MONSTERS, ...WOODS_MONSTERS, ...BUNTOWN_MONSTERS, ...CHERRYMART_MONSTERS, ...SUNNYSIDE_MONSTERS, ...BIGBLUE_MONSTERS];
 
 /** One world's monsters. */
 export function monstersOf(world: WorldId): Monster[] {

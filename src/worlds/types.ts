@@ -30,6 +30,8 @@ export interface SpawnPoint {
   map: string;
   x: number;
   y: number;
+  /** Which way Layne looks on his very first visit (default: down). */
+  facing?: 'up' | 'down' | 'left' | 'right';
 }
 
 /** Everything build() makes. */

@@ -22,7 +22,7 @@ A new world should fit in one prompt. Use `src/worlds/home/` and
 - [ ] A few files of 2-3 rooms each, so files stay small.
 
 ## 4. Layout: `src/worlds/<id>/layout.ts`
-- [ ] A **legend**: character → `{ tile, decor?, link?, arrive?, spawn? }`.
+- [ ] A **legend**: character → `{ tile, decor?, link?, arrive?, spawn?, face? }` (`face` on the spawn square picks which way Layne looks when the world starts: `'up'`, `'down'`, `'left'` or `'right'`).
 - [ ] The **main map** first (about 90×70: walking across should take under a minute), then any extra maps.
 - [ ] A **zones** template the same size as each map: the realm's zone letter, `.` for walls and doorways.
 - [ ] Exactly one `spawn` square. Stairs: the same `link` name on both maps, and `arrive` on the side that keeps you walking AWAY from them.
