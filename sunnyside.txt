@@ -1,0 +1,2451 @@
+diff --git a/README.md b/README.md
+index 22e7a44..bb7d228 100644
+--- a/README.md
++++ b/README.md
+@@ -2,7 +2,7 @@
+ 
+ A gentle, NES-style pixel-art exploring game made for a 6-year-old. Layne picks
+ a world, walks around it, and finds original monsters that live in the places
+-that suit them. Every world has 9 realms and 108 monsters (540 so far).
++that suit them. Every world has 9 realms and 108 monsters (648 so far).
+ 
+ - **No losing, ever.** A catch that doesn't work out just means the monster hops off to play; you can find it again.
+ - **No reading needed.** Icons, pictures and a wordless how-to-play.
+@@ -14,7 +14,7 @@ What's in it:
+ | | |
+ |---|---|
+ | Worlds | See the table below. Each world has 9 realms with 12 monsters each (2 rare) |
+-| Monsters | 540 original monsters, drawn from parts as 16-bit pixel art |
++| Monsters | 648 original monsters, drawn from parts as 16-bit pixel art |
+ | Catching | Tap when the shrinking ring is in the green zone; 3 tries |
+ | Monster Book | A tab per world, a section per realm (found / 12); silhouettes for the ones not found yet |
+ | Coloring pages | Print any found monster as a line-art coloring page (US Letter), or a whole world or realm from the grown-ups area |
+@@ -30,6 +30,7 @@ What's in it:
+ | Home Sweet Home | `home` | 90×70 house and yard (drawn as ASCII), attic and basement | kitchen, living, bath, bedroom, laundry, garage, attic, basement, yard | 108 |
+ | Bun Town Burgers | `buntown` | 90×70 burger restaurant, drive-thru and back alley (drawn as ASCII), walk-in freezer | counter, grill, fries, soda, freezer, dining, play, drive, alley | 108 |
+ | Cherry Mart | `cherrymart` | 90×68 department store with a red racetrack aisle, front doors and parking lot (drawn as ASCII); the holiday aisle follows the device's month | deals, toys, home, clothes, tech, cafe, grocery, beauty, holiday | 108 |
++| Sunnyside Elementary | `sunnyside` | 90×70 one-story school (drawn as ASCII): a long hallway with rooms off it, the playground out back and the bus loop out front | class, library, lunch, gym, recess, art, music, science, bus | 108 |
+ 
+ New worlds are added with one checklist: see [docs/ADDING-A-WORLD.md](docs/ADDING-A-WORLD.md).
+ 
+diff --git a/src/audio/tracks.ts b/src/audio/tracks.ts
+index d8ce910..a4a1bc8 100644
+--- a/src/audio/tracks.ts
++++ b/src/audio/tracks.ts
+@@ -28,7 +28,7 @@ export interface Song {
+   parts: Part[];
+ }
+ 
+-export type SongName = 'title' | 'explore' | 'cave' | 'catch' | 'home' | 'buntown' | 'cherrymart';
++export type SongName = 'title' | 'explore' | 'cave' | 'catch' | 'home' | 'buntown' | 'cherrymart' | 'sunnyside';
+ 
+ export const SONGS: Record<SongName, Song> = {
+   // The title screen: bright and bouncy, "let's go on an adventure!". F major, 8 bars of eighth notes.
+@@ -183,6 +183,39 @@ export const SONGS: Record<SongName, Song> = {
+     ],
+   },
+ 
++  // Sunnyside Elementary: a cheerful school-bell tune, "ding-dong, time for class!". F major, 8 bars.
++  sunnyside: {
++    bpm: 132,
++    stepsPerBeat: 2,
++    parts: [
++      {
++        voice: 'pulse',
++        volume: 0.13,
++        notes: `C6 . A5 . C6 . A5 . | F5 . G5 . A5 . . . | Bb5 . A5 . G5 . F5 . | G5 . . . C5 . . .
++                C6 . A5 . C6 . D6 . | C6 . A5 . F5 . A5 . | G5 . Bb5 . A5 . G5 . | F5 . . . - - - -`,
++      },
++      {
++        // A little school bell ringing "ding-dong" at the start of each half.
++        voice: 'square',
++        volume: 0.04,
++        notes: `F6 - C6 - F6 - C6 - | - - - - - - - - | - - - - - - - - | - - - - C6 - E6 -
++                F6 - C6 - F6 - C6 - | - - - - - - - - | - - - - - - - - | - - - - C6 - F6 -`,
++      },
++      {
++        voice: 'triangle',
++        volume: 0.22,
++        notes: `F2 . C3 . F2 . C3 . | F2 . C3 . A2 . C3 . | Bb2 . F3 . Bb2 . F3 . | C3 . G3 . C3 . E3 .
++                F2 . C3 . F2 . C3 . | D3 . A3 . D3 . A3 . | Bb2 . F3 . C3 . E3 . | F2 . C3 . F2 . - -`,
++      },
++      {
++        voice: 'drums',
++        volume: 0.05,
++        notes: `k h s h k h s h | k h s h k h s h | k h s h k h s h | k h s h k k s h
++                k h s h k h s h | k h s h k h s h | k h s h k h s h | k h s h k - - -`,
++      },
++    ],
++  },
++
+   // Mysterious, not scary: slow, quiet and echoey, like exploring a big hall of crystals. A minor.
+   cave: {
+     bpm: 76,
+diff --git a/src/monsters/worlds/index.ts b/src/monsters/worlds/index.ts
+index 1df0761..16cd621 100644
+--- a/src/monsters/worlds/index.ts
++++ b/src/monsters/worlds/index.ts
+@@ -4,6 +4,7 @@ import { BUNTOWN_MONSTERS } from './buntown';
+ import { CHERRYMART_MONSTERS } from './cherrymart';
+ import { HOME_MONSTERS } from './home';
+ import { ISLAND_MONSTERS } from './island';
++import { SUNNYSIDE_MONSTERS } from './sunnyside';
+ import { WOODS_MONSTERS } from '../data/woods';
+ 
+ /**
+@@ -11,7 +12,7 @@ import { WOODS_MONSTERS } from '../data/woods';
+  * Ids are unique across ALL worlds, so the save can keep one collection.
+  * To add a world's monsters: make a file like island.ts and add it here.
+  */
+-export const MONSTERS: Monster[] = [...ISLAND_MONSTERS, ...HOME_MONSTERS, ...WOODS_MONSTERS, ...BUNTOWN_MONSTERS, ...CHERRYMART_MONSTERS];
++export const MONSTERS: Monster[] = [...ISLAND_MONSTERS, ...HOME_MONSTERS, ...WOODS_MONSTERS, ...BUNTOWN_MONSTERS, ...CHERRYMART_MONSTERS, ...SUNNYSIDE_MONSTERS];
+ 
+ /** One world's monsters. */
+ export function monstersOf(world: WorldId): Monster[] {
+diff --git a/src/monsters/worlds/sunnyside.ts b/src/monsters/worlds/sunnyside.ts
+new file mode 100644
+index 0000000..e0ac0f8
+--- /dev/null
++++ b/src/monsters/worlds/sunnyside.ts
+@@ -0,0 +1,786 @@
++import { NES as C } from '../../render/nesPalette';
++import { type MonsterData, worldMonsters } from '../monsterTypes';
++
++/**
++ * SUNNYSIDE ELEMENTARY's monsters: 12 per realm (2 rare, 4 uncommon, 6 common), 108 in total.
++ *
++ * Rules (checked on /gallery, see newWorldRules.ts):
++ *   - every id and name unique across ALL worlds; names one word, 2-4 syllables, no "-mon",
++ *     and no real brand, product or character names
++ *   - per realm, besides the 2 rares: at least 4 creatures and 2 living objects,
++ *     at most 4 round/blob bodies, at least 5 different body shapes
++ *   - ability name 2-3 words, description under 12 words; fact one sentence under 15 words
++ *   - monsters play, help, sing, glow and bounce: they never fight or hurt
++ *
++ * `habitat` is one of the realm ids in src/worlds/sunnyside/realms.ts.
++ * `look` picks one part of each kind; see src/monsters/art/ for the options.
++ */
++const LIST: MonsterData[] = [
++  // ───────────── CLASS ─────────────
++  {
++    id: 'gluegoo', name: 'Gluegoo', habitat: 'class', type: 'Bubble', rarity: 'common', size: 'small',
++    ability: { name: 'Sticky Hug', description: 'Holds paper crafts together with a gentle hug!' },
++    fact: 'Gluegoo dries clear, so you only see its smile.',
++    colors: { main: C.skyLight, accent: C.white, belly: C.white },
++    look: { body: 'blob', eyes: 'happy', mouth: 'smile', top: 'tuft', tail: 'none', feet: 'none', arms: 'nubs', pattern: 'none', cheeks: true },
++  },
++  {
++    id: 'erasmouse', name: 'Erasmouse', habitat: 'class', type: 'Toy', rarity: 'common', size: 'tiny',
++    ability: { name: 'Oops Wipe', description: 'Rubs away little oopsies so you can try again!' },
++    fact: 'Erasmouse gets a tiny bit smaller every time it helps.',
++    colors: { main: C.pinkLight, accent: C.pink, belly: C.white },
++    look: { body: 'long', eyes: 'round', mouth: 'smile', top: 'round', tail: 'long', feet: 'four', arms: 'none', pattern: 'none', belly: true, cheeks: true },
++  },
++  {
++    id: 'inchling', name: 'Inchling', habitat: 'class', type: 'Leaf', rarity: 'common', size: 'small',
++    ability: { name: 'Measure Wiggle', description: 'Wiggles along a table to see how long it is!' },
++    fact: 'Inchling is exactly twelve wiggles long, which is one foot.',
++    colors: { main: C.ochre, accent: C.black, belly: C.yellowLight },
++    look: { body: 'serpent', eyes: 'round', mouth: 'smile', top: 'antennae', tail: 'serpent', feet: 'none', arms: 'none', pattern: 'stripes', belly: true },
++  },
++  {
++    id: 'starchick', name: 'Starchick', habitat: 'class', type: 'Sparkle', rarity: 'common', size: 'tiny',
++    ability: { name: 'Gold Star', description: 'Drops a shiny gold star on great work!' },
++    fact: 'Starchick chirps once for every star on the sticker chart.',
++    colors: { main: C.yellowLight, accent: C.gold, belly: C.white, wing: C.gold },
++    look: { body: 'bird', eyes: 'big', mouth: 'beak', top: 'tuft', tail: 'none', feet: 'stubs', arms: 'bird', pattern: 'sprinkles', belly: true },
++  },
++  {
++    id: 'deskadoo', name: 'Deskadoo', habitat: 'class', type: 'Gear', rarity: 'common', size: 'small',
++    ability: { name: 'Lid Peek', description: 'Lifts its lid to share a sharp pencil!' },
++    fact: 'Deskadoo keeps a lost crayon inside for anyone who needs one.',
++    colors: { main: C.blueMid, accent: C.sand, belly: C.skyLight },
++    look: { body: 'square', eyes: 'round', mouth: 'grin', top: 'none', tail: 'none', feet: 'stubs', arms: 'nubs', pattern: 'none' },
++  },
++  {
++    id: 'nibblet', name: 'Nibblet', habitat: 'class', type: 'Fluff', rarity: 'common', size: 'tiny',
++    ability: { name: 'Wheel Run', description: 'Runs in its little wheel to cheer up the class!' },
++    fact: 'Nibblet stuffs its cheeks so full it looks like a fuzzy peach.',
++    colors: { main: C.sand, accent: C.orangeLight, belly: C.white },
++    look: { body: 'beast', eyes: 'round', mouth: 'cat', top: 'round', tail: 'puff', feet: 'paws', arms: 'none', pattern: 'patches', belly: true, cheeks: true },
++  },
++  {
++    id: 'guppling', name: 'Guppling', habitat: 'class', type: 'Splash', rarity: 'uncommon', size: 'tiny',
++    ability: { name: 'Bubble Wave', description: 'Blows a row of bubbles to say good morning!' },
++    fact: 'Guppling waves its fins at every kid who walks in.',
++    colors: { main: C.orange, accent: C.gold, belly: C.yellowLight },
++    look: { body: 'drop', eyes: 'big', mouth: 'o', top: 'fins', tail: 'fish', feet: 'none', arms: 'flippers', pattern: 'scales', belly: true },
++  },
++  {
++    id: 'twirlpoint', name: 'Twirlpoint', habitat: 'class', type: 'Gear', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Point Spin', description: 'Spins dull pencils into nice pointy points!' },
++    fact: 'Twirlpoint hums a happy whirr song while it works.',
++    colors: { main: C.grayLight, accent: C.redBright, belly: C.white },
++    look: { body: 'appliance', eyes: 'round', mouth: 'grin', top: 'none', tail: 'none', feet: 'none', arms: 'nubs', pattern: 'none' },
++  },
++  {
++    id: 'letterbug', name: 'Letterbug', habitat: 'class', type: 'Toy', rarity: 'uncommon', size: 'tiny',
++    ability: { name: 'Alphabet Hop', description: 'Hops from A to Z and back again!' },
++    fact: 'There are 26 letters, and Letterbug has a spot for each one.',
++    colors: { main: C.redBright, accent: C.blueMid, belly: C.yellowLight, wing: C.skyLight },
++    look: { body: 'pear', eyes: 'round', mouth: 'smile', top: 'antennae', tail: 'none', feet: 'stubs', arms: 'insect', pattern: 'spots' },
++  },
++  {
++    id: 'tickaroo', name: 'Tickaroo', habitat: 'class', type: 'Zap', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Recess Ring', description: 'Rings a happy bell when it is time to play!' },
++    fact: 'Tickaroo says tick, tock sixty times every single minute.',
++    colors: { main: C.mint, accent: C.black, belly: C.white },
++    look: { body: 'round', eyes: 'round', mouth: 'open', top: 'antennae', tail: 'none', feet: 'stubs', arms: 'nubs', pattern: 'none', belly: true },
++  },
++  {
++    id: 'chalkwyrm', name: 'Chalkwyrm', habitat: 'class', type: 'Sparkle', rarity: 'rare', size: 'large',
++    ability: { name: 'Air Drawing', description: 'Draws chalky pictures right in the air!' },
++    fact: 'Chalkwyrm sneezes little puffs of rainbow chalk dust.',
++    colors: { main: C.white, accent: C.greenForest, belly: C.grayLight, wing: C.greenSea },
++    look: { body: 'dragon', eyes: 'big', mouth: 'snout', top: 'crown', extraTop: 'dragonhorns', tail: 'dragon', feet: 'claws', arms: 'dragonwings', pattern: 'sprinkles', belly: true, cheeks: true },
++  },
++  {
++    id: 'pencilcorn', name: 'Pencilcorn', habitat: 'class', type: 'Toy', rarity: 'rare', size: 'large',
++    ability: { name: 'Eraser Prance', description: 'Prances on eraser hooves and tidies every smudge!' },
++    fact: "Pencilcorn's horn is a sharp pencil that only writes nice notes.",
++    colors: { main: C.gold, accent: C.pinkLight, belly: C.sand, feet: C.pinkLight },
++    look: { body: 'beast', eyes: 'big', mouth: 'snout', top: 'unihorn', extraTop: 'mane', tail: 'plume', feet: 'hooves', arms: 'none', pattern: 'stripes', belly: true, cheeks: true },
++  },
++  // ───────────── LIBRARY ─────────────
++  {
++    id: 'pagewiggle', name: 'Pagewiggle', habitat: 'library', type: 'Leaf', rarity: 'common', size: 'tiny',
++    ability: { name: 'Page Turn', description: 'Wiggles under a page and flips it over!' },
++    fact: 'Pagewiggle reads every book from the very first page.',
++    colors: { main: C.limeLight, accent: C.green, belly: C.white },
++    look: { body: 'serpent', eyes: 'happy', mouth: 'smile', top: 'antennae', tail: 'serpent', feet: 'none', arms: 'none', pattern: 'spots', belly: true, cheeks: true },
++  },
++  {
++    id: 'bookmoth', name: 'Bookmoth', habitat: 'library', type: 'Shadow', rarity: 'common', size: 'tiny',
++    ability: { name: 'Place Keeper', description: 'Naps between the pages to save your spot!' },
++    fact: 'Bookmoth flutters over to any book left open.',
++    colors: { main: C.lavender, accent: C.purple, belly: C.white, wing: C.pinkLight },
++    look: { body: 'tall', eyes: 'sleepy', mouth: 'smile', top: 'antennae', tail: 'none', feet: 'stubs', arms: 'insect', pattern: 'none', belly: true },
++  },
++  {
++    id: 'beanflop', name: 'Beanflop', habitat: 'library', type: 'Fluff', rarity: 'common', size: 'small',
++    ability: { name: 'Comfy Squish', description: 'Squishes into the perfect reading seat!' },
++    fact: 'Beanflop is full of tiny beans that giggle when you sit.',
++    colors: { main: C.rose, accent: C.pink, belly: C.pinkLight },
++    look: { body: 'blob', eyes: 'sleepy', mouth: 'smile', top: 'none', tail: 'none', feet: 'none', arms: 'nubs', pattern: 'none', cheeks: true },
++  },
++  {
++    id: 'bookbuggy', name: 'Bookbuggy', habitat: 'library', type: 'Gear', rarity: 'common', size: 'small',
++    ability: { name: 'Shelf Roll', description: 'Rolls returned books back to their shelves!' },
++    fact: 'Bookbuggy knows where every single book lives.',
++    colors: { main: C.greenSea, accent: C.redBright, belly: C.white },
++    look: { body: 'cart', eyes: 'round', mouth: 'grin', top: 'none', tail: 'none', feet: 'wheels', arms: 'nubs', pattern: 'none' },
++  },
++  {
++    id: 'stamplet', name: 'Stamplet', habitat: 'library', type: 'Gear', rarity: 'common', size: 'tiny',
++    ability: { name: 'Date Stamp', description: 'Stamps a smiley face inside your library book!' },
++    fact: 'Stamplet goes ka-chunk, and that is its favorite word.',
++    colors: { main: C.teal, accent: C.gold, belly: C.white },
++    look: { body: 'appliance', eyes: 'round', mouth: 'o', top: 'none', tail: 'none', feet: 'none', arms: 'nubs', pattern: 'none' },
++  },
++  {
++    id: 'nookbat', name: 'Nookbat', habitat: 'library', type: 'Shadow', rarity: 'common', size: 'small',
++    ability: { name: 'Cozy Hang', description: 'Hangs upside down to read with its toes!' },
++    fact: 'Nookbat likes the quiet corner best, with a soft lamp on.',
++    colors: { main: C.plum, accent: C.lavender, belly: C.pinkLight, wing: C.purple },
++    look: { body: 'beast', eyes: 'round', mouth: 'cat', top: 'cat', tail: 'none', feet: 'paws', arms: 'wings', pattern: 'none', belly: true },
++  },
++  {
++    id: 'readowl', name: 'Readowl', habitat: 'library', type: 'Shadow', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Story Hoot', description: 'Hoots softly when it is time for a story!' },
++    fact: 'Readowl can turn its head way around to read the shelf behind it.',
++    colors: { main: C.ochre, accent: C.brownRed, belly: C.sand, wing: C.brownRed },
++    look: { body: 'bird', eyes: 'big', mouth: 'beak', top: 'tuft', tail: 'none', feet: 'stubs', arms: 'bird', pattern: 'stripes', belly: true },
++  },
++  {
++    id: 'talebox', name: 'Talebox', habitat: 'library', type: 'Sparkle', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Story Pop', description: 'Opens its lid and a story pops out!' },
++    fact: 'Talebox always ends its stories with happily ever after.',
++    colors: { main: C.purple, accent: C.gold, belly: C.lavender },
++    look: { body: 'square', eyes: 'big', mouth: 'open', top: 'lid', tail: 'none', feet: 'stubs', arms: 'nubs', pattern: 'sprinkles' },
++  },
++  {
++    id: 'globlet', name: 'Globlet', habitat: 'library', type: 'Splash', rarity: 'uncommon', size: 'small',
++    ability: { name: 'World Spin', description: 'Spins around to show you faraway places!' },
++    fact: 'Globlet is mostly blue, because most of Earth is water.',
++    colors: { main: C.sky, accent: C.green, belly: C.skyLight },
++    look: { body: 'round', eyes: 'round', mouth: 'smile', top: 'antennae', tail: 'none', feet: 'stubs', arms: 'nubs', pattern: 'patches' },
++  },
++  {
++    id: 'storyfox', name: 'Storyfox', habitat: 'library', type: 'Fluff', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Funny Voices', description: 'Reads aloud with a silly voice for everyone!' },
++    fact: 'Storyfox curls its fluffy tail around kids at story time.',
++    colors: { main: C.orange, accent: C.white, belly: C.white },
++    look: { body: 'long', eyes: 'happy', mouth: 'cat', top: 'cat', tail: 'fluffy', feet: 'four', arms: 'none', pattern: 'none', belly: true, cheeks: true },
++  },
++  {
++    id: 'bookwyvern', name: 'Bookwyvern', habitat: 'library', type: 'Sparkle', rarity: 'rare', size: 'large',
++    ability: { name: 'Pages Flutter', description: 'Flaps its book wings and story pictures float out!' },
++    fact: "Bookwyvern's wings are open books, and it reads while it flies.",
++    colors: { main: C.red, accent: C.gold, belly: C.sand, wing: C.white },
++    look: { body: 'dragon', eyes: 'big', mouth: 'snout', top: 'crown', extraTop: 'dragonhorns', tail: 'dragon', feet: 'claws', arms: 'dragonwings', pattern: 'stripes', belly: true },
++  },
++  {
++    id: 'shushsphinx', name: 'Shushsphinx', habitat: 'library', type: 'Shadow', rarity: 'rare', size: 'large',
++    ability: { name: 'Whisper Riddle', description: 'Whispers a gentle riddle for you to solve!' },
++    fact: 'Shushsphinx can purr so quietly that only books can hear.',
++    colors: { main: C.sand, accent: C.purple, belly: C.white, wing: C.lavender },
++    look: { body: 'beast', eyes: 'big', mouth: 'cat', top: 'crown', extraTop: 'mane', tail: 'long', feet: 'paws', arms: 'feathers', pattern: 'glow', belly: true },
++  },
++  // ───────────── LUNCH ─────────────
++  {
++    id: 'moopack', name: 'Moopack', habitat: 'lunch', type: 'Snack', rarity: 'common', size: 'tiny',
++    ability: { name: 'Straw Sip', description: 'Pokes in a straw and shares a cold sip!' },
++    fact: 'Moopack says moo when you open its little spout.',
++    colors: { main: C.white, accent: C.sky, belly: C.skyLight },
++    look: { body: 'square', eyes: 'round', mouth: 'o', top: 'none', tail: 'none', feet: 'stubs', arms: 'nubs', pattern: 'none', cheeks: true },
++  },
++  {
++    id: 'sporkle', name: 'Sporkle', habitat: 'lunch', type: 'Gear', rarity: 'common', size: 'tiny',
++    ability: { name: 'Scoop Poke', description: 'Scoops soup and pokes peas with one end!' },
++    fact: 'Sporkle is half spoon, half fork, and all smiles.',
++    colors: { main: C.pastelBlue, accent: C.white, belly: C.white },
++    look: { body: 'tall', eyes: 'round', mouth: 'grin', top: 'spikes', tail: 'none', feet: 'stubs', arms: 'nubs', pattern: 'none' },
++  },
++  {
++    id: 'pizzapup', name: 'Pizzapup', habitat: 'lunch', type: 'Snack', rarity: 'common', size: 'small',
++    ability: { name: 'Cheesy Wag', description: 'Wags so hard its cheese gets all stretchy!' },
++    fact: 'Pizzapup has pepperoni spots, and it counts them every Friday.',
++    colors: { main: C.gold, accent: C.redBright, belly: C.yellowLight },
++    look: { body: 'long', eyes: 'happy', mouth: 'smile', top: 'round', tail: 'curl', feet: 'four', arms: 'none', pattern: 'spots', belly: true, cheeks: true },
++  },
++  {
++    id: 'crunchick', name: 'Crunchick', habitat: 'lunch', type: 'Snack', rarity: 'common', size: 'tiny',
++    ability: { name: 'Dip Dance', description: 'Does a happy dance next to the ketchup!' },
++    fact: 'Crunchick is crunchy on the outside and cuddly on the inside.',
++    colors: { main: C.orangeLight, accent: C.ochre, belly: C.sand, wing: C.ochre },
++    look: { body: 'bird', eyes: 'round', mouth: 'beak', top: 'tuft', tail: 'none', feet: 'stubs', arms: 'bird', pattern: 'spots', belly: true },
++  },
++  {
++    id: 'toasty', name: 'Toasty', habitat: 'lunch', type: 'Ember', rarity: 'common', size: 'small',
++    ability: { name: 'Warm Hum', description: 'Hums and warms up lunches nice and cozy!' },
++    fact: 'Toasty goes ding when your lunch is just right.',
++    colors: { main: C.grayLight, accent: C.orange, belly: C.white },
++    look: { body: 'appliance', eyes: 'round', mouth: 'smile', top: 'antennae', tail: 'none', feet: 'none', arms: 'nubs', pattern: 'none' },
++  },
++  {
++    id: 'crustwich', name: 'Crustwich', habitat: 'lunch', type: 'Snack', rarity: 'common', size: 'small',
++    ability: { name: 'Crust Share', description: 'Saves its crusts for the birds outside!' },
++    fact: 'Crustwich is a sandwich that likes to be cut into triangles.',
++    colors: { main: C.sand, accent: C.ochre, belly: C.yellowLight },
++    look: { body: 'square', eyes: 'happy', mouth: 'grin', top: 'leaf', tail: 'none', feet: 'stubs', arms: 'nubs', pattern: 'none' },
++  },
++  {
++    id: 'noodlewig', name: 'Noodlewig', habitat: 'lunch', type: 'Snack', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Noodle Twirl', description: 'Twirls around a fork like a happy noodle!' },
++    fact: 'Noodlewig is very long, and very good at slurping.',
++    colors: { main: C.yellowLight, accent: C.redBright, belly: C.white },
++    look: { body: 'serpent', eyes: 'happy', mouth: 'open', top: 'none', tail: 'serpent', feet: 'none', arms: 'none', pattern: 'sprinkles', belly: true, cheeks: true },
++  },
++  {
++    id: 'soupsip', name: 'Soupsip', habitat: 'lunch', type: 'Snack', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Steam Puff', description: 'Puffs warm steam that smells like tomatoes!' },
++    fact: 'Soupsip loves crackers, and they love floating in it.',
++    colors: { main: C.salmon, accent: C.white, belly: C.redBright },
++    look: { body: 'bowl', eyes: 'happy', mouth: 'smile', top: 'none', tail: 'none', feet: 'none', arms: 'nubs', pattern: 'none', cheeks: true },
++  },
++  {
++    id: 'peabuzz', name: 'Peabuzz', habitat: 'lunch', type: 'Leaf', rarity: 'uncommon', size: 'tiny',
++    ability: { name: 'Pea Roll', description: 'Rolls peas across the tray for a race!' },
++    fact: 'Peabuzz hides in the pea pile, so look for its wings.',
++    colors: { main: C.greenBright, accent: C.greenForest, belly: C.limeLight, wing: C.white },
++    look: { body: 'drop', eyes: 'round', mouth: 'smile', top: 'leaf', tail: 'none', feet: 'stubs', arms: 'insect', pattern: 'none', belly: true },
++  },
++  {
++    id: 'wobblepud', name: 'Wobblepud', habitat: 'lunch', type: 'Snack', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Jiggle Jig', description: 'Jiggles to the music and makes everyone laugh!' },
++    fact: 'Wobblepud cannot stand still, not even for a picture.',
++    colors: { main: C.brownRed, accent: C.sand, belly: C.orangeLight },
++    look: { body: 'blob', eyes: 'happy', mouth: 'grin', top: 'tuft', tail: 'none', feet: 'none', arms: 'nubs', pattern: 'none', cheeks: true },
++  },
++  {
++    id: 'lunchdrake', name: 'Lunchdrake', habitat: 'lunch', type: 'Snack', rarity: 'rare', size: 'large',
++    ability: { name: 'Snack Share', description: 'Opens its lunchbox lid and shares snacks with all!' },
++    fact: 'Lunchdrake always packs one extra cookie, just in case.',
++    colors: { main: C.blueMid, accent: C.redBright, belly: C.skyLight, wing: C.redBright },
++    look: { body: 'dragon', eyes: 'big', mouth: 'snout', top: 'lid', extraTop: 'dragonhorns', tail: 'dragon', feet: 'claws', arms: 'dragonwings', pattern: 'checks', belly: true, cheeks: true },
++  },
++  {
++    id: 'tatertotaur', name: 'Tatertotaur', habitat: 'lunch', type: 'Snack', rarity: 'rare', size: 'large',
++    ability: { name: 'Tot Stack', description: 'Stacks tater tots into a tall, wobbly tower!' },
++    fact: 'Tatertotaur is crispy, golden and the friendliest guest at lunch.',
++    colors: { main: C.ochre, accent: C.gold, belly: C.orangeLight },
++    look: { body: 'beast', eyes: 'big', mouth: 'snout', top: 'crown', extraTop: 'horns', tail: 'long', feet: 'hooves', arms: 'none', pattern: 'spots', belly: true, cheeks: true },
++  },
++  // ───────────── GYM ─────────────
++  {
++    id: 'dribbly', name: 'Dribbly', habitat: 'gym', type: 'Toy', rarity: 'common', size: 'small',
++    ability: { name: 'Swish Bounce', description: 'Bounces right through the hoop, swish!' },
++    fact: 'Dribbly dribbles itself when nobody is playing.',
++    colors: { main: C.orange, accent: C.black, belly: C.orangeLight },
++    look: { body: 'round', eyes: 'round', mouth: 'grin', top: 'none', tail: 'none', feet: 'stubs', arms: 'nubs', pattern: 'stripes' },
++  },
++  {
++    id: 'boinger', name: 'Boinger', habitat: 'gym', type: 'Toy', rarity: 'common', size: 'small',
++    ability: { name: 'Big Boing', description: 'Jumps so high it can touch the gym ceiling!' },
++    fact: 'Boinger counts every jump, and once it reached one hundred.',
++    colors: { main: C.salmon, accent: C.brownRed, belly: C.sand },
++    look: { body: 'beast', eyes: 'happy', mouth: 'smile', top: 'bunny', tail: 'long', feet: 'paws', arms: 'nubs', pattern: 'none', belly: true, cheeks: true },
++  },
++  {
++    id: 'tumblemat', name: 'Tumblemat', habitat: 'gym', type: 'Fluff', rarity: 'common', size: 'small',
++    ability: { name: 'Soft Landing', description: 'Unfolds flat so every tumble lands softly!' },
++    fact: 'Tumblemat giggles every time someone does a roll on it.',
++    colors: { main: C.blue, accent: C.skyLight, belly: C.blueMid },
++    look: { body: 'square', eyes: 'happy', mouth: 'open', top: 'none', tail: 'none', feet: 'stubs', arms: 'nubs', pattern: 'checks' },
++  },
++  {
++    id: 'rollaball', name: 'Rollaball', habitat: 'gym', type: 'Gear', rarity: 'common', size: 'small',
++    ability: { name: 'Ball Delivery', description: 'Rolls out a ball for every kid in class!' },
++    fact: 'Rollaball carries balls of every size, from tiny to huge.',
++    colors: { main: C.blueMid, accent: C.redBright, belly: C.white },
++    look: { body: 'cart', eyes: 'round', mouth: 'grin', top: 'none', tail: 'none', feet: 'wheels', arms: 'nubs', pattern: 'none' },
++  },
++  {
++    id: 'sprintbun', name: 'Sprintbun', habitat: 'gym', type: 'Zap', rarity: 'common', size: 'tiny',
++    ability: { name: 'Zoom Lap', description: 'Zooms one happy lap around the gym!' },
++    fact: 'Sprintbun always stops to wait for its friends to catch up.',
++    colors: { main: C.white, accent: C.pinkLight, belly: C.pinkLight },
++    look: { body: 'long', eyes: 'round', mouth: 'cat', top: 'bunny', tail: 'puff', feet: 'four', arms: 'none', pattern: 'none', belly: true, cheeks: true },
++  },
++  {
++    id: 'squeaker', name: 'Squeaker', habitat: 'gym', type: 'Toy', rarity: 'common', size: 'tiny',
++    ability: { name: 'Sneaker Squeak', description: 'Squeaks on the shiny floor to play a song!' },
++    fact: 'Squeaker ties its own laces with a double bunny-ear bow.',
++    colors: { main: C.lavender, accent: C.white, belly: C.white },
++    look: { body: 'pear', eyes: 'round', mouth: 'open', top: 'none', tail: 'none', feet: 'stubs', arms: 'nubs', pattern: 'stripes' },
++  },
++  {
++    id: 'whistlewren', name: 'Whistlewren', habitat: 'gym', type: 'Zap', rarity: 'uncommon', size: 'tiny',
++    ability: { name: 'Game Whistle', description: 'Toots a cheerful whistle to start the game!' },
++    fact: 'Whistlewren can whistle loud or tiny, but never too loud.',
++    colors: { main: C.grayLight, accent: C.redBright, belly: C.white, wing: C.gray },
++    look: { body: 'bird', eyes: 'round', mouth: 'beak', top: 'tuft', tail: 'none', feet: 'stubs', arms: 'bird', pattern: 'none', belly: true },
++  },
++  {
++    id: 'somersnail', name: 'Somersnail', habitat: 'gym', type: 'Splash', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Shell Roll', description: 'Tucks into its shell and does a somersault!' },
++    fact: 'Somersnail is slow walking, but super speedy rolling.',
++    colors: { main: C.seafoam, accent: C.purple, belly: C.mint },
++    look: { body: 'long', eyes: 'stalks', mouth: 'smile', top: 'none', tail: 'curl', feet: 'none', arms: 'none', pattern: 'spots', belly: true },
++  },
++  {
++    id: 'trophlet', name: 'Trophlet', habitat: 'gym', type: 'Sparkle', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Cheer Shine', description: 'Shines extra bright for anyone who tried their best!' },
++    fact: 'Trophlet thinks everybody who plays is a winner.',
++    colors: { main: C.gold, accent: C.yellowLight, belly: C.white },
++    look: { body: 'bowl', eyes: 'happy', mouth: 'grin', top: 'crown', tail: 'none', feet: 'none', arms: 'nubs', pattern: 'glow' },
++  },
++  {
++    id: 'bumpaball', name: 'Bumpaball', habitat: 'gym', type: 'Toy', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Bumpy Bop', description: 'Bops gently with its soft, bumpy nubs!' },
++    fact: 'Bumpaball is spiky, but every spike is squishy soft.',
++    colors: { main: C.pink, accent: C.pinkLight, belly: C.white },
++    look: { body: 'spiky', eyes: 'big', mouth: 'smile', top: 'none', tail: 'none', feet: 'stubs', arms: 'nubs', pattern: 'none', cheeks: true },
++  },
++  {
++    id: 'ropewyrm', name: 'Ropewyrm', habitat: 'gym', type: 'Toy', rarity: 'rare', size: 'large',
++    ability: { name: 'Climb Coil', description: 'Hangs down so kids can climb up to the ceiling!' },
++    fact: 'Ropewyrm ties itself in knots, then giggles untying them.',
++    colors: { main: C.ochre, accent: C.sand, belly: C.yellowLight },
++    look: { body: 'serpent', eyes: 'big', mouth: 'smile', top: 'crown', tail: 'serpent', feet: 'none', arms: 'none', pattern: 'stripes', belly: true, cheeks: true },
++  },
++  {
++    id: 'bouncicorn', name: 'Bouncicorn', habitat: 'gym', type: 'Zap', rarity: 'rare', size: 'large',
++    ability: { name: 'Rubber Bounce', description: 'Bounces all around the gym like a big ball!' },
++    fact: 'Bouncicorn is made of red rubber, so falling down is fun.',
++    colors: { main: C.redBright, accent: C.white, belly: C.salmon },
++    look: { body: 'beast', eyes: 'big', mouth: 'snout', top: 'unihorn', extraTop: 'mane', tail: 'plume', feet: 'hooves', arms: 'none', pattern: 'glow', belly: true, cheeks: true },
++  },
++  // ───────────── RECESS ─────────────
++  {
++    id: 'slidewhee', name: 'Slidewhee', habitat: 'recess', type: 'Splash', rarity: 'common', size: 'small',
++    ability: { name: 'Belly Slide', description: 'Slides down the slide on its tummy, wheee!' },
++    fact: 'Slidewhee climbs back up the ladder a hundred times a day.',
++    colors: { main: C.ochre, accent: C.brownRed, belly: C.sand },
++    look: { body: 'serpent', eyes: 'happy', mouth: 'open', top: 'round', tail: 'serpent', feet: 'none', arms: 'none', pattern: 'none', belly: true, cheeks: true },
++  },
++  {
++    id: 'bucketbop', name: 'Bucketbop', habitat: 'recess', type: 'Sand', rarity: 'common', size: 'tiny',
++    ability: { name: 'Castle Flip', description: 'Flips over and leaves a sandcastle behind!' },
++    fact: 'Bucketbop is always full of sand, and it likes it that way.',
++    colors: { main: C.orange, accent: C.redBright, belly: C.sand },
++    look: { body: 'bowl', eyes: 'round', mouth: 'grin', top: 'none', tail: 'none', feet: 'none', arms: 'nubs', pattern: 'none', cheeks: true },
++  },
++  {
++    id: 'flittersky', name: 'Flittersky', habitat: 'recess', type: 'Leaf', rarity: 'common', size: 'tiny',
++    ability: { name: 'Flower Visit', description: 'Flutters from flower to flower saying hello!' },
++    fact: 'Flittersky tastes with its feet, just like real butterflies.',
++    colors: { main: C.yellowLight, accent: C.orange, belly: C.white, wing: C.orangeLight },
++    look: { body: 'drop', eyes: 'round', mouth: 'smile', top: 'antennae', tail: 'none', feet: 'stubs', arms: 'insect', pattern: 'spots' },
++  },
++  {
++    id: 'chirpaloo', name: 'Chirpaloo', habitat: 'recess', type: 'Fluff', rarity: 'common', size: 'tiny',
++    ability: { name: 'Fence Song', description: 'Sits on the fence and sings a recess song!' },
++    fact: 'Chirpaloo knows recess is over when the bell rings.',
++    colors: { main: C.rose, accent: C.brownRed, belly: C.pinkLight, wing: C.brownRed },
++    look: { body: 'bird', eyes: 'round', mouth: 'beak', top: 'tuft', tail: 'none', feet: 'stubs', arms: 'bird', pattern: 'none', belly: true, cheeks: true },
++  },
++  {
++    id: 'scribblestick', name: 'Scribblestick', habitat: 'recess', type: 'Sparkle', rarity: 'common', size: 'small',
++    ability: { name: 'Chalk Doodle', description: 'Draws a smiley sun on the blacktop!' },
++    fact: 'Scribblestick gets shorter with every doodle, then grows back by morning.',
++    colors: { main: C.lavender, accent: C.pinkLight, belly: C.white },
++    look: { body: 'tall', eyes: 'round', mouth: 'grin', top: 'none', tail: 'none', feet: 'stubs', arms: 'nubs', pattern: 'sprinkles' },
++  },
++  {
++    id: 'kickaboo', name: 'Kickaboo', habitat: 'recess', type: 'Toy', rarity: 'common', size: 'small',
++    ability: { name: 'Big Kick', description: 'Rolls up to the plate and asks for a kick!' },
++    fact: 'Kickaboo loves kickball and always lands in a soft spot.',
++    colors: { main: C.redBright, accent: C.white, belly: C.salmon },
++    look: { body: 'round', eyes: 'big', mouth: 'grin', top: 'none', tail: 'none', feet: 'stubs', arms: 'nubs', pattern: 'stripes' },
++  },
++  {
++    id: 'dangleboo', name: 'Dangleboo', habitat: 'recess', type: 'Leaf', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Bar Swing', description: 'Swings across the monkey bars by its tail!' },
++    fact: 'Dangleboo hangs upside down to see the world a new way.',
++    colors: { main: C.brownRed, accent: C.sand, belly: C.sand },
++    look: { body: 'beast', eyes: 'round', mouth: 'grin', top: 'round', tail: 'curl', feet: 'paws', arms: 'nubs', pattern: 'none', belly: true, cheeks: true },
++  },
++  {
++    id: 'sandypinch', name: 'Sandypinch', habitat: 'recess', type: 'Sand', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Tunnel Dig', description: 'Digs a long tunnel right across the sandbox!' },
++    fact: 'Sandypinch walks sideways, because that is how crabs say hi.',
++    colors: { main: C.sand, accent: C.orange, belly: C.white },
++    look: { body: 'long', eyes: 'stalks', mouth: 'smile', top: 'none', tail: 'none', feet: 'four', arms: 'pincers', pattern: 'spots', belly: true },
++  },
++  {
++    id: 'wagonroll', name: 'Wagonroll', habitat: 'recess', type: 'Gear', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Wagon Ride', description: 'Gives friends a bumpy, giggly ride!' },
++    fact: 'Wagonroll can carry three friends and one very big ball.',
++    colors: { main: C.blue, accent: C.white, belly: C.skyLight },
++    look: { body: 'cart', eyes: 'happy', mouth: 'open', top: 'none', tail: 'none', feet: 'wheels', arms: 'nubs', pattern: 'none' },
++  },
++  {
++    id: 'wishweed', name: 'Wishweed', habitat: 'recess', type: 'Fluff', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Wish Puff', description: 'Lets you blow a puff and make a wish!' },
++    fact: 'Wishweed starts out as a yellow flower, then turns fluffy.',
++    colors: { main: C.white, accent: C.green, belly: C.yellowLight },
++    look: { body: 'cloud', eyes: 'happy', mouth: 'smile', top: 'leaf', tail: 'none', feet: 'none', arms: 'nubs', pattern: 'none', cheeks: true },
++  },
++  {
++    id: 'swingwyvern', name: 'Swingwyvern', habitat: 'recess', type: 'Fluff', rarity: 'rare', size: 'large',
++    ability: { name: 'Sky Swing', description: 'Swings so high it waves at the clouds!' },
++    fact: 'Swingwyvern always gives the next kid a turn on the swings.',
++    colors: { main: C.sky, accent: C.redBright, belly: C.skyLight, wing: C.white },
++    look: { body: 'dragon', eyes: 'big', mouth: 'snout', top: 'crown', extraTop: 'dragonhorns', tail: 'dragon', feet: 'claws', arms: 'dragonwings', pattern: 'glow', belly: true, cheeks: true },
++  },
++  {
++    id: 'hopchimera', name: 'Hopchimera', habitat: 'recess', type: 'Toy', rarity: 'rare', size: 'large',
++    ability: { name: 'Number Hop', description: 'Hops on its number squares and counts to ten!' },
++    fact: 'Hopchimera has three heads, so it counts in three voices.',
++    colors: { main: C.pinkLight, accent: C.white, belly: C.yellowLight },
++    look: { body: 'beast', eyes: 'big', mouth: 'smile', top: 'crown', extraTop: 'mane', tail: 'long', feet: 'paws', arms: 'none', pattern: 'checks', belly: true, cheeks: true, heads: 3 },
++  },
++  // ───────────── ART ─────────────
++  {
++    id: 'dabbletail', name: 'Dabbletail', habitat: 'art', type: 'Sparkle', rarity: 'common', size: 'small',
++    ability: { name: 'Brush Flick', description: 'Paints a rainbow stripe with its brushy tail!' },
++    fact: "Dabbletail's tail tip changes color every time it paints.",
++    colors: { main: C.brownRed, accent: C.sand, belly: C.skyLight },
++    look: { body: 'beast', eyes: 'round', mouth: 'cat', top: 'round', tail: 'fluffy', feet: 'paws', arms: 'none', pattern: 'none', belly: true, cheeks: true },
++  },
++  {
++    id: 'splattle', name: 'Splattle', habitat: 'art', type: 'Splash', rarity: 'common', size: 'small',
++    ability: { name: 'Color Splat', description: 'Lands with a splat and makes a pretty picture!' },
++    fact: 'Splattle mixed red and yellow once and turned orange.',
++    colors: { main: C.pink, accent: C.gold, belly: C.pinkLight },
++    look: { body: 'blob', eyes: 'happy', mouth: 'open', top: 'none', tail: 'none', feet: 'none', arms: 'nubs', pattern: 'spots', cheeks: true },
++  },
++  {
++    id: 'snipsnap', name: 'Snipsnap', habitat: 'art', type: 'Gear', rarity: 'common', size: 'tiny',
++    ability: { name: 'Snowflake Snip', description: 'Snips folded paper into a snowflake surprise!' },
++    fact: 'Snipsnap has round, safe tips and always walks with them down.',
++    colors: { main: C.cyan, accent: C.grayLight, belly: C.white },
++    look: { body: 'pear', eyes: 'round', mouth: 'grin', top: 'none', tail: 'none', feet: 'stubs', arms: 'pincers', pattern: 'none' },
++  },
++  {
++    id: 'paintpot', name: 'Paintpot', habitat: 'art', type: 'Splash', rarity: 'common', size: 'tiny',
++    ability: { name: 'Brush Dip', description: 'Holds still so brushes can dip in!' },
++    fact: 'Paintpot is full of blue paint, the color of a sunny sky.',
++    colors: { main: C.sky, accent: C.blueMid, belly: C.skyLight },
++    look: { body: 'bowl', eyes: 'happy', mouth: 'smile', top: 'none', tail: 'none', feet: 'none', arms: 'nubs', pattern: 'none', cheeks: true },
++  },
++  {
++    id: 'artcart', name: 'Artcart', habitat: 'art', type: 'Gear', rarity: 'common', size: 'small',
++    ability: { name: 'Supply Roll', description: 'Rolls over with crayons, glue and glitter!' },
++    fact: 'Artcart has a drawer for every color of the rainbow.',
++    colors: { main: C.redBright, accent: C.gold, belly: C.white },
++    look: { body: 'cart', eyes: 'round', mouth: 'grin', top: 'none', tail: 'none', feet: 'wheels', arms: 'nubs', pattern: 'sprinkles' },
++  },
++  {
++    id: 'rinsefin', name: 'Rinsefin', habitat: 'art', type: 'Splash', rarity: 'common', size: 'tiny',
++    ability: { name: 'Brush Wash', description: 'Swishes around and cleans the paintbrushes!' },
++    fact: 'Rinsefin lives in the water cup and changes color with every rinse.',
++    colors: { main: C.mint, accent: C.sky, belly: C.white },
++    look: { body: 'drop', eyes: 'big', mouth: 'o', top: 'fins', tail: 'fish', feet: 'none', arms: 'flippers', pattern: 'none', belly: true },
++  },
++  {
++    id: 'doodlejay', name: 'Doodlejay', habitat: 'art', type: 'Sparkle', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Doodle Peck', description: 'Pecks tiny dots that turn into a picture!' },
++    fact: 'Doodlejay hangs its best drawings on the fridge at home.',
++    colors: { main: C.blueMid, accent: C.white, belly: C.skyLight, wing: C.blue },
++    look: { body: 'bird', eyes: 'round', mouth: 'beak', top: 'tuft', tail: 'none', feet: 'stubs', arms: 'bird', pattern: 'spots', belly: true, cheeks: true },
++  },
++  {
++    id: 'canvaso', name: 'Canvaso', habitat: 'art', type: 'Toy', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Blank Page', description: 'Stands still so you can paint anything on it!' },
++    fact: 'Canvaso is white until a friend makes it a masterpiece.',
++    colors: { main: C.white, accent: C.ochre, belly: C.sand },
++    look: { body: 'square', eyes: 'big', mouth: 'smile', top: 'none', tail: 'none', feet: 'stubs', arms: 'nubs', pattern: 'sprinkles', cheeks: true },
++  },
++  {
++    id: 'glitterfly', name: 'Glitterfly', habitat: 'art', type: 'Sparkle', rarity: 'uncommon', size: 'tiny',
++    ability: { name: 'Glitter Flap', description: 'Flaps its wings and sprinkles sparkly glitter!' },
++    fact: 'Glitterfly leaves sparkles everywhere, even on the teacher.',
++    colors: { main: C.pinkLight, accent: C.purple, belly: C.white, wing: C.lavender },
++    look: { body: 'round', eyes: 'big', mouth: 'smile', top: 'antennae', tail: 'none', feet: 'stubs', arms: 'insect', pattern: 'sprinkles' },
++  },
++  {
++    id: 'squigglesnake', name: 'Squigglesnake', habitat: 'art', type: 'Leaf', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Squiggle Line', description: 'Wiggles across paper and leaves a squiggly line!' },
++    fact: 'Squigglesnake can make a circle, a zigzag and a heart.',
++    colors: { main: C.green, accent: C.gold, belly: C.limeLight },
++    look: { body: 'serpent', eyes: 'happy', mouth: 'smile', top: 'none', tail: 'serpent', feet: 'none', arms: 'none', pattern: 'stripes', belly: true },
++  },
++  {
++    id: 'crayondrake', name: 'Crayondrake', habitat: 'art', type: 'Sparkle', rarity: 'rare', size: 'large',
++    ability: { name: 'Rainbow Draw', description: 'Draws a whole rainbow with its crayon spikes!' },
++    fact: "Crayondrake's spikes are crayons, and it never runs out of colors.",
++    colors: { main: C.purple, accent: C.gold, belly: C.lavender, wing: C.redBright },
++    look: { body: 'dragon', eyes: 'big', mouth: 'snout', top: 'crown', extraTop: 'spikes', tail: 'dragon', feet: 'claws', arms: 'dragonwings', pattern: 'stripes', belly: true, cheeks: true },
++  },
++  {
++    id: 'paintphoenix', name: 'Paintphoenix', habitat: 'art', type: 'Ember', rarity: 'rare', size: 'large',
++    ability: { name: 'Color Splash', description: 'Flaps its palette wings and splashes bright colors!' },
++    fact: 'Paintphoenix knows that blue and yellow make green.',
++    colors: { main: C.orange, accent: C.gold, belly: C.sand, wing: C.redBright },
++    look: { body: 'bird', eyes: 'big', mouth: 'beak', top: 'crown', extraTop: 'tuft', tail: 'plume', feet: 'claws', arms: 'feathers', pattern: 'spots', belly: true, cheeks: true },
++  },
++  // ───────────── MUSIC ─────────────
++  {
++    id: 'tumtum', name: 'Tumtum', habitat: 'music', type: 'Toy', rarity: 'common', size: 'small',
++    ability: { name: 'Drum Roll', description: 'Taps its tummy for a happy drum roll!' },
++    fact: 'Tumtum keeps the beat so everyone claps at the same time.',
++    colors: { main: C.blue, accent: C.white, belly: C.skyLight },
++    look: { body: 'bowl', eyes: 'happy', mouth: 'grin', top: 'none', tail: 'none', feet: 'stubs', arms: 'nubs', pattern: 'stripes', cheeks: true },
++  },
++  {
++    id: 'rattlebean', name: 'Rattlebean', habitat: 'music', type: 'Toy', rarity: 'common', size: 'tiny',
++    ability: { name: 'Shake Shake', description: 'Wiggles and rattles a cheerful little rhythm!' },
++    fact: 'Rattlebean is full of dried beans that go chick-a-chick.',
++    colors: { main: C.redBright, accent: C.gold, belly: C.orangeLight },
++    look: { body: 'pear', eyes: 'round', mouth: 'open', top: 'leaf', tail: 'none', feet: 'stubs', arms: 'nubs', pattern: 'spots' },
++  },
++  {
++    id: 'xylobop', name: 'Xylobop', habitat: 'music', type: 'Sparkle', rarity: 'common', size: 'small',
++    ability: { name: 'Bar Chime', description: 'Rings each colorful bar from low to high!' },
++    fact: 'Xylobop has eight bars, one for every note of a scale.',
++    colors: { main: C.greenBright, accent: C.purple, belly: C.yellowLight },
++    look: { body: 'square', eyes: 'big', mouth: 'smile', top: 'none', tail: 'none', feet: 'four', arms: 'nubs', pattern: 'stripes', cheeks: true },
++  },
++  {
++    id: 'fiddlebug', name: 'Fiddlebug', habitat: 'music', type: 'Leaf', rarity: 'common', size: 'tiny',
++    ability: { name: 'Leg Fiddle', description: 'Rubs its legs together and chirps a tune!' },
++    fact: 'Fiddlebug chirps faster when the music room is warm.',
++    colors: { main: C.plum, accent: C.limeLight, belly: C.lavender, wing: C.pinkLight },
++    look: { body: 'tall', eyes: 'big', mouth: 'smile', top: 'antennae', tail: 'none', feet: 'stubs', arms: 'insect', pattern: 'none', belly: true },
++  },
++  {
++    id: 'bassfrog', name: 'Bassfrog', habitat: 'music', type: 'Splash', rarity: 'common', size: 'small',
++    ability: { name: 'Low Croak', description: 'Sings the lowest, bounciest note in the room!' },
++    fact: 'Bassfrog hums so low the music stands wiggle.',
++    colors: { main: C.lime, accent: C.greenDark, belly: C.limeLight },
++    look: { body: 'long', eyes: 'stalks', mouth: 'grin', top: 'none', tail: 'none', feet: 'four', arms: 'none', pattern: 'spots', belly: true },
++  },
++  {
++    id: 'lullapuff', name: 'Lullapuff', habitat: 'music', type: 'Fluff', rarity: 'common', size: 'small',
++    ability: { name: 'Soft Song', description: 'Hums a soft song for quiet time!' },
++    fact: 'Lullapuff floats over the piano when the song is slow.',
++    colors: { main: C.lavender, accent: C.white, belly: C.pinkLight },
++    look: { body: 'cloud', eyes: 'sleepy', mouth: 'o', top: 'none', tail: 'none', feet: 'none', arms: 'none', pattern: 'none', cheeks: true },
++  },
++  {
++    id: 'plinkety', name: 'Plinkety', habitat: 'music', type: 'Toy', rarity: 'uncommon', size: 'medium',
++    ability: { name: 'Key Plink', description: 'Plinks its black and white keys in order!' },
++    fact: 'A piano has 88 keys, and Plinkety can reach all of them.',
++    colors: { main: C.brownRed, accent: C.white, belly: C.black },
++    look: { body: 'appliance', eyes: 'round', mouth: 'grin', top: 'none', tail: 'none', feet: 'stubs', arms: 'nubs', pattern: 'checks' },
++  },
++  {
++    id: 'tralalark', name: 'Tralalark', habitat: 'music', type: 'Fluff', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Morning Trill', description: 'Trills the first song of the school day!' },
++    fact: 'Tralalark learns a new song every Monday.',
++    colors: { main: C.skyLight, accent: C.gold, belly: C.white, wing: C.sky },
++    look: { body: 'bird', eyes: 'happy', mouth: 'beak', top: 'tuft', tail: 'none', feet: 'stubs', arms: 'bird', pattern: 'none', belly: true, cheeks: true },
++  },
++  {
++    id: 'purrtune', name: 'Purrtune', habitat: 'music', type: 'Fluff', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Purr Melody', description: 'Purrs along to any song you sing!' },
++    fact: 'Purrtune naps on the piano bench between lessons.',
++    colors: { main: C.orangeLight, accent: C.brownRed, belly: C.sand },
++    look: { body: 'beast', eyes: 'round', mouth: 'cat', top: 'cat', tail: 'curl', feet: 'paws', arms: 'none', pattern: 'stripes', belly: true, cheeks: true },
++  },
++  {
++    id: 'tingaling', name: 'Tingaling', habitat: 'music', type: 'Sparkle', rarity: 'uncommon', size: 'tiny',
++    ability: { name: 'Triangle Ting', description: 'Goes ting and makes everyone smile!' },
++    fact: 'Tingaling is shaped like a triangle and rings like a tiny bell.',
++    colors: { main: C.yellowLight, accent: C.gold, belly: C.white },
++    look: { body: 'crystal', eyes: 'big', mouth: 'o', top: 'none', tail: 'none', feet: 'none', arms: 'nubs', pattern: 'glow' },
++  },
++  {
++    id: 'tubawyrm', name: 'Tubawyrm', habitat: 'music', type: 'Gear', rarity: 'rare', size: 'large',
++    ability: { name: 'Happy Honk', description: 'Honks a big, bouncy song through its horn!' },
++    fact: 'Tubawyrm is the biggest horn in the band and the loudest laugher.',
++    colors: { main: C.gold, accent: C.yellowLight, belly: C.orange },
++    look: { body: 'serpent', eyes: 'big', mouth: 'o', top: 'crown', tail: 'serpent', feet: 'none', arms: 'none', pattern: 'glow', belly: true, cheeks: true },
++  },
++  {
++    id: 'harpicorn', name: 'Harpicorn', habitat: 'music', type: 'Sparkle', rarity: 'rare', size: 'large',
++    ability: { name: 'Mane Strum', description: 'Shakes its harp-string mane for a sparkly song!' },
++    fact: "Harpicorn's mane has strings that play soft notes in the wind.",
++    colors: { main: C.white, accent: C.gold, belly: C.pinkLight, feet: C.gold },
++    look: { body: 'beast', eyes: 'big', mouth: 'snout', top: 'unihorn', extraTop: 'mane', tail: 'plume', feet: 'hooves', arms: 'none', pattern: 'glow', belly: true, cheeks: true },
++  },
++  // ───────────── SCIENCE ─────────────
++  {
++    id: 'magnapup', name: 'Magnapup', habitat: 'science', type: 'Zap', rarity: 'common', size: 'small',
++    ability: { name: 'Paperclip Pull', description: 'Wags its tail and paperclips zip over!' },
++    fact: 'Magnapup sticks to the fridge but never to paper.',
++    colors: { main: C.redBright, accent: C.grayLight, belly: C.white },
++    look: { body: 'beast', eyes: 'round', mouth: 'open', top: 'round', tail: 'zigzag', feet: 'paws', arms: 'none', pattern: 'none', belly: true, cheeks: true },
++  },
++  {
++    id: 'bubblecup', name: 'Bubblecup', habitat: 'science', type: 'Bubble', rarity: 'common', size: 'tiny',
++    ability: { name: 'Fizz Pop', description: 'Fizzes up tiny bubbles that tickle your nose!' },
++    fact: 'Bubblecup bubbles when you add a pinch of baking soda.',
++    colors: { main: C.skyLight, accent: C.white, belly: C.mint },
++    look: { body: 'bowl', eyes: 'happy', mouth: 'o', top: 'none', tail: 'none', feet: 'none', arms: 'nubs', pattern: 'spots', cheeks: true },
++  },
++  {
++    id: 'growbud', name: 'Growbud', habitat: 'science', type: 'Leaf', rarity: 'common', size: 'tiny',
++    ability: { name: 'Light Reach', description: 'Stretches its leaf toward the warm light!' },
++    fact: 'Growbud drinks water with its roots and sunlight with its leaf.',
++    colors: { main: C.greenBright, accent: C.brownRed, belly: C.limeLight },
++    look: { body: 'tall', eyes: 'happy', mouth: 'smile', top: 'leaf', tail: 'none', feet: 'stubs', arms: 'leaves', pattern: 'none', belly: true, cheeks: true },
++  },
++  {
++    id: 'lensbeetle', name: 'Lensbeetle', habitat: 'science', type: 'Stone', rarity: 'common', size: 'tiny',
++    ability: { name: 'Close Look', description: 'Makes tiny things look big and friendly!' },
++    fact: 'Lensbeetle has a shell like a magnifying glass.',
++    colors: { main: C.gold, accent: C.brownDark, belly: C.yellowLight, wing: C.skyLight },
++    look: { body: 'round', eyes: 'big', mouth: 'grin', top: 'antennae', tail: 'none', feet: 'stubs', arms: 'insect', pattern: 'spots' },
++  },
++  {
++    id: 'tadwiggle', name: 'Tadwiggle', habitat: 'science', type: 'Splash', rarity: 'common', size: 'tiny',
++    ability: { name: 'Tank Wiggle', description: 'Wiggles its tail and swims a happy loop!' },
++    fact: 'Tadwiggle will grow legs one day and turn into a frog.',
++    colors: { main: C.teal, accent: C.greenDark, belly: C.mint },
++    look: { body: 'drop', eyes: 'big', mouth: 'smile', top: 'none', tail: 'fish', feet: 'none', arms: 'none', pattern: 'none', belly: true },
++  },
++  {
++    id: 'labgecko', name: 'Labgecko', habitat: 'science', type: 'Leaf', rarity: 'common', size: 'small',
++    ability: { name: 'Goggle Peek', description: 'Pushes up its goggles for a closer look!' },
++    fact: 'Labgecko can walk up the window to check on the plants.',
++    colors: { main: C.lime, accent: C.orange, belly: C.yellowLight },
++    look: { body: 'long', eyes: 'round', mouth: 'grin', top: 'none', tail: 'long', feet: 'four', arms: 'none', pattern: 'spots', belly: true },
++  },
++  {
++    id: 'fizzlava', name: 'Fizzlava', habitat: 'science', type: 'Ember', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Foam Burst', description: 'Erupts with pink foam and lots of giggles!' },
++    fact: 'Fizzlava is a pretend volcano made of clay and fizzy foam.',
++    colors: { main: C.brownRed, accent: C.orange, belly: C.pink },
++    look: { body: 'spiky', eyes: 'round', mouth: 'open', top: 'flame', tail: 'none', feet: 'stubs', arms: 'nubs', pattern: 'cracks' },
++  },
++  {
++    id: 'zoomlens', name: 'Zoomlens', habitat: 'science', type: 'Gear', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Tiny World', description: 'Shows the tiny world hiding in a drop!' },
++    fact: 'Zoomlens found a whole zoo of tiny swimmers in pond water.',
++    colors: { main: C.grayLight, accent: C.blueMid, belly: C.white },
++    look: { body: 'appliance', eyes: 'cyclops', mouth: 'smile', top: 'none', tail: 'none', feet: 'stubs', arms: 'nubs', pattern: 'none' },
++  },
++  {
++    id: 'orbitowl', name: 'Orbitowl', habitat: 'science', type: 'Shadow', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Planet Spin', description: 'Spins tiny planets around its head!' },
++    fact: 'Orbitowl knows Earth takes one year to circle the Sun.',
++    colors: { main: C.periwinkle, accent: C.gold, belly: C.pastelBlue, wing: C.blueMid },
++    look: { body: 'bird', eyes: 'big', mouth: 'beak', top: 'tuft', tail: 'none', feet: 'claws', arms: 'bird', pattern: 'sprinkles', belly: true },
++  },
++  {
++    id: 'botbox', name: 'Botbox', habitat: 'science', type: 'Gear', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Beep Boop', description: 'Beeps a robot hello to every friend!' },
++    fact: 'Botbox was built from a cardboard box and a lot of tape.',
++    colors: { main: C.cyan, accent: C.redBright, belly: C.white },
++    look: { body: 'square', eyes: 'round', mouth: 'grin', top: 'antennae', tail: 'none', feet: 'wheels', arms: 'claws', pattern: 'checks' },
++  },
++  {
++    id: 'beakerdrake', name: 'Beakerdrake', habitat: 'science', type: 'Bubble', rarity: 'rare', size: 'large',
++    ability: { name: 'Potion Bubble', description: 'Bubbles up rainbow foam from its glass belly!' },
++    fact: 'Beakerdrake measures every bubble before it pops.',
++    colors: { main: C.mint, accent: C.purple, belly: C.white, wing: C.seafoam },
++    look: { body: 'dragon', eyes: 'big', mouth: 'snout', top: 'crown', extraTop: 'dragonhorns', tail: 'dragon', feet: 'claws', arms: 'dragonwings', pattern: 'spots', belly: true, cheeks: true },
++  },
++  {
++    id: 'rocketroc', name: 'Rocketroc', habitat: 'science', type: 'Gear', rarity: 'rare', size: 'large',
++    ability: { name: 'Countdown Zoom', description: 'Counts down from ten and zooms up high!' },
++    fact: 'Rocketroc has been to the Moon and back for show-and-tell.',
++    colors: { main: C.white, accent: C.redBright, belly: C.skyLight, wing: C.redBright },
++    look: { body: 'bird', eyes: 'big', mouth: 'beak', top: 'crown', extraTop: 'tuft', tail: 'plume', feet: 'claws', arms: 'feathers', pattern: 'glow', belly: true, cheeks: true },
++  },
++  // ───────────── BUS ─────────────
++  {
++    id: 'pylonpip', name: 'Pylonpip', habitat: 'bus', type: 'Toy', rarity: 'common', size: 'tiny',
++    ability: { name: 'Safe Spot', description: 'Stands tall so cars go slow and careful!' },
++    fact: 'Pylonpip is bright orange so drivers can see it from far away.',
++    colors: { main: C.orange, accent: C.white, belly: C.orangeLight },
++    look: { body: 'drop', eyes: 'round', mouth: 'smile', top: 'none', tail: 'none', feet: 'stubs', arms: 'nubs', pattern: 'stripes', cheeks: true },
++  },
++  {
++    id: 'bagaboo', name: 'Bagaboo', habitat: 'bus', type: 'Toy', rarity: 'common', size: 'small',
++    ability: { name: 'Lunch Carry', description: 'Carries your lunch and homework all the way home!' },
++    fact: 'Bagaboo always has one lost crayon in its front pocket.',
++    colors: { main: C.purple, accent: C.gold, belly: C.lavender },
++    look: { body: 'square', eyes: 'big', mouth: 'grin', top: 'none', tail: 'none', feet: 'stubs', arms: 'nubs', pattern: 'patches', cheeks: true },
++  },
++  {
++    id: 'coorie', name: 'Coorie', habitat: 'bus', type: 'Fluff', rarity: 'common', size: 'small',
++    ability: { name: 'Bench Snuggle', description: 'Fluffs up and snuggles beside you at the stop!' },
++    fact: 'Coorie waits at the bus stop every morning for crumbs and hellos.',
++    colors: { main: C.grayLight, accent: C.teal, belly: C.white, wing: C.gray },
++    look: { body: 'bird', eyes: 'round', mouth: 'beak', top: 'none', tail: 'none', feet: 'stubs', arms: 'bird', pattern: 'none', belly: true, cheeks: true },
++  },
++  {
++    id: 'puddlebug', name: 'Puddlebug', habitat: 'bus', type: 'Splash', rarity: 'common', size: 'tiny',
++    ability: { name: 'Puddle Hop', description: 'Hops from puddle to puddle with a tiny splash!' },
++    fact: 'Puddlebug loves rainy days and splashy rain boots.',
++    colors: { main: C.greenBright, accent: C.blueMid, belly: C.limeLight, wing: C.skyLight },
++    look: { body: 'tall', eyes: 'big', mouth: 'open', top: 'antennae', tail: 'none', feet: 'stubs', arms: 'insect', pattern: 'spots', belly: true },
++  },
++  {
++    id: 'beepahorn', name: 'Beepahorn', habitat: 'bus', type: 'Gear', rarity: 'common', size: 'tiny',
++    ability: { name: 'Friendly Beep', description: 'Beeps twice to say good morning!' },
++    fact: 'Beepahorn only beeps nicely, never grumpy.',
++    colors: { main: C.yellowLight, accent: C.black, belly: C.white },
++    look: { body: 'appliance', eyes: 'happy', mouth: 'o', top: 'none', tail: 'none', feet: 'stubs', arms: 'nubs', pattern: 'none', cheeks: true },
++  },
++  {
++    id: 'drizzlepuff', name: 'Drizzlepuff', habitat: 'bus', type: 'Frost', rarity: 'common', size: 'small',
++    ability: { name: 'Light Drizzle', description: 'Sprinkles a gentle rain for puddle jumping!' },
++    fact: 'Drizzlepuff makes rainbows when the sun peeks out.',
++    colors: { main: C.skyLight, accent: C.blueMid, belly: C.white },
++    look: { body: 'cloud', eyes: 'sleepy', mouth: 'smile', top: 'none', tail: 'none', feet: 'none', arms: 'none', pattern: 'none', cheeks: true },
++  },
++  {
++    id: 'stopagon', name: 'Stopagon', habitat: 'bus', type: 'Stone', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Big Stop', description: 'Holds up its red face so everyone stops!' },
++    fact: 'Stopagon has eight sides, just like a real stop sign.',
++    colors: { main: C.redBright, accent: C.white, belly: C.salmon },
++    look: { body: 'crystal', eyes: 'round', mouth: 'smile', top: 'none', tail: 'none', feet: 'stubs', arms: 'nubs', pattern: 'none' },
++  },
++  {
++    id: 'zoomabout', name: 'Zoomabout', habitat: 'bus', type: 'Gear', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Pickup Zoom', description: 'Zooms up to the curb right on time!' },
++    fact: 'Zoomabout always stops for kids at the crosswalk.',
++    colors: { main: C.sky, accent: C.white, belly: C.pastelBlue },
++    look: { body: 'cart', eyes: 'big', mouth: 'grin', top: 'none', tail: 'none', feet: 'wheels', arms: 'none', pattern: 'none', cheeks: true },
++  },
++  {
++    id: 'flagwag', name: 'Flagwag', habitat: 'bus', type: 'Fluff', rarity: 'uncommon', size: 'small',
++    ability: { name: 'Tail Wave', description: 'Waves its flag tail when the wind blows!' },
++    fact: 'Flagwag naps at the bottom of the flagpole every recess.',
++    colors: { main: C.sand, accent: C.blueMid, belly: C.white },
++    look: { body: 'beast', eyes: 'happy', mouth: 'open', top: 'bunny', tail: 'fluffy', feet: 'paws', arms: 'none', pattern: 'none', belly: true, cheeks: true },
++  },
++  {
++    id: 'stripester', name: 'Stripester', habitat: 'bus', type: 'Shadow', rarity: 'uncommon', size: 'medium',
++    ability: { name: 'Crosswalk Stretch', description: 'Lies flat across the road so kids cross safely!' },
++    fact: 'Stripester reminds everyone to look left, right and left again.',
++    colors: { main: C.white, accent: C.black, belly: C.grayLight },
++    look: { body: 'serpent', eyes: 'round', mouth: 'smile', top: 'none', tail: 'serpent', feet: 'none', arms: 'none', pattern: 'stripes', belly: true },
++  },
++  {
++    id: 'busdrake', name: 'Busdrake', habitat: 'bus', type: 'Gear', rarity: 'rare', size: 'large',
++    ability: { name: 'All Aboard', description: 'Opens its doors and gives everyone a ride!' },
++    fact: 'Busdrake rolls on wheels and knows every stop by heart.',
++    colors: { main: C.gold, accent: C.black, belly: C.yellowLight, wing: C.orange },
++    look: { body: 'dragon', eyes: 'big', mouth: 'snout', top: 'crown', extraTop: 'dragonhorns', tail: 'dragon', feet: 'wheels', arms: 'dragonwings', pattern: 'stripes', belly: true, cheeks: true },
++  },
++  {
++    id: 'crossgriff', name: 'Crossgriff', habitat: 'bus', type: 'Stone', rarity: 'rare', size: 'large',
++    ability: { name: 'Shield Guard', description: 'Holds up its stop-sign shield so kids cross safely!' },
++    fact: 'Crossgriff wears a bright vest so every driver sees it.',
++    colors: { main: C.lime, accent: C.redBright, belly: C.yellowLight, wing: C.gold },
++    look: { body: 'beast', eyes: 'big', mouth: 'beak', top: 'crown', tail: 'plume', feet: 'claws', arms: 'feathers', pattern: 'stripes', belly: true, cheeks: true },
++  },
++];
++
++export const SUNNYSIDE_MONSTERS = worldMonsters('sunnyside', LIST);
+diff --git a/src/worlds/index.ts b/src/worlds/index.ts
+index d94ed19..2e2927c 100644
+--- a/src/worlds/index.ts
++++ b/src/worlds/index.ts
+@@ -3,6 +3,7 @@ import { BUNTOWN } from './buntown';
+ import { CHERRYMART } from './cherrymart';
+ import { HOME } from './home';
+ import { ISLAND } from './island';
++import { SUNNYSIDE } from './sunnyside';
+ import { WOODS } from './woods';
+ import { type RealmDef, type WorldDef } from './types';
+ import { type WorldId } from './worldIds';
+@@ -17,6 +18,7 @@ export const WORLDS: Record<WorldId, WorldDef> = {
+   woods: WOODS,
+   buntown: BUNTOWN,
+   cherrymart: CHERRYMART,
++  sunnyside: SUNNYSIDE,
+ };
+ 
+ /** All worlds, in order (for the title screen and /gallery). */
+diff --git a/src/worlds/sunnyside/decor/artMusic.ts b/src/worlds/sunnyside/decor/artMusic.ts
+new file mode 100644
+index 0000000..c64cd7b
+--- /dev/null
++++ b/src/worlds/sunnyside/decor/artMusic.ts
+@@ -0,0 +1,160 @@
++import { type DecorKind } from '../../building/types';
++
++/** Art room and music room things (letters as in classLibrary.ts). */
++export const ART_MUSIC: Record<string, DecorKind> = {
++  // An easel with a painting of a sunny day.
++  easel: {
++    solid: true,
++    on: ['artFloor'],
++    place: 'open',
++    sprite: [
++      '.....kk.....',
++      '.kkkkkkkkkk.',
++      '.kwwwwwwwwk.',
++      '.kwuuuuuuwk.',
++      '.kwuuuYuuwk.',
++      '.kwuuuuuuwk.',
++      '.kwggggggwk.',
++      '.kwwwwwwwwk.',
++      '.kkkkkkkkkk.',
++      '..kd....dk..',
++      '..kd.kk.dk..',
++      '.kd..kd..dk.',
++      '.kd..kd..dk.',
++      'kd...kd...dk',
++      'kk...kk...kk',
++    ],
++  },
++  // Splats of paint on the floor (you can walk on them).
++  paintSplat: {
++    solid: false,
++    on: ['artFloor'],
++    sprite: [
++      '..PP....u...',
++      '.PPPP..uuu..',
++      'PPPPPP.uu...',
++      '.PPPP.....Y.',
++      '..PP..rr.YYY',
++      '.....rrrr.Y.',
++      '..l..rrr....',
++      '.lll........',
++    ],
++  },
++  // A bucket of crayons (also the ART icon).
++  crayonBucket: {
++    solid: false,
++    on: ['artFloor'],
++    sprite: [
++      '..r.Y.b...',
++      '.rr.YYbb.g',
++      '.rr.YYbbgg',
++      '.rrOYYbbgg',
++      'kkkkkkkkkk',
++      'kaaaaaaaak',
++      '.kaaaaaak.',
++      '.kaPPPPak.',
++      '.kaaaaaak.',
++      '..kkkkkk..',
++    ],
++  },
++  // A drying rack with little paintings on every shelf.
++  dryingRack: {
++    solid: true,
++    on: ['artFloor'],
++    place: 'wall',
++    sprite: [
++      'kkkkkkkkkkkkkk',
++      'kA..........Ak',
++      'kAwrwwuwwYwwAk',
++      'kAAAAAAAAAAAAk',
++      'kA..........Ak',
++      'kAwwgwwPwwOwAk',
++      'kAAAAAAAAAAAAk',
++      'kA..........Ak',
++      'kAwvwwlwwrwwAk',
++      'kAAAAAAAAAAAAk',
++      'kA..........Ak',
++      'kA..........Ak',
++      'kk..........kk',
++    ],
++  },
++
++  // A red drum with gold zigzags (also the MUSIC icon).
++  drum: {
++    solid: true,
++    on: ['musicFloor'],
++    place: 'open',
++    sprite: [
++      '.kkkkkkkkkk.',
++      'kwwwwwwwwwwk',
++      'kkkkkkkkkkkk',
++      'krrYrrrrYrrk',
++      'krrrYrrYrrrk',
++      'krrrrYYrrrrk',
++      'krrrYrrYrrrk',
++      'krrYrrrrYrrk',
++      'kkkkkkkkkkkk',
++      '.kA......Ak.',
++    ],
++  },
++  // A rainbow xylophone: the bars get shorter as the notes get higher.
++  xylophone: {
++    solid: true,
++    on: ['musicFloor'],
++    place: 'open',
++    sprite: [
++      'krk.............',
++      'krkOk...........',
++      'krkOkYk.........',
++      'krkOkYkgk.......',
++      'krkOkYkgkuk.....',
++      'krkOkYkgkukvk...',
++      'krkOkYkgkukvkPk.',
++      'kkkkkkkkkkkkkkkk',
++      '.kA..........Ak.',
++      '.kk..........kk.',
++    ],
++  },
++  // An upright piano with a sheet of music.
++  piano: {
++    solid: true,
++    on: ['musicFloor'],
++    place: 'wall',
++    sprite: [
++      'kkkkkkkkkkkkkkkk',
++      'kNNNNNNNNNNNNNNk',
++      'kNNNNkkkkkkNNNNk',
++      'kNNNNkwwwwkNNNNk',
++      'kNNNNkkkkkkNNNNk',
++      'kkkkkkkkkkkkkkkk',
++      'kwkkwkkwwkkwkkwk',
++      'kwwwwwwwwwwwwwwk',
++      'kkkkkkkkkkkkkkkk',
++      'kNNNNNNNNNNNNNNk',
++      'kNNNNNNNNNNNNNNk',
++      'kNk..........kNk',
++      'kkk..........kkk',
++    ],
++  },
++  // A music stand holding a page of notes.
++  musicStand: {
++    solid: true,
++    on: ['musicFloor'],
++    sprite: [
++      'kkkkkkkkkk',
++      'kwwwwwwwwk',
++      'kwkwwkwwwk',
++      'kwkkwkkwwk',
++      'kwwwwwwwwk',
++      'kkkkkkkkkk',
++      '....kk....',
++      '....kA....',
++      '....kA....',
++      '....kA....',
++      '....kA....',
++      '....kA....',
++      '..kk..kk..',
++      '.kk....kk.',
++    ],
++  },
++};
+diff --git a/src/worlds/sunnyside/decor/classLibrary.ts b/src/worlds/sunnyside/decor/classLibrary.ts
+new file mode 100644
+index 0000000..34d5f0b
+--- /dev/null
++++ b/src/worlds/sunnyside/decor/classLibrary.ts
+@@ -0,0 +1,198 @@
++import { type DecorKind } from '../../building/types';
++
++/**
++ * Classroom and library things (pixel art, one character = one pixel).
++ * Letters are the decoration colors from render/decorArt.ts:
++ *   k black  w white  a light gray  A gray  r red  R dark red  O orange  o light orange
++ *   Y gold  y light yellow  n brown  N dark brown  u sky  U light blue  b blue  B dark blue
++ *   g green  l light green  G dark green  p light pink  P pink  s sand  d ochre  v purple  L lavender
++ */
++export const CLASS_LIBRARY: Record<string, DecorKind> = {
++  // A kid's desk with a paper on top and a little blue chair tucked in.
++  desk: {
++    solid: true,
++    on: ['classFloor'],
++    place: 'open',
++    sprite: [
++      'kkkkkkkkkkkkkk',
++      'kooowooooooook',
++      'kooowwoooooook',
++      'kddddddddddddk',
++      'kkkkkkkkkkkkkk',
++      '.kA........Ak.',
++      '.kA..kkkk..Ak.',
++      '.kA..kuuk..Ak.',
++      '.kA..kkkk..Ak.',
++      '.kk..k..k..kk.',
++    ],
++  },
++  // A green chalkboard with chalk doodles, in a wooden frame (also the CLASS icon).
++  chalkboard: {
++    solid: true,
++    on: ['classFloor'],
++    place: 'wall',
++    sprite: [
++      'kkkkkkkkkkkkkkkk',
++      'knnnnnnnnnnnnnnk',
++      'knGGGGGGGGGGGGnk',
++      'knGwGGwwGGGGGGnk',
++      'knGwwGGGGwGwGGnk',
++      'knGwGwGGGGwGGGnk',
++      'knGGGGGGwwwwwGnk',
++      'knGGGGGGGGGGGGnk',
++      'knnnnnnnnnnnnnnk',
++      'kkkkkkkkkkkkkkkk',
++      '..kA........Ak..',
++      '..kA........Ak..',
++      '.kkk........kkk.',
++    ],
++  },
++  // An alphabet poster on a stand: a big red A, blue B and gold C.
++  abcPoster: {
++    solid: true,
++    on: ['classFloor'],
++    place: 'wall',
++    sprite: [
++      'kkkkkkkkkkkkkk',
++      'kwwwwwwwwwwwwk',
++      'kwrwwbbwwwYYwk',
++      'krwrwbwbwYwwwk',
++      'krrrwbbwwYwwwk',
++      'krwrwbwbwYwwwk',
++      'krwrwbbwwwYYwk',
++      'kwwwwwwwwwwwwk',
++      'kkkkkkkkkkkkkk',
++      '......kk......',
++      '......kk......',
++      '....kkkkkk....',
++    ],
++  },
++  // A round rainbow reading rug (you can walk on it).
++  readingRug: {
++    solid: false,
++    on: ['classFloor'],
++    place: 'open',
++    sprite: [
++      '...kkkkkkkk...',
++      '.kkrrrrrrrrkk.',
++      'krrOOOOOOOOrrk',
++      'krOOYYYYYYOOrk',
++      'krrOOOOOOOOrrk',
++      '.kkrrrrrrrrkk.',
++      '...kkkkkkkk...',
++    ],
++  },
++  // The class pet's tank: a goldfish, a plant and a bubble.
++  petTank: {
++    solid: true,
++    on: ['classFloor'],
++    place: 'wall',
++    sprite: [
++      'kkkkkkkkkkkkkk',
++      'kaaaaaaaaaaaak',
++      'kUUUUUUUUUUUUk',
++      'kUUUUUOOUUUUUk',
++      'kUUgUUOOOOUUUk',
++      'kUUgUUUOOUUUUk',
++      'kUgUUUUUUUUUUk',
++      'kUgUUUUUUwUUUk',
++      'kssssssssssssk',
++      'kkkkkkkkkkkkkk',
++      '.kAAAAAAAAAAk.',
++      '.kA........Ak.',
++      '.kk........kk.',
++    ],
++  },
++
++  // A tall bookshelf full of colorful books.
++  bookshelf: {
++    solid: true,
++    on: ['libraryFloor'],
++    place: 'wall',
++    sprite: [
++      'kkkkkkkkkkkkkkkk',
++      'knnnnnnnnnnnnnnk',
++      'knrbYgPurvOlbYnk',
++      'knrbYgPurvOlbYnk',
++      'knrbYgPurvOlbYnk',
++      'knnnnnnnnnnnnnnk',
++      'knvOlbrYgPuvbOnk',
++      'knvOlbrYgPuvbOnk',
++      'knvOlbrYgPuvbOnk',
++      'knnnnnnnnnnnnnnk',
++      'knuPgYbrOlvuPgnk',
++      'knuPgYbrOlvuPgnk',
++      'knnnnnnnnnnnnnnk',
++      'kkkkkkkkkkkkkkkk',
++    ],
++  },
++  // A squishy pink beanbag (you can walk on it).
++  beanbag: {
++    solid: false,
++    on: ['libraryFloor'],
++    place: 'open',
++    sprite: [
++      '....kkkk....',
++      '..kkPPPPkk..',
++      '.kPPPPpPPPk.',
++      'kPPPPPPPpPPk',
++      'kPPPPPPPPPPk',
++      'kPPPPPPPPPPk',
++      '.kkkkkkkkkk.',
++    ],
++  },
++  // The story-time rocking chair.
++  storyChair: {
++    solid: true,
++    on: ['libraryFloor'],
++    place: 'wall',
++    sprite: [
++      '..kkkkkkkk..',
++      '..krrrrrrk..',
++      '..krwrrwrk..',
++      '..krrrrrrk..',
++      '..krwrrwrk..',
++      'kkkkkkkkkkkk',
++      'kooooooooook',
++      'kkkkkkkkkkkk',
++      '.kd......dk.',
++      '.kd......dk.',
++      'kkkkkkkkkkkk',
++      '.kkkkkkkkkk.',
++    ],
++  },
++  // A spinning globe on a stand.
++  globe: {
++    solid: true,
++    on: ['libraryFloor'],
++    place: 'open',
++    sprite: [
++      '....kkkk....',
++      '..kkuuggkk..',
++      '.kuugggguuk.',
++      '.kuuuggguuk.',
++      '.kuuuuuuggk.',
++      '.kuuuuugggk.',
++      '..kkuuuukk..',
++      '....kkkk....',
++      '.....kk.....',
++      '....kkkk....',
++      '..kkddddkk..',
++      '..kkkkkkkk..',
++    ],
++  },
++  // A little stack of books (also the LIBRARY icon).
++  bookStack: {
++    solid: false,
++    on: ['libraryFloor'],
++    sprite: [
++      '.kkkkkkkk.',
++      '.krrrrrrk.',
++      'kkkkkkkkkk',
++      'kbbbbbbbwk',
++      'kkkkkkkkkk',
++      '.kYYYYYYk.',
++      '.kkkkkkkk.',
++    ],
++  },
++};
+diff --git a/src/worlds/sunnyside/decor/lunchGym.ts b/src/worlds/sunnyside/decor/lunchGym.ts
+new file mode 100644
+index 0000000..bda398f
+--- /dev/null
++++ b/src/worlds/sunnyside/decor/lunchGym.ts
+@@ -0,0 +1,163 @@
++import { type DecorKind } from '../../building/types';
++
++/** Lunchroom and gym things (letters as in classLibrary.ts). */
++export const LUNCH_GYM: Record<string, DecorKind> = {
++  // A long cafeteria table with a bench in front.
++  lunchTable: {
++    solid: true,
++    on: ['lunchFloor'],
++    place: 'open',
++    sprite: [
++      'kkkkkkkkkkkkkkkk',
++      'kaaaaaaaaaaaaaak',
++      'kaarraaaaaYYaaak',
++      'kaaaaaaaaaaaaaak',
++      'kkkkkkkkkkkkkkkk',
++      '..kA........Ak..',
++      'kkkkkkkkkkkkkkkk',
++      'kuuuuuuuuuuuuuuk',
++      'kkkkkkkkkkkkkkkk',
++      '..kk........kk..',
++    ],
++  },
++  // A lunch tray: an apple, peas and a sandwich (you can walk past it).
++  tray: {
++    solid: false,
++    on: ['lunchFloor'],
++    sprite: [
++      'kkkkkkkkkkkk',
++      'kuuuuuuuuuuk',
++      'kurrugguyyuk',
++      'kurrugguyyuk',
++      'kuuuuuuuuuuk',
++      'kkkkkkkkkkkk',
++    ],
++  },
++  // A little carton of milk (also the LUNCH icon).
++  milkCarton: {
++    solid: false,
++    on: ['lunchFloor'],
++    sprite: [
++      '...kk...',
++      '..kwwk..',
++      '.kwwwwk.',
++      'kkkkkkkk',
++      'kwwwwwwk',
++      'kwuuuuwk',
++      'kwuwwuwk',
++      'kwuuuuwk',
++      'kwwwwwwk',
++      'kkkkkkkk',
++    ],
++  },
++  // The serving line: warm pans of food behind a glass cover.
++  servingLine: {
++    solid: true,
++    on: ['lunchFloor'],
++    place: 'wall',
++    sprite: [
++      '..aaaaaaaaaaaa..',
++      '..a..........a..',
++      '..a.w....w...a..',
++      'kkkkkkkkkkkkkkkk',
++      'kAAAAAAAAAAAAAAk',
++      'kAOOAAyyAAggAAAk',
++      'kAAAAAAAAAAAAAAk',
++      'kkkkkkkkkkkkkkkk',
++      'kaaaaaaaaaaaaaak',
++      'kaaaaaaaaaaaaaak',
++      'kaaaaaaaaaaaaaak',
++      'kkkkkkkkkkkkkkkk',
++    ],
++  },
++
++  // A basketball hoop: backboard, orange rim, net and pole.
++  hoop: {
++    solid: true,
++    on: ['gymFloor'],
++    place: 'wall',
++    sprite: [
++      '.kkkkkkkkkkkk.',
++      '.kwwwwwwwwwwk.',
++      '.kwwwkkkkwwwk.',
++      '.kwwwkwwkwwwk.',
++      '.kwwwkkkkwwwk.',
++      '.kkkkkkkkkkkk.',
++      '...OOOOOOOO...',
++      '....waaaaw....',
++      '....awwwwa....',
++      '.....aaaa.....',
++      '......AA......',
++      '......AA......',
++      '......AA......',
++      '....kkkkkk....',
++    ],
++  },
++  // A climbing rope hanging from a beam, with knots to hold on to.
++  climbRope: {
++    solid: true,
++    on: ['gymFloor'],
++    place: 'wall',
++    sprite: [
++      'kkkkkkkkkkkk',
++      'kAAAAAAAAAAk',
++      'kkkkkkkkkkkk',
++      '.....do.....',
++      '.....od.....',
++      '.....do.....',
++      '.....od.....',
++      '....dood....',
++      '.....do.....',
++      '.....od.....',
++      '.....do.....',
++      '....dood....',
++      '.....do.....',
++      '.....od.....',
++      '.....kk.....',
++    ],
++  },
++  // A big red bouncy rubber ball (also the GYM icon; it rolls around the playground too).
++  bigBall: {
++    solid: false,
++    on: ['gymFloor', 'grass', 'blacktop'],
++    sprite: [
++      '...kkkk...',
++      '.kkrrrrkk.',
++      '.krwrrrrk.',
++      'krwrrrrrrk',
++      'krrrrrrrrk',
++      'krrrrrrrrk',
++      'krrrrrrRRk',
++      '.krrrrRRk.',
++      '.kkRRRRkk.',
++      '...kkkk...',
++    ],
++  },
++  // A blue folding gym mat (you can walk on it).
++  gymMat: {
++    solid: false,
++    on: ['gymFloor'],
++    place: 'open',
++    sprite: [
++      'kkkkkkkkkkkkkkkk',
++      'kuuuukuuuukuuuuk',
++      'kuuuukuuuukuuuuk',
++      'kbbbbkbbbbkbbbbk',
++      'kkkkkkkkkkkkkkkk',
++    ],
++  },
++  // An orange cone (in the gym and on the bus loop).
++  cone: {
++    solid: false,
++    on: ['gymFloor', 'road', 'sidewalk'],
++    sprite: [
++      '...kk...',
++      '..kOOk..',
++      '..kwwk..',
++      '.kOOOOk.',
++      '.kwwwwk.',
++      'kOOOOOOk',
++      'kkkkkkkk',
++    ],
++  },
++};
+diff --git a/src/worlds/sunnyside/decor/recessBus.ts b/src/worlds/sunnyside/decor/recessBus.ts
+new file mode 100644
+index 0000000..9ad56d6
+--- /dev/null
++++ b/src/worlds/sunnyside/decor/recessBus.ts
+@@ -0,0 +1,212 @@
++import { type DecorKind } from '../../building/types';
++
++/** Playground and bus loop things (letters as in classLibrary.ts). */
++export const RECESS_BUS: Record<string, DecorKind> = {
++  // A swing set with a red swing and a blue swing.
++  swings: {
++    solid: true,
++    on: ['woodchips'],
++    place: 'open',
++    sprite: [
++      'kkkkkkkkkkkkkkkk',
++      'kAAAAAAAAAAAAAAk',
++      'kkkkkkkkkkkkkkkk',
++      '.kAa..a..a..aAk.',
++      '.kAa..a..a..aAk.',
++      'kA.a..a..a..a.Ak',
++      'kA.a..a..a..a.Ak',
++      'kA.rrrr..bbbb.Ak',
++      'kA............Ak',
++      'kA............Ak',
++      'kk............kk',
++    ],
++  },
++  // A yellow slide with a ladder (also the RECESS icon).
++  slide: {
++    solid: true,
++    on: ['woodchips'],
++    place: 'open',
++    sprite: [
++      '..kkk...........',
++      '..kYk...........',
++      '.kkkkkk.........',
++      '.kA.kYYk........',
++      '.kAAkkYYk.......',
++      '.kA..kkYYk......',
++      '.kAAk..kYYk.....',
++      '.kA.....kYYk....',
++      '.kAA.....kYYk...',
++      '.kA.......kYYk..',
++      '.kAA.......kYYk.',
++      '.kA.........kYYk',
++      '.kk..........kkk',
++    ],
++  },
++  // Monkey bars to swing across.
++  monkeyBars: {
++    solid: true,
++    on: ['woodchips'],
++    place: 'open',
++    sprite: [
++      'kkkkkkkkkkkkkkkk',
++      'kuauauauauauauak',
++      'kkkkkkkkkkkkkkkk',
++      '.ku..........uk.',
++      '.ku..........uk.',
++      '.ku..........uk.',
++      '.ku..........uk.',
++      '.ku..........uk.',
++      '.ku..........uk.',
++      'kkkk........kkkk',
++    ],
++  },
++  // An orange sand pail (you can walk past it).
++  sandPail: {
++    solid: false,
++    on: ['sandbox'],
++    sprite: [
++      '..kkkkkk..',
++      '.k......k.',
++      '.k......k.',
++      'kkkkkkkkkk',
++      'kOOOOOOOOk',
++      'kOwOOOOOOk',
++      '.kOOOOOOk.',
++      '.kOOOOOOk.',
++      '..kkkkkk..',
++    ],
++  },
++
++  // A long yellow school bus is three pieces side by side: back, middle, front (placed by hand in layout.ts).
++  busBack: {
++    solid: true,
++    sprite: [
++      '.kkkkkkkkkkkkkkk',
++      'kYYYYYYYYYYYYYYY',
++      'kYkkkkYkkkkYkkkk',
++      'kYkUUkYkUUkYkUUk',
++      'kYkUUkYkUUkYkUUk',
++      'kYkkkkYkkkkYkkkk',
++      'kYYYYYYYYYYYYYYY',
++      'kkkkkkkkkkkkkkkk',
++      'krYYYYYYYYYYYYYY',
++      'kYYYYYYYYYYYYYYY',
++      'kkkkkkkkkkkkkkkk',
++      '..kkkk..........',
++      '.kkAAkk.........',
++      '..kkkk..........',
++    ],
++  },
++  busMid: {
++    solid: true,
++    sprite: [
++      'kkkkkkkkkkkkkkkk',
++      'YYYYYYYYYYYYYYYY',
++      'kkkkYkkkkYkkkkYk',
++      'kUUkYkUUkYkUUkYk',
++      'kUUkYkUUkYkUUkYk',
++      'kkkkYkkkkYkkkkYk',
++      'YYYYYYYYYYYYYYYY',
++      'kkkkkkkkkkkkkkkk',
++      'YYYYYYYYYYYYYYYY',
++      'YYYYYYYYYYYYYYYY',
++      'kkkkkkkkkkkkkkkk',
++      '................',
++      '................',
++      '................',
++    ],
++  },
++  busFront: {
++    solid: true,
++    sprite: [
++      'kkkkkkkkkkk.....',
++      'YYYYYYYYYYYk....',
++      'kkkkYkkkkkYYk...',
++      'kUUkYkUUUUkYYk..',
++      'kUUkYkUUUUUkYYk.',
++      'kkkkYkkkkkkkkYYk',
++      'YYYYYYYYYYYYYYYk',
++      'kkkkkkkkkkkkkkkk',
++      'YYYYYYYYYYYYYYwk',
++      'YYYYYYYYYYYYYYYk',
++      'kkkkkkkkkkkkkkkk',
++      '.........kkkk...',
++      '........kkAAkk..',
++      '.........kkkk...',
++    ],
++  },
++  // A whole little school bus in one square (the BUS icon, the encounter picture and coloring pages).
++  schoolBus: {
++    solid: true,
++    on: ['road'],
++    sprite: [
++      '.kkkkkkkkkkk....',
++      'kYYYYYYYYYYYk...',
++      'kYkUkUkUkUkYYk..',
++      'kYkUkUkUkUkYYYk.',
++      'kYYYYYYYYYYYYYYk',
++      'kkkkkkkkkkkkkkkk',
++      'krYYYYYYYYYYYYwk',
++      'kkkkkkkkkkkkkkkk',
++      '..kAk.....kAk...',
++      '...k.......k....',
++    ],
++  },
++  // The flagpole, with the school's own gold sun flag.
++  flagpole: {
++    solid: true,
++    on: ['grass'],
++    sprite: [
++      '...kk.......',
++      '...kAkkkkkkk',
++      '...kAkYYYYYk',
++      '...kAkYYOYYk',
++      '...kAkYOOOYk',
++      '...kAkYYOYYk',
++      '...kAkkkkkkk',
++      '...kA.......',
++      '...kA.......',
++      '...kA.......',
++      '...kA.......',
++      '...kA.......',
++      '...kA.......',
++      '...kA.......',
++      '.kkkkkk.....',
++      '.kAAAAk.....',
++    ],
++  },
++  // A red stop sign on a pole.
++  stopSign: {
++    solid: true,
++    on: ['grass', 'sidewalk'],
++    sprite: [
++      '..kkkkkk..',
++      '.krrrrrrk.',
++      'krrrrrrrrk',
++      'krwwwwwwrk',
++      'krrrrrrrrk',
++      '.krrrrrrk.',
++      '..kkkkkk..',
++      '....kA....',
++      '....kA....',
++      '....kA....',
++      '....kA....',
++      '....kA....',
++      '..kkkkkk..',
++    ],
++  },
++  // A wooden bench to wait for the bus on.
++  bench: {
++    solid: true,
++    on: ['sidewalk'],
++    sprite: [
++      'kkkkkkkkkkkkkk',
++      'knnnnnnnnnnnnk',
++      'kkkkkkkkkkkkkk',
++      'knnnnnnnnnnnnk',
++      'kkkkkkkkkkkkkk',
++      '.kA........Ak.',
++      '.kk........kk.',
++    ],
++  },
++};
+diff --git a/src/worlds/sunnyside/decor/scienceHall.ts b/src/worlds/sunnyside/decor/scienceHall.ts
+new file mode 100644
+index 0000000..c2d58a3
+--- /dev/null
++++ b/src/worlds/sunnyside/decor/scienceHall.ts
+@@ -0,0 +1,124 @@
++import { type DecorKind } from '../../building/types';
++
++/** Science room things, and the cubbies along the hallway (letters as in classLibrary.ts). */
++export const SCIENCE_HALL: Record<string, DecorKind> = {
++  // A lab table with two bubbling beakers.
++  beakerTable: {
++    solid: true,
++    on: ['scienceFloor'],
++    place: 'open',
++    sprite: [
++      '..l......P......',
++      '.l.l....P.P.....',
++      '..ww......ww....',
++      '..kk......kk....',
++      '.kllk....kPPk...',
++      '.kllk...kPPPPk..',
++      'kkkkkkkkkkkkkkkk',
++      'kaaaaaaaaaaaaaak',
++      'kkkkkkkkkkkkkkkk',
++      '.kA..........Ak.',
++      '.kA..........Ak.',
++      '.kk..........kk.',
++    ],
++  },
++  // A model volcano on a board, with a little puff of pretend lava.
++  volcano: {
++    solid: true,
++    on: ['scienceFloor'],
++    place: 'open',
++    sprite: [
++      '....r....r....',
++      '.....r..r.....',
++      '......rr......',
++      '.....kOOk.....',
++      '....knOOnk....',
++      '....knnOnk....',
++      '...knnnnnnk...',
++      '...kngnnnnk...',
++      '..knnnnngnnk..',
++      '..kngnnnnnnk..',
++      '.knnnnnnnnnnk.',
++      'kkkkkkkkkkkkkk',
++      'kddddddddddddk',
++      'kkkkkkkkkkkkkk',
++    ],
++  },
++  // A red horseshoe magnet (you can walk past it).
++  magnet: {
++    solid: false,
++    on: ['scienceFloor'],
++    sprite: [
++      '..rrrrrr..',
++      '.rrrrrrrr.',
++      'rrr....rrr',
++      'rr......rr',
++      'rr......rr',
++      'rr......rr',
++      'aa......aa',
++      'aa......aa',
++    ],
++  },
++  // A model rocket on a stand (also the SCIENCE icon).
++  rocketModel: {
++    solid: true,
++    on: ['scienceFloor'],
++    place: 'open',
++    sprite: [
++      '....kk....',
++      '...krrk...',
++      '...krrk...',
++      '..kwwwwk..',
++      '..kwuuwk..',
++      '..kwuuwk..',
++      '..kwwwwk..',
++      '..kwwwwk..',
++      '..kwrrwk..',
++      '.krwwwwrk.',
++      'krrwwwwrrk',
++      'krkkkkkkrk',
++      '...kOOk...',
++      '...OYYO...',
++      '....YY....',
++      'kkkkkkkkkk',
++    ],
++  },
++  // Little plants growing under a warm light.
++  plantLight: {
++    solid: true,
++    on: ['scienceFloor'],
++    place: 'wall',
++    sprite: [
++      'kkkkkkkkkkkkkk',
++      'kAAAAAAAAAAAAk',
++      'kyyyyyyyyyyyyk',
++      '.k..........k.',
++      '.k.l...l...l.k',
++      '.klgl.lgl.lglk',
++      '.k.g...g...g.k',
++      '.kOOO.OOO.OOOk',
++      'kkkkkkkkkkkkkk',
++      'kA..........Ak',
++      'kk..........kk',
++    ],
++  },
++
++  // Cubbies along the hallway wall, with backpacks and lunch bags in them (placed by hand in layout.ts).
++  cubby: {
++    solid: true,
++    on: ['hallFloor'],
++    sprite: [
++      'kkkkkkkkkkkkkkkk',
++      'kddddkddddkddddk',
++      'kdrrdkduudkdPPdk',
++      'kdrrdkduudkdPPdk',
++      'kddddkddddkddddk',
++      'kkkkkkkkkkkkkkkk',
++      'kddddkddddkddddk',
++      'kdggdkddddkdOOdk',
++      'kdggdkddddkdOOdk',
++      'kddddkddddkddddk',
++      'kkkkkkkkkkkkkkkk',
++    ],
++  },
++};
+diff --git a/src/worlds/sunnyside/index.ts b/src/worlds/sunnyside/index.ts
+new file mode 100644
+index 0000000..40986d4
+--- /dev/null
++++ b/src/worlds/sunnyside/index.ts
+@@ -0,0 +1,29 @@
++import { makeBuildingWorld } from '../building';
++import { ART_MUSIC } from './decor/artMusic';
++import { CLASS_LIBRARY } from './decor/classLibrary';
++import { LUNCH_GYM } from './decor/lunchGym';
++import { RECESS_BUS } from './decor/recessBus';
++import { SCIENCE_HALL } from './decor/scienceHall';
++import { LEGEND, SUNNYSIDE_MAPS } from './layout';
++import { SUNNYSIDE_REALMS } from './realms';
++import { SUNNYSIDE_SCENE } from './scene';
++import { SCHOOL_NAME } from './schoolName';
++import { SUNNYSIDE_TILES } from './tiles';
++
++/**
++ * Sunnyside Elementary: a friendly one-story school (an original one, with its own
++ * smiling-sun sign). One big map: the playground out back, a long main hallway
++ * with rooms on both sides, and the bus loop out front, where Layne starts.
++ * The name lives in schoolName.ts, so it's easy to change.
++ */
++export const SUNNYSIDE = makeBuildingWorld({
++  id: 'sunnyside',
++  name: SCHOOL_NAME,
++  seed: 2727,
++  scene: SUNNYSIDE_SCENE,
++  tiles: SUNNYSIDE_TILES,
++  decor: { ...CLASS_LIBRARY, ...LUNCH_GYM, ...RECESS_BUS, ...ART_MUSIC, ...SCIENCE_HALL },
++  legend: LEGEND,
++  maps: SUNNYSIDE_MAPS,
++  realms: SUNNYSIDE_REALMS,
++});
+diff --git a/src/worlds/sunnyside/layout.ts b/src/worlds/sunnyside/layout.ts
+new file mode 100644
+index 0000000..f477393
+--- /dev/null
++++ b/src/worlds/sunnyside/layout.ts
+@@ -0,0 +1,220 @@
++import { type LegendEntry, type MapPlan } from '../building/types';
++
++/**
++ * Sunnyside Elementary, drawn as ASCII: one character per 16x16 tile.
++ * Change the school by retyping characters (every row must stay the same length).
++ *
++ * LEGEND (what each character is)
++ *   Outside:  H hedge (the edge of the world)   F playground fence   g grass
++ *             w wood chips   x sandbox   b blacktop   8 hopscotch square
++ *             s sidewalk   a bus loop road   - yellow road line   z crosswalk
++ *   Walls:    # brick wall   W window   S the sun-face sign   L lockers   P a kid's drawing
++ *             D glass doors (front and back)   o an open classroom door
++ *   Floors:   h hallway   c classroom   l library   n lunchroom   y gym   | gym middle line
++ *             t art room   m music room   e science room
++ *   By hand:  u cubbies (hallway)   1 2 3 a school bus (back, middle, front)   f the flagpole
++ *             @ the start (on the bus loop sidewalk, by the front doors)
++ *
++ * ZONES (which realm each tile is in; '.' = none: walls, doors, the hallway)
++ *   C class  L library  N lunch  G gym  R recess  A art  M music  S science  U bus
++ *   The playground (everything behind the school) is RECESS, and everything in front
++ *   of the school (sidewalk, road, the grass island) is BUS.
++ */
++export const LEGEND: Record<string, LegendEntry> = {
++  H: { tile: 'hedge' },
++  F: { tile: 'fence' },
++  g: { tile: 'grass' },
++  w: { tile: 'woodchips' },
++  x: { tile: 'sandbox' },
++  b: { tile: 'blacktop' },
++  '8': { tile: 'hopscotch' },
++  s: { tile: 'sidewalk' },
++  a: { tile: 'road' },
++  '-': { tile: 'roadLine' },
++  z: { tile: 'crosswalk' },
++  '#': { tile: 'wall' },
++  W: { tile: 'window' },
++  S: { tile: 'sunSign' },
++  L: { tile: 'lockers' },
++  P: { tile: 'artWall' },
++  D: { tile: 'frontDoor' },
++  o: { tile: 'doorway' },
++  h: { tile: 'hallFloor' },
++  c: { tile: 'classFloor' },
++  l: { tile: 'libraryFloor' },
++  n: { tile: 'lunchFloor' },
++  y: { tile: 'gymFloor' },
++  '|': { tile: 'gymLine' },
++  t: { tile: 'artFloor' },
++  m: { tile: 'musicFloor' },
++  e: { tile: 'scienceFloor' },
++  u: { tile: 'hallFloor', decor: 'cubby' },
++  '1': { tile: 'road', decor: 'busBack' },
++  '2': { tile: 'road', decor: 'busMid' },
++  '3': { tile: 'road', decor: 'busFront' },
++  f: { tile: 'grass', decor: 'flagpole' },
++  '@': { tile: 'sidewalk', spawn: true },
++};
++
++/**
++ * The whole school and its grounds (90 x 70), from back to front:
++ *   - the playground, fenced in: wood chips (swings, slide, monkey bars), blacktop
++ *     with hopscotch, and a sandbox
++ *   - the back doors, then a short hall down to the main hallway
++ *   - top row of rooms: class, library, (the back hall), art, music
++ *   - the long main hallway: lockers and kids' drawings on the wall, cubbies along the bottom
++ *   - bottom row of rooms: lunch, science, (the front hall), the big gym
++ *   - the front doors with a sun sign on each side, then the bus loop: sidewalk, yellow
++ *     buses, a crosswalk to the grass island and its flagpole
++ */
++const MAIN: MapPlan = {
++  name: 'main',
++  outside: 'hedge',
++  rows: [
++    'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF',
++    'FggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggF',
++    'FggwwwwwwwwwwwwwwwwwwwwwwwwwwgggggbbbbbbbbbbbbbbbbbbbbbbbggggggggggggggggggggggggggggggggF',
++    'Fggwwwwwwwwwwwwwwwwwwwwwwwwwwgggggbbbbbbbbbbb8bbbbbbbbbbbgggggxxxxxxxxxxxxxxxxxxxggggggggF',
++    'Fggwwwwwwwwwwwwwwwwwwwwwwwwwwgggggbbbbbbbbbbb8bbbbbbbbbbbgggggxxxxxxxxxxxxxxxxxxxggggggggF',
++    'Fggwwwwwwwwwwwwwwwwwwwwwwwwwwgggggbbbbbbbbbbb8bbbbbbbbbbbgggggxxxxxxxxxxxxxxxxxxxggggggggF',
++    'Fggwwwwwwwwwwwwwwwwwwwwwwwwwwgggggbbbbbbbbbbb8bbbbbbbbbbbgggggxxxxxxxxxxxxxxxxxxxggggggggF',
++    'Fggwwwwwwwwwwwwwwwwwwwwwwwwwwgggggbbbbbbbbbbb8bbbbbbbbbbbgggggxxxxxxxxxxxxxxxxxxxggggggggF',
++    'Fggwwwwwwwwwwwwwwwwwwwwwwwwwwgggggbbbbbbbbbbb8bbbbbbbbbbbgggggxxxxxxxxxxxxxxxxxxxggggggggF',
++    'Fggwwwwwwwwwwwwwwwwwwwwwwwwwwgggggbbbbbbbbbbb8bbbbbbbbbbbgggggxxxxxxxxxxxxxxxxxxxggggggggF',
++    'Fggwwwwwwwwwwwwwwwwwwwwwwwwwwgggggbbbbbbbbbbb8bbbbbbbbbbbggggggggggggggggggggggggggggggggF',
++    'FggwwwwwwwwwwwwwwwwwwwwwwwwwwgggggbbbbbbbbbbbbbbbbbbbbbbbggggggggggggggggggggggggggggggggF',
++    'FggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggF',
++    'FggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggF',
++    '###W#####W#####W#####W#####W#####W#####W###DDDD####W#####W#####W#####W#####W#####W#####W##',
++    '#cccccccccccccccccccccc#llllllllllllllllll#hhhh#ttttttttttttttttttt#mmmmmmmmmmmmmmmmmmmmm#',
++    '#cccccccccccccccccccccc#llllllllllllllllll#hhhh#ttttttttttttttttttt#mmmmmmmmmmmmmmmmmmmmm#',
++    '#cccccccccccccccccccccc#llllllllllllllllll#hhhh#ttttttttttttttttttt#mmmmmmmmmmmmmmmmmmmmm#',
++    '#cccccccccccccccccccccc#llllllllllllllllll#hhhh#ttttttttttttttttttt#mmmmmmmmmmmmmmmmmmmmm#',
++    '#cccccccccccccccccccccc#llllllllllllllllll#hhhh#ttttttttttttttttttt#mmmmmmmmmmmmmmmmmmmmm#',
++    '#cccccccccccccccccccccc#llllllllllllllllll#hhhh#ttttttttttttttttttt#mmmmmmmmmmmmmmmmmmmmm#',
++    '#cccccccccccccccccccccc#llllllllllllllllll#hhhh#ttttttttttttttttttt#mmmmmmmmmmmmmmmmmmmmm#',
++    '#cccccccccccccccccccccc#llllllllllllllllll#hhhh#ttttttttttttttttttt#mmmmmmmmmmmmmmmmmmmmm#',
++    '#cccccccccccccccccccccc#llllllllllllllllll#hhhh#ttttttttttttttttttt#mmmmmmmmmmmmmmmmmmmmm#',
++    '#cccccccccccccccccccccc#llllllllllllllllll#hhhh#ttttttttttttttttttt#mmmmmmmmmmmmmmmmmmmmm#',
++    '#cccccccccccccccccccccc#llllllllllllllllll#hhhh#ttttttttttttttttttt#mmmmmmmmmmmmmmmmmmmmm#',
++    '#cccccccccccccccccccccc#llllllllllllllllll#hhhh#ttttttttttttttttttt#mmmmmmmmmmmmmmmmmmmmm#',
++    '#cccccccccccccccccccccc#llllllllllllllllll#hhhh#ttttttttttttttttttt#mmmmmmmmmmmmmmmmmmmmm#',
++    '#cccccccccccccccccccccc#llllllllllllllllll#hhhh#ttttttttttttttttttt#mmmmmmmmmmmmmmmmmmmmm#',
++    '#cccccccccccccccccccccc#llllllllllllllllll#hhhh#ttttttttttttttttttt#mmmmmmmmmmmmmmmmmmmmm#',
++    '#LPLLLLPLLoooLLLLPLLLLP#LLLPLLLoooLLLPLLLL#hhhh#LLLLPLLLoooLLLPLLLL#LLLLPLLLLoooLLPLLLLPL#',
++    '#hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh#',
++    '#hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh#',
++    '#hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh#',
++    '#hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh#',
++    '#huuuuuhhhhhhhhuuuuuuhhhuuuuhhhhhhhuuuuuhhhhhhhhhhuuuuuuhhhhhhhhhhuuuuuuhhhhhhhhhhuuuuuhh#',
++    '#########ooo##################ooo##########hhhh#############ooo############ooo############',
++    '#nnnnnnnnnnnnnnnnnnnn#eeeeeeeeeeeeeeeeeeee#hhhh#yyyyyyyyyyyyyyyyyyyy|yyyyyyyyyyyyyyyyyyyy#',
++    '#nnnnnnnnnnnnnnnnnnnn#eeeeeeeeeeeeeeeeeeee#hhhh#yyyyyyyyyyyyyyyyyyyy|yyyyyyyyyyyyyyyyyyyy#',
++    '#nnnnnnnnnnnnnnnnnnnn#eeeeeeeeeeeeeeeeeeee#hhhh#yyyyyyyyyyyyyyyyyyyy|yyyyyyyyyyyyyyyyyyyy#',
++    '#nnnnnnnnnnnnnnnnnnnn#eeeeeeeeeeeeeeeeeeee#hhhh#yyyyyyyyyyyyyyyyyyyy|yyyyyyyyyyyyyyyyyyyy#',
++    '#nnnnnnnnnnnnnnnnnnnn#eeeeeeeeeeeeeeeeeeee#hhhh#yyyyyyyyyyyyyyyyyyyy|yyyyyyyyyyyyyyyyyyyy#',
++    '#nnnnnnnnnnnnnnnnnnnn#eeeeeeeeeeeeeeeeeeee#hhhh#yyyyyyyyyyyyyyyyyyyy|yyyyyyyyyyyyyyyyyyyy#',
++    '#nnnnnnnnnnnnnnnnnnnn#eeeeeeeeeeeeeeeeeeee#hhhh#yyyyyyyyyyyyyyyyyyyy|yyyyyyyyyyyyyyyyyyyy#',
++    '#nnnnnnnnnnnnnnnnnnnn#eeeeeeeeeeeeeeeeeeee#hhhh#yyyyyyyyyyyyyyyyyyyy|yyyyyyyyyyyyyyyyyyyy#',
++    '#nnnnnnnnnnnnnnnnnnnn#eeeeeeeeeeeeeeeeeeee#hhhh#yyyyyyyyyyyyyyyyyyyy|yyyyyyyyyyyyyyyyyyyy#',
++    '#nnnnnnnnnnnnnnnnnnnn#eeeeeeeeeeeeeeeeeeee#hhhh#yyyyyyyyyyyyyyyyyyyy|yyyyyyyyyyyyyyyyyyyy#',
++    '#nnnnnnnnnnnnnnnnnnnn#eeeeeeeeeeeeeeeeeeee#hhhh#yyyyyyyyyyyyyyyyyyyy|yyyyyyyyyyyyyyyyyyyy#',
++    '#nnnnnnnnnnnnnnnnnnnn#eeeeeeeeeeeeeeeeeeee#hhhh#yyyyyyyyyyyyyyyyyyyy|yyyyyyyyyyyyyyyyyyyy#',
++    '#nnnnnnnnnnnnnnnnnnnn#eeeeeeeeeeeeeeeeeeee#hhhh#yyyyyyyyyyyyyyyyyyyy|yyyyyyyyyyyyyyyyyyyy#',
++    '#nnnnnnnnnnnnnnnnnnnn#eeeeeeeeeeeeeeeeeeee#hhhh#yyyyyyyyyyyyyyyyyyyy|yyyyyyyyyyyyyyyyyyyy#',
++    '#nnnnnnnnnnnnnnnnnnnn#eeeeeeeeeeeeeeeeeeee#hhhh#yyyyyyyyyyyyyyyyyyyy|yyyyyyyyyyyyyyyyyyyy#',
++    '###W####W####W####W####W####W####W####W##S#DDDD#S####W####W####W####W####W####W####W####W#',
++    'HssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssH',
++    'Hssssssssssssssssssssssssssssssssssssssssssss@sssssssssssssssssssssssssssssssssssssssssssH',
++    'HssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssH',
++    'Hggaaaaaaa123aaaaa123aaaaa123aaaaaaaaaaaaaazzzzaaaaaaaaaaa123aaaaa123aaaaa123aaaaaaaaaaggH',
++    'Hgga-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-zzzza-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-ggH',
++    'HggaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaazzzzaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaggH',
++    'HggaaaaaaggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggaaaaaaggH',
++    'HggaaaaaaggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggaaaaaaggH',
++    'HggaaaaaaggggggggggggggggggggggggggggggggggggfgggggggggggggggggggggggggggggggggggaaaaaaggH',
++    'HggaaaaaaggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggaaaaaaggH',
++    'HggaaaaaaggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggaaaaaaggH',
++    'HggaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaggH',
++    'Hgga-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-ggH',
++    'HggaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaggH',
++    'HggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggH',
++    'HggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggH',
++    'HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH',
++  ],
++  zones: [
++    '..........................................................................................',
++    '.RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR.',
++    '.RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR.',
++    '.RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR.',
++    '.RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR.',
++    '.RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR.',
++    '.RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR.',
++    '.RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR.',
++    '.RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR.',
++    '.RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR.',
++    '.RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR.',
++    '.RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR.',
++    '.RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR.',
++    '.RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR.',
++    '..........................................................................................',
++    '.CCCCCCCCCCCCCCCCCCCCCC.LLLLLLLLLLLLLLLLLL......AAAAAAAAAAAAAAAAAAA.MMMMMMMMMMMMMMMMMMMMM.',
++    '.CCCCCCCCCCCCCCCCCCCCCC.LLLLLLLLLLLLLLLLLL......AAAAAAAAAAAAAAAAAAA.MMMMMMMMMMMMMMMMMMMMM.',
++    '.CCCCCCCCCCCCCCCCCCCCCC.LLLLLLLLLLLLLLLLLL......AAAAAAAAAAAAAAAAAAA.MMMMMMMMMMMMMMMMMMMMM.',
++    '.CCCCCCCCCCCCCCCCCCCCCC.LLLLLLLLLLLLLLLLLL......AAAAAAAAAAAAAAAAAAA.MMMMMMMMMMMMMMMMMMMMM.',
++    '.CCCCCCCCCCCCCCCCCCCCCC.LLLLLLLLLLLLLLLLLL......AAAAAAAAAAAAAAAAAAA.MMMMMMMMMMMMMMMMMMMMM.',
++    '.CCCCCCCCCCCCCCCCCCCCCC.LLLLLLLLLLLLLLLLLL......AAAAAAAAAAAAAAAAAAA.MMMMMMMMMMMMMMMMMMMMM.',
++    '.CCCCCCCCCCCCCCCCCCCCCC.LLLLLLLLLLLLLLLLLL......AAAAAAAAAAAAAAAAAAA.MMMMMMMMMMMMMMMMMMMMM.',
++    '.CCCCCCCCCCCCCCCCCCCCCC.LLLLLLLLLLLLLLLLLL......AAAAAAAAAAAAAAAAAAA.MMMMMMMMMMMMMMMMMMMMM.',
++    '.CCCCCCCCCCCCCCCCCCCCCC.LLLLLLLLLLLLLLLLLL......AAAAAAAAAAAAAAAAAAA.MMMMMMMMMMMMMMMMMMMMM.',
++    '.CCCCCCCCCCCCCCCCCCCCCC.LLLLLLLLLLLLLLLLLL......AAAAAAAAAAAAAAAAAAA.MMMMMMMMMMMMMMMMMMMMM.',
++    '.CCCCCCCCCCCCCCCCCCCCCC.LLLLLLLLLLLLLLLLLL......AAAAAAAAAAAAAAAAAAA.MMMMMMMMMMMMMMMMMMMMM.',
++    '.CCCCCCCCCCCCCCCCCCCCCC.LLLLLLLLLLLLLLLLLL......AAAAAAAAAAAAAAAAAAA.MMMMMMMMMMMMMMMMMMMMM.',
++    '.CCCCCCCCCCCCCCCCCCCCCC.LLLLLLLLLLLLLLLLLL......AAAAAAAAAAAAAAAAAAA.MMMMMMMMMMMMMMMMMMMMM.',
++    '.CCCCCCCCCCCCCCCCCCCCCC.LLLLLLLLLLLLLLLLLL......AAAAAAAAAAAAAAAAAAA.MMMMMMMMMMMMMMMMMMMMM.',
++    '.CCCCCCCCCCCCCCCCCCCCCC.LLLLLLLLLLLLLLLLLL......AAAAAAAAAAAAAAAAAAA.MMMMMMMMMMMMMMMMMMMMM.',
++    '..........................................................................................',
++    '..........................................................................................',
++    '..........................................................................................',
++    '..........................................................................................',
++    '..........................................................................................',
++    '..........................................................................................',
++    '..........................................................................................',
++    '.NNNNNNNNNNNNNNNNNNNN.SSSSSSSSSSSSSSSSSSSS......GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG.',
++    '.NNNNNNNNNNNNNNNNNNNN.SSSSSSSSSSSSSSSSSSSS......GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG.',
++    '.NNNNNNNNNNNNNNNNNNNN.SSSSSSSSSSSSSSSSSSSS......GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG.',
++    '.NNNNNNNNNNNNNNNNNNNN.SSSSSSSSSSSSSSSSSSSS......GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG.',
++    '.NNNNNNNNNNNNNNNNNNNN.SSSSSSSSSSSSSSSSSSSS......GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG.',
++    '.NNNNNNNNNNNNNNNNNNNN.SSSSSSSSSSSSSSSSSSSS......GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG.',
++    '.NNNNNNNNNNNNNNNNNNNN.SSSSSSSSSSSSSSSSSSSS......GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG.',
++    '.NNNNNNNNNNNNNNNNNNNN.SSSSSSSSSSSSSSSSSSSS......GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG.',
++    '.NNNNNNNNNNNNNNNNNNNN.SSSSSSSSSSSSSSSSSSSS......GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG.',
++    '.NNNNNNNNNNNNNNNNNNNN.SSSSSSSSSSSSSSSSSSSS......GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG.',
++    '.NNNNNNNNNNNNNNNNNNNN.SSSSSSSSSSSSSSSSSSSS......GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG.',
++    '.NNNNNNNNNNNNNNNNNNNN.SSSSSSSSSSSSSSSSSSSS......GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG.',
++    '.NNNNNNNNNNNNNNNNNNNN.SSSSSSSSSSSSSSSSSSSS......GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG.',
++    '.NNNNNNNNNNNNNNNNNNNN.SSSSSSSSSSSSSSSSSSSS......GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG.',
++    '.NNNNNNNNNNNNNNNNNNNN.SSSSSSSSSSSSSSSSSSSS......GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG.',
++    '..........................................................................................',
++    '.UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU.',
++    '.UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU.',
++    '.UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU.',
++    '.UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU.',
++    '.UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU.',
++    '.UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU.',
++    '.UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU.',
++    '.UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU.',
++    '.UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU.',
++    '.UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU.',
++    '.UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU.',
++    '.UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU.',
++    '.UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU.',
++    '.UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU.',
++    '.UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU.',
++    '.UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU.',
++    '..........................................................................................',
++  ],
++};
++
++/** Sunnyside is one big map (the whole school is on one floor). */
++export const SUNNYSIDE_MAPS: MapPlan[] = [MAIN];
+diff --git a/src/worlds/sunnyside/realms.ts b/src/worlds/sunnyside/realms.ts
+new file mode 100644
+index 0000000..cc4bb09
+--- /dev/null
++++ b/src/worlds/sunnyside/realms.ts
+@@ -0,0 +1,62 @@
++import { type RealmPlan } from '../building/types';
++
++/**
++ * Sunnyside's 9 realms, in Monster Book order. `zone` is the realm's letter in
++ * layout.ts; `scatter` is what gets sprinkled around (and how many).
++ */
++export const SUNNYSIDE_REALMS: RealmPlan[] = [
++  {
++    id: 'class', label: 'CLASS', zone: 'C', icon: 'chalkboard', music: 'sunnyside',
++    scatter: { desk: 12, chalkboard: 2, abcPoster: 3, readingRug: 2, petTank: 1 },
++    scene: { wall: 'window', floor: 'classFloor', decor: ['chalkboard', 'desk', 'petTank'] },
++    printDecor: ['chalkboard', 'desk', 'abcPoster', 'readingRug', 'petTank'],
++  },
++  {
++    id: 'library', label: 'LIBRARY', zone: 'L', icon: 'bookStack', music: 'sunnyside',
++    scatter: { bookshelf: 8, beanbag: 5, storyChair: 1, globe: 2, bookStack: 6 },
++    scene: { wall: 'wall', floor: 'libraryFloor', decor: ['bookshelf', 'beanbag', 'globe'] },
++    printDecor: ['bookshelf', 'beanbag', 'storyChair', 'globe', 'bookStack'],
++  },
++  {
++    id: 'lunch', label: 'LUNCH', zone: 'N', icon: 'milkCarton', music: 'sunnyside',
++    scatter: { lunchTable: 8, tray: 6, milkCarton: 8, servingLine: 2 },
++    scene: { wall: 'window', floor: 'lunchFloor', decor: ['servingLine', 'lunchTable', 'milkCarton'] },
++    printDecor: ['lunchTable', 'tray', 'milkCarton', 'servingLine', 'bookStack'],
++  },
++  {
++    id: 'gym', label: 'GYM', zone: 'G', icon: 'bigBall', music: 'sunnyside',
++    scatter: { hoop: 4, climbRope: 3, bigBall: 8, gymMat: 4, cone: 6 },
++    scene: { wall: 'wall', floor: 'gymFloor', decor: ['hoop', 'bigBall', 'climbRope'] },
++    printDecor: ['hoop', 'climbRope', 'bigBall', 'gymMat', 'cone'],
++  },
++  {
++    id: 'recess', label: 'RECESS', zone: 'R', icon: 'slide', music: 'sunnyside',
++    scatter: { swings: 4, slide: 3, monkeyBars: 3, sandPail: 6, bigBall: 4 },
++    scene: { wall: 'fence', floor: 'grass', decor: ['swings', 'slide', 'bigBall'] },
++    printDecor: ['swings', 'slide', 'monkeyBars', 'sandPail', 'bigBall'],
++  },
++  {
++    id: 'art', label: 'ART', zone: 'A', icon: 'crayonBucket', music: 'sunnyside',
++    scatter: { easel: 6, paintSplat: 8, crayonBucket: 6, dryingRack: 3 },
++    scene: { wall: 'artWall', floor: 'artFloor', decor: ['easel', 'crayonBucket', 'dryingRack'] },
++    printDecor: ['easel', 'paintSplat', 'crayonBucket', 'dryingRack', 'abcPoster'],
++  },
++  {
++    id: 'music', label: 'MUSIC', zone: 'M', icon: 'drum', music: 'sunnyside',
++    scatter: { drum: 5, xylophone: 4, piano: 2, musicStand: 6 },
++    scene: { wall: 'wall', floor: 'musicFloor', decor: ['piano', 'drum', 'xylophone'] },
++    printDecor: ['drum', 'xylophone', 'piano', 'musicStand', 'bookStack'],
++  },
++  {
++    id: 'science', label: 'SCIENCE', zone: 'S', icon: 'rocketModel', music: 'sunnyside',
++    scatter: { beakerTable: 6, volcano: 2, magnet: 6, rocketModel: 2, plantLight: 4 },
++    scene: { wall: 'window', floor: 'scienceFloor', decor: ['beakerTable', 'volcano', 'rocketModel'] },
++    printDecor: ['beakerTable', 'volcano', 'magnet', 'rocketModel', 'plantLight'],
++  },
++  {
++    id: 'bus', label: 'BUS', zone: 'U', icon: 'schoolBus', music: 'sunnyside',
++    scatter: { bench: 5, cone: 6, stopSign: 2 },
++    scene: { wall: 'sunSign', floor: 'road', decor: ['stopSign', 'schoolBus', 'flagpole'] },
++    printDecor: ['schoolBus', 'stopSign', 'flagpole', 'bench', 'cone'],
++  },
++];
+diff --git a/src/worlds/sunnyside/scene.ts b/src/worlds/sunnyside/scene.ts
+new file mode 100644
+index 0000000..cd50b4d
+--- /dev/null
++++ b/src/worlds/sunnyside/scene.ts
+@@ -0,0 +1,25 @@
++/**
++ * Sunnyside's picture for its world card and book tab: a little red-brick school
++ * with glass doors, and its smiling sun peeking up over the roof (letters as in
++ * render/decorArt.ts).
++ */
++export const SUNNYSIDE_SCENE = [
++  '..............o..o..............',
++  '...........o..YYYY..o...........',
++  '.............YYYYYY.............',
++  '...........oYYkYYkYYo...........',
++  '............YYYYYYYY............',
++  '...........oYpYYYYpYo...........',
++  '.............YkYYkY.............',
++  '...........o..YkkY..o...........',
++  '..............o..o..............',
++  '.kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk.',
++  '.kRrrrRrrrRrrrRrrrRrrrRrrrRrrrk.',
++  '.krrUUUrrUUUrRrrrRrrUUUrrUUUrRk.',
++  '.krrUUUrRUUURrkkkkrrUUUrRUUURrk.',
++  '.krRrrrRrrrRrruuuurRrrrRrrrRrrk.',
++  '.kRrrrRrrrRrrruuuuRrrrRrrrRrrrk.',
++  '.krrrRrrrRrrrRuuuurrrRrrrRrrrRk.',
++  '.krrRrrrRrrrRruuuurrRrrrRrrrRrk.',
++  'gggggggggggggaaaaaaggggggggggggg',
++];
+diff --git a/src/worlds/sunnyside/schoolName.ts b/src/worlds/sunnyside/schoolName.ts
+new file mode 100644
+index 0000000..d6ca9af
+--- /dev/null
++++ b/src/worlds/sunnyside/schoolName.ts
+@@ -0,0 +1,6 @@
++/**
++ * The school's name, in ONE place. Change it here and the world card, the
++ * world picker, the Monster Book tab and the gallery all use the new name.
++ * (The world id 'sunnyside' stays the same forever: it's in save files.)
++ */
++export const SCHOOL_NAME = 'Sunnyside Elementary';
+diff --git a/src/worlds/sunnyside/tiles.ts b/src/worlds/sunnyside/tiles.ts
+new file mode 100644
+index 0000000..781c7d7
+--- /dev/null
++++ b/src/worlds/sunnyside/tiles.ts
+@@ -0,0 +1,257 @@
++import { hash2 } from '../../core/rng';
++import { NES } from '../../render/nesPalette';
++import { checker, fill, grid, planks, rect, speckle, wall } from '../building/paint';
++import { type TileCtx, type TileKind } from '../building/types';
++
++/**
++ * Sunnyside's tiles, painted in code (16x16 each). A one-story brick school:
++ * red brick walls with a cream front, blue lockers and kids' drawings along the
++ * hallway, a sun-face sign by the front doors, a fenced playground out back and
++ * a bus loop out front. Walls are dark on the corner map so the rooms look outlined.
++ */
++const floor = (color: string, draw: (c: TileCtx) => void, extra: Partial<TileKind> = {}): TileKind => ({ walkable: true, color, draw, ...extra });
++const solid = (color: string, draw: (c: TileCtx) => void): TileKind => ({ walkable: false, color, draw });
++
++/** Does the front of this wall show? (Only when the square below it is something else.) */
++const faceShows = (c: TileCtx) => c.near(0, 1) !== c.near(0, 0);
++
++/** Red bricks on top (thin pale lines between them), a cream front where the front shows. */
++const brickWall = (c: TileCtx) => {
++  wall(c, NES.red, NES.sand, NES.black);
++  const bottom = faceShows(c) ? 9 : 15;
++  for (let row = 0; row * 4 + 1 < bottom; row++) {
++    const top = row * 4 + 1;
++    const y = row * 4 + 3;
++    if (y < bottom) rect(c, 1, y, 14, 1, NES.salmon);
++    // The joints between bricks move over every other row, like a real brick wall.
++    const joint = (row + c.x) % 2 ? 4 : 12;
++    rect(c, joint, top, 1, Math.min(2, bottom - top), NES.salmon);
++  }
++};
++
++const grass = (c: TileCtx) => {
++  fill(c, NES.greenBright);
++  speckle(c, NES.green, 6, 140);
++  speckle(c, NES.limeLight, 3, 141);
++};
++const asphalt = (c: TileCtx) => {
++  fill(c, NES.gray);
++  speckle(c, NES.grayLight, 5, 142);
++  speckle(c, NES.black, 3, 143);
++};
++/** The hallway's shiny squares: cream and white, like a real school floor. */
++const hallTiles = (c: TileCtx) => {
++  checker(c, NES.white, NES.sand, 8);
++  speckle(c, NES.grayLight, 3, 144);
++};
++
++/** Sunnyside's own sign: a smiling sun face (drawn here, so it's nobody else's logo). */
++const SUN = [
++  'o...oo...o',
++  '.o.YYYY.o.',
++  '..YYYYYY..',
++  '.YYkYYkYY.',
++  'oYYYYYYYYo',
++  'oYpYYYYpYo',
++  '.YYkYYkYY.',
++  '..YYkkYY..',
++  '.o.YYYY.o.',
++  'o...oo...o',
++];
++const SUN_COLORS: Record<string, string> = { o: NES.orange, Y: NES.gold, k: NES.black, p: NES.pink };
++export const drawSunFace = (c: TileCtx, x: number, y: number) => {
++  SUN.forEach((row, dy) => {
++    for (let dx = 0; dx < row.length; dx++) if (row[dx] !== '.') rect(c, x + dx, y + dy, 1, 1, SUN_COLORS[row[dx]]);
++  });
++};
++
++/** A kid's crayon drawing taped to the wall: a little house, a flower or a smiley, picked by the tile's spot. */
++const CRAYON = [NES.redBright, NES.blueMid, NES.green, NES.purple, NES.orange, NES.pink];
++const kidsDrawing = (c: TileCtx) => {
++  rect(c, 3, 9, 10, 6, NES.white);
++  rect(c, 7, 9, 2, 1, NES.gold); // a strip of tape
++  const pick = Math.floor(hash2(c.x, c.y, 145) * 3);
++  const ink = CRAYON[Math.floor(hash2(c.y, c.x, 146) * CRAYON.length)];
++  if (pick === 0) {
++    rect(c, 5, 12, 4, 3, ink); // a house with a roof
++    rect(c, 6, 11, 2, 1, ink);
++    rect(c, 10, 10, 2, 2, NES.gold); // and a sun
++  } else if (pick === 1) {
++    rect(c, 7, 12, 1, 3, NES.green); // a flower
++    rect(c, 6, 10, 3, 2, ink);
++  } else {
++    rect(c, 5, 10, 6, 4, NES.gold); // a smiley
++    rect(c, 6, 11, 1, 1, NES.black);
++    rect(c, 9, 11, 1, 1, NES.black);
++    rect(c, 6, 13, 4, 1, NES.black);
++  }
++};
++
++/** A row of four blue lockers with little vents and handles. */
++const lockerFront = (c: TileCtx) => {
++  for (let k = 0; k < 4; k++) {
++    rect(c, k * 4, 9, 4, 7, NES.blueMid);
++    rect(c, k * 4, 9, 1, 7, NES.blueDark);
++    rect(c, k * 4 + 1, 10, 2, 1, NES.sky);
++    rect(c, k * 4 + 1, 11, 2, 1, NES.sky);
++    rect(c, k * 4 + 2, 13, 1, 1, NES.grayLight);
++  }
++};
++
++/** Wooden sandbox edges wherever the sand meets something else. */
++const sandbox = (c: TileCtx) => {
++  fill(c, NES.sand);
++  speckle(c, NES.yellowLight, 5, 147);
++  speckle(c, NES.orangeLight, 2, 148);
++  const edge = (dx: number, dy: number) => c.near(dx, dy) !== 'sandbox';
++  if (edge(0, -1)) rect(c, 0, 0, 16, 2, NES.ochre);
++  if (edge(0, 1)) rect(c, 0, 14, 16, 2, NES.ochre);
++  if (edge(-1, 0)) rect(c, 0, 0, 2, 16, NES.ochre);
++  if (edge(1, 0)) rect(c, 14, 0, 2, 16, NES.ochre);
++};
++
++/** The gym's wooden floor: a red line just inside the walls, like the edge of a court. */
++const gymWood = (c: TileCtx) => {
++  planks(c, NES.orangeLight, NES.ochre, NES.yellowLight);
++  const edge = (dx: number, dy: number) => !c.near(dx, dy).startsWith('gym');
++  if (edge(0, -1)) rect(c, 0, 2, 16, 1, NES.redBright);
++  if (edge(0, 1)) rect(c, 0, 13, 16, 1, NES.redBright);
++  if (edge(-1, 0)) rect(c, 2, 0, 1, 16, NES.redBright);
++  if (edge(1, 0)) rect(c, 13, 0, 1, 16, NES.redBright);
++};
++
++/** Glass doors (front and back of the school): two panes with a gap down the middle. */
++const glassDoors = (c: TileCtx) => {
++  hallTiles(c);
++  rect(c, 0, 1, 16, 14, NES.blueMid);
++  rect(c, 1, 2, 6, 12, NES.skyLight);
++  rect(c, 9, 2, 6, 12, NES.skyLight);
++  rect(c, 2, 3, 1, 4, NES.white);
++  rect(c, 10, 3, 1, 4, NES.white);
++  rect(c, 6, 8, 1, 2, NES.gray);
++  rect(c, 9, 8, 1, 2, NES.gray);
++};
++
++export const SUNNYSIDE_TILES: Record<string, TileKind> = {
++  // ---------- Outside ----------
++  hedge: solid(NES.greenDark, (c) => {
++    fill(c, NES.greenForest);
++    speckle(c, NES.green, 10, 149);
++    speckle(c, NES.greenDark, 6, 150);
++  }),
++  /** The playground's chain-link fence: gray posts with a crisscross wire. */
++  fence: solid(NES.gray, (c) => {
++    grass(c);
++    for (let y = 3; y < 15; y++) {
++      for (let x = 0; x < 16; x++) if ((x + y) % 4 === 0 || (x - y + 16) % 4 === 0) rect(c, x, y, 1, 1, NES.grayLight);
++    }
++    rect(c, 0, 2, 16, 1, NES.gray);
++    rect(c, 7, 2, 2, 13, NES.gray);
++  }),
++  grass: floor(NES.greenBright, grass),
++  /** Soft wood chips under the swings, slide and monkey bars. */
++  woodchips: floor(NES.ochre, (c) => {
++    fill(c, NES.ochre);
++    speckle(c, NES.orangeLight, 8, 151);
++    speckle(c, NES.brownRed, 5, 152);
++  }),
++  sandbox: floor(NES.sand, sandbox),
++  /** The playground's blacktop, for hopscotch and chalk. */
++  blacktop: floor(NES.gray, (c) => {
++    asphalt(c);
++    speckle(c, NES.pinkLight, 1, 153);
++  }),
++  /** A chalk hopscotch square, with 1 to 5 chalk dots to count (they change as you hop up the column). */
++  hopscotch: floor(NES.gray, (c) => {
++    asphalt(c);
++    rect(c, 2, 1, 12, 1, NES.white);
++    rect(c, 2, 14, 12, 1, NES.white);
++    rect(c, 2, 1, 1, 14, NES.white);
++    rect(c, 13, 1, 1, 14, NES.white);
++    const dots = (c.y % 5) + 1;
++    for (let k = 0; k < dots; k++) rect(c, 4 + k * 2, 7, 1, 2, k % 2 ? NES.pinkLight : NES.yellowLight);
++  }),
++  sidewalk: floor(NES.grayLight, (c) => {
++    grid(c, NES.grayLight, NES.gray, 8);
++    speckle(c, NES.white, 3, 154);
++  }),
++  road: floor(NES.gray, asphalt),
++  /** Yellow dashes down the middle of the bus loop. */
++  roadLine: floor(NES.gray, (c) => {
++    asphalt(c);
++    rect(c, 2, 7, 8, 2, NES.gold);
++  }),
++  /** Wide white crosswalk stripes. */
++  crosswalk: floor(NES.white, (c) => {
++    asphalt(c);
++    for (const x of [1, 6, 11]) rect(c, x, 0, 4, 16, NES.white);
++  }),
++
++  // ---------- Walls, windows and doors ----------
++  wall: solid(NES.brownRed, brickWall),
++  window: solid(NES.brownRed, (c) => {
++    brickWall(c);
++    rect(c, 2, 2, 12, 9, NES.white);
++    rect(c, 3, 3, 10, 7, NES.skyLight);
++    rect(c, 7, 3, 2, 7, NES.white);
++    rect(c, 4, 4, 1, 2, NES.white);
++  }),
++  /** The school's sign by the front doors: a smiling sun on a sky-blue board. */
++  sunSign: solid(NES.brownRed, (c) => {
++    brickWall(c);
++    rect(c, 1, 0, 14, 12, NES.black);
++    rect(c, 2, 1, 12, 10, NES.skyLight);
++    drawSunFace(c, 3, 1);
++  }),
++  /** Hallway wall with blue lockers on its front. */
++  lockers: solid(NES.brownRed, (c) => {
++    brickWall(c);
++    if (faceShows(c)) lockerFront(c);
++  }),
++  /** Hallway wall with a kid's drawing taped to its front. */
++  artWall: solid(NES.brownRed, (c) => {
++    brickWall(c);
++    if (faceShows(c)) kidsDrawing(c);
++  }),
++  frontDoor: floor(NES.skyLight, glassDoors, { doorway: true }),
++  /** An open classroom door: hallway floor with a wooden threshold strip. */
++  doorway: floor(NES.white, (c) => {
++    hallTiles(c);
++    rect(c, 0, 7, 16, 2, NES.ochre);
++  }, { doorway: true }),
++
++  // ---------- Floors (the hallway, then one per room) ----------
++  hallFloor: floor(NES.white, hallTiles),
++  classFloor: floor(NES.sand, (c) => {
++    grid(c, NES.sand, NES.orangeLight, 8);
++    speckle(c, NES.white, 2, 155);
++  }),
++  libraryFloor: floor(NES.periwinkle, (c) => {
++    fill(c, NES.periwinkle);
++    speckle(c, NES.pastelBlue, 6, 156);
++    speckle(c, NES.blueMid, 4, 157);
++  }),
++  lunchFloor: floor(NES.yellowLight, (c) => checker(c, NES.yellowLight, NES.white, 8)),
++  gymFloor: floor(NES.orangeLight, gymWood),
++  /** The middle line of the basketball court. */
++  gymLine: floor(NES.orangeLight, (c) => {
++    gymWood(c);
++    rect(c, 7, 0, 2, 16, NES.blueMid);
++  }),
++  artFloor: floor(NES.pinkLight, (c) => {
++    fill(c, NES.white);
++    speckle(c, NES.grayLight, 4, 158);
++    speckle(c, NES.pink, 2, 159);
++    speckle(c, NES.sky, 2, 160);
++    speckle(c, NES.gold, 2, 161);
++  }),
++  musicFloor: floor(NES.violet, (c) => {
++    fill(c, NES.violet);
++    speckle(c, NES.lavender, 6, 162);
++    speckle(c, NES.purple, 4, 163);
++  }),
++  scienceFloor: floor(NES.mint, (c) => {
++    grid(c, NES.mint, NES.seafoam, 8);
++    speckle(c, NES.white, 3, 164);
++  }),
++};
+diff --git a/src/worlds/worldIds.ts b/src/worlds/worldIds.ts
+index f0ee6d5..bf305ed 100644
+--- a/src/worlds/worldIds.ts
++++ b/src/worlds/worldIds.ts
+@@ -6,7 +6,7 @@
+  * This file has no other imports on purpose: the save code needs it, and the
+  * save code shouldn't have to load whole worlds just to check an id.
+  */
+-export const WORLD_IDS = ['island', 'home', 'woods', 'buntown', 'cherrymart'] as const;
++export const WORLD_IDS = ['island', 'home', 'woods', 'buntown', 'cherrymart', 'sunnyside'] as const;
+ export type WorldId = (typeof WORLD_IDS)[number];
+ 
+ /** The world a brand-new game starts in. */

@@ -28,7 +28,7 @@ export interface Song {
   parts: Part[];
 }
 
-export type SongName = 'title' | 'explore' | 'cave' | 'catch' | 'home' | 'buntown' | 'cherrymart';
+export type SongName = 'title' | 'explore' | 'cave' | 'catch' | 'home' | 'buntown' | 'cherrymart' | 'sunnyside';
 
 export const SONGS: Record<SongName, Song> = {
   // The title screen: bright and bouncy, "let's go on an adventure!". F major, 8 bars of eighth notes.
@@ -179,6 +179,39 @@ export const SONGS: Record<SongName, Song> = {
         volume: 0.05,
         notes: `k h s h k h s h | k h s h k h s h | k h s h k h s h | k h s h k k s h
                 k h s h k h s h | k h s h k h s h | k h s h k h s h | k h s s k - - -`,
+      },
+    ],
+  },
+
+  // Sunnyside Elementary: a cheerful school-bell tune, "ding-dong, time for class!". F major, 8 bars.
+  sunnyside: {
+    bpm: 132,
+    stepsPerBeat: 2,
+    parts: [
+      {
+        voice: 'pulse',
+        volume: 0.13,
+        notes: `C6 . A5 . C6 . A5 . | F5 . G5 . A5 . . . | Bb5 . A5 . G5 . F5 . | G5 . . . C5 . . .
+                C6 . A5 . C6 . D6 . | C6 . A5 . F5 . A5 . | G5 . Bb5 . A5 . G5 . | F5 . . . - - - -`,
+      },
+      {
+        // A little school bell ringing "ding-dong" at the start of each half.
+        voice: 'square',
+        volume: 0.04,
+        notes: `F6 - C6 - F6 - C6 - | - - - - - - - - | - - - - - - - - | - - - - C6 - E6 -
+                F6 - C6 - F6 - C6 - | - - - - - - - - | - - - - - - - - | - - - - C6 - F6 -`,
+      },
+      {
+        voice: 'triangle',
+        volume: 0.22,
+        notes: `F2 . C3 . F2 . C3 . | F2 . C3 . A2 . C3 . | Bb2 . F3 . Bb2 . F3 . | C3 . G3 . C3 . E3 .
+                F2 . C3 . F2 . C3 . | D3 . A3 . D3 . A3 . | Bb2 . F3 . C3 . E3 . | F2 . C3 . F2 . - -`,
+      },
+      {
+        voice: 'drums',
+        volume: 0.05,
+        notes: `k h s h k h s h | k h s h k h s h | k h s h k h s h | k h s h k k s h
+                k h s h k h s h | k h s h k h s h | k h s h k h s h | k h s h k - - -`,
       },
     ],
   },

@@ -3,6 +3,7 @@ import { BUNTOWN } from './buntown';
 import { CHERRYMART } from './cherrymart';
 import { HOME } from './home';
 import { ISLAND } from './island';
+import { SUNNYSIDE } from './sunnyside';
 import { WOODS } from './woods';
 import { type RealmDef, type WorldDef } from './types';
 import { type WorldId } from './worldIds';
@@ -17,6 +18,7 @@ export const WORLDS: Record<WorldId, WorldDef> = {
   woods: WOODS,
   buntown: BUNTOWN,
   cherrymart: CHERRYMART,
+  sunnyside: SUNNYSIDE,
 };
 
 /** All worlds, in order (for the title screen and /gallery). */

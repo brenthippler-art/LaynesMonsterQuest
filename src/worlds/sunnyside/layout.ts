@@ -1,0 +1,220 @@
+import { type LegendEntry, type MapPlan } from '../building/types';
+
+/**
+ * Sunnyside Elementary, drawn as ASCII: one character per 16x16 tile.
+ * Change the school by retyping characters (every row must stay the same length).
+ *
+ * LEGEND (what each character is)
+ *   Outside:  H hedge (the edge of the world)   F playground fence   g grass
+ *             w wood chips   x sandbox   b blacktop   8 hopscotch square
+ *             s sidewalk   a bus loop road   - yellow road line   z crosswalk
+ *   Walls:    # brick wall   W window   S the sun-face sign   L lockers   P a kid's drawing
+ *             D glass doors (front and back)   o an open classroom door
+ *   Floors:   h hallway   c classroom   l library   n lunchroom   y gym   | gym middle line
+ *             t art room   m music room   e science room
+ *   By hand:  u cubbies (hallway)   1 2 3 a school bus (back, middle, front)   f the flagpole
+ *             @ the start (on the bus loop sidewalk, by the front doors)
+ *
+ * ZONES (which realm each tile is in; '.' = none: walls, doors, the hallway)
+ *   C class  L library  N lunch  G gym  R recess  A art  M music  S science  U bus
+ *   The playground (everything behind the school) is RECESS, and everything in front
+ *   of the school (sidewalk, road, the grass island) is BUS.
+ */
+export const LEGEND: Record<string, LegendEntry> = {
+  H: { tile: 'hedge' },
+  F: { tile: 'fence' },
+  g: { tile: 'grass' },
+  w: { tile: 'woodchips' },
+  x: { tile: 'sandbox' },
+  b: { tile: 'blacktop' },
+  '8': { tile: 'hopscotch' },
+  s: { tile: 'sidewalk' },
+  a: { tile: 'road' },
+  '-': { tile: 'roadLine' },
+  z: { tile: 'crosswalk' },
+  '#': { tile: 'wall' },
+  W: { tile: 'window' },
+  S: { tile: 'sunSign' },
+  L: { tile: 'lockers' },
+  P: { tile: 'artWall' },
+  D: { tile: 'frontDoor' },
+  o: { tile: 'doorway' },
+  h: { tile: 'hallFloor' },
+  c: { tile: 'classFloor' },
+  l: { tile: 'libraryFloor' },
+  n: { tile: 'lunchFloor' },
+  y: { tile: 'gymFloor' },
+  '|': { tile: 'gymLine' },
+  t: { tile: 'artFloor' },
+  m: { tile: 'musicFloor' },
+  e: { tile: 'scienceFloor' },
+  u: { tile: 'hallFloor', decor: 'cubby' },
+  '1': { tile: 'road', decor: 'busBack' },
+  '2': { tile: 'road', decor: 'busMid' },
+  '3': { tile: 'road', decor: 'busFront' },
+  f: { tile: 'grass', decor: 'flagpole' },
+  '@': { tile: 'sidewalk', spawn: true },
+};
+
+/**
+ * The whole school and its grounds (90 x 70), from back to front:
+ *   - the playground, fenced in: wood chips (swings, slide, monkey bars), blacktop
+ *     with hopscotch, and a sandbox
+ *   - the back doors, then a short hall down to the main hallway
+ *   - top row of rooms: class, library, (the back hall), art, music
+ *   - the long main hallway: lockers and kids' drawings on the wall, cubbies along the bottom
+ *   - bottom row of rooms: lunch, science, (the front hall), the big gym
+ *   - the front doors with a sun sign on each side, then the bus loop: sidewalk, yellow
+ *     buses, a crosswalk to the grass island and its flagpole
+ */
+const MAIN: MapPlan = {
+  name: 'main',
+  outside: 'hedge',
+  rows: [
+    'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF',
+    'FggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggF',
+    'FggwwwwwwwwwwwwwwwwwwwwwwwwwwgggggbbbbbbbbbbbbbbbbbbbbbbbggggggggggggggggggggggggggggggggF',
+    'Fggwwwwwwwwwwwwwwwwwwwwwwwwwwgggggbbbbbbbbbbb8bbbbbbbbbbbgggggxxxxxxxxxxxxxxxxxxxggggggggF',
+    'Fggwwwwwwwwwwwwwwwwwwwwwwwwwwgggggbbbbbbbbbbb8bbbbbbbbbbbgggggxxxxxxxxxxxxxxxxxxxggggggggF',
+    'Fggwwwwwwwwwwwwwwwwwwwwwwwwwwgggggbbbbbbbbbbb8bbbbbbbbbbbgggggxxxxxxxxxxxxxxxxxxxggggggggF',
+    'Fggwwwwwwwwwwwwwwwwwwwwwwwwwwgggggbbbbbbbbbbb8bbbbbbbbbbbgggggxxxxxxxxxxxxxxxxxxxggggggggF',
+    'Fggwwwwwwwwwwwwwwwwwwwwwwwwwwgggggbbbbbbbbbbb8bbbbbbbbbbbgggggxxxxxxxxxxxxxxxxxxxggggggggF',
+    'Fggwwwwwwwwwwwwwwwwwwwwwwwwwwgggggbbbbbbbbbbb8bbbbbbbbbbbgggggxxxxxxxxxxxxxxxxxxxggggggggF',
+    'Fggwwwwwwwwwwwwwwwwwwwwwwwwwwgggggbbbbbbbbbbb8bbbbbbbbbbbgggggxxxxxxxxxxxxxxxxxxxggggggggF',
+    'Fggwwwwwwwwwwwwwwwwwwwwwwwwwwgggggbbbbbbbbbbb8bbbbbbbbbbbggggggggggggggggggggggggggggggggF',
+    'FggwwwwwwwwwwwwwwwwwwwwwwwwwwgggggbbbbbbbbbbbbbbbbbbbbbbbggggggggggggggggggggggggggggggggF',
+    'FggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggF',
+    'FggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggF',
+    '###W#####W#####W#####W#####W#####W#####W###DDDD####W#####W#####W#####W#####W#####W#####W##',
+    '#cccccccccccccccccccccc#llllllllllllllllll#hhhh#ttttttttttttttttttt#mmmmmmmmmmmmmmmmmmmmm#',
+    '#cccccccccccccccccccccc#llllllllllllllllll#hhhh#ttttttttttttttttttt#mmmmmmmmmmmmmmmmmmmmm#',
+    '#cccccccccccccccccccccc#llllllllllllllllll#hhhh#ttttttttttttttttttt#mmmmmmmmmmmmmmmmmmmmm#',
+    '#cccccccccccccccccccccc#llllllllllllllllll#hhhh#ttttttttttttttttttt#mmmmmmmmmmmmmmmmmmmmm#',
+    '#cccccccccccccccccccccc#llllllllllllllllll#hhhh#ttttttttttttttttttt#mmmmmmmmmmmmmmmmmmmmm#',
+    '#cccccccccccccccccccccc#llllllllllllllllll#hhhh#ttttttttttttttttttt#mmmmmmmmmmmmmmmmmmmmm#',
+    '#cccccccccccccccccccccc#llllllllllllllllll#hhhh#ttttttttttttttttttt#mmmmmmmmmmmmmmmmmmmmm#',
+    '#cccccccccccccccccccccc#llllllllllllllllll#hhhh#ttttttttttttttttttt#mmmmmmmmmmmmmmmmmmmmm#',
+    '#cccccccccccccccccccccc#llllllllllllllllll#hhhh#ttttttttttttttttttt#mmmmmmmmmmmmmmmmmmmmm#',
+    '#cccccccccccccccccccccc#llllllllllllllllll#hhhh#ttttttttttttttttttt#mmmmmmmmmmmmmmmmmmmmm#',
+    '#cccccccccccccccccccccc#llllllllllllllllll#hhhh#ttttttttttttttttttt#mmmmmmmmmmmmmmmmmmmmm#',
+    '#cccccccccccccccccccccc#llllllllllllllllll#hhhh#ttttttttttttttttttt#mmmmmmmmmmmmmmmmmmmmm#',
+    '#cccccccccccccccccccccc#llllllllllllllllll#hhhh#ttttttttttttttttttt#mmmmmmmmmmmmmmmmmmmmm#',
+    '#cccccccccccccccccccccc#llllllllllllllllll#hhhh#ttttttttttttttttttt#mmmmmmmmmmmmmmmmmmmmm#',
+    '#cccccccccccccccccccccc#llllllllllllllllll#hhhh#ttttttttttttttttttt#mmmmmmmmmmmmmmmmmmmmm#',
+    '#LPLLLLPLLoooLLLLPLLLLP#LLLPLLLoooLLLPLLLL#hhhh#LLLLPLLLoooLLLPLLLL#LLLLPLLLLoooLLPLLLLPL#',
+    '#hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh#',
+    '#hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh#',
+    '#hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh#',
+    '#hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh#',
+    '#huuuuuhhhhhhhhuuuuuuhhhuuuuhhhhhhhuuuuuhhhhhhhhhhuuuuuuhhhhhhhhhhuuuuuuhhhhhhhhhhuuuuuhh#',
+    '#########ooo##################ooo##########hhhh#############ooo############ooo############',
+    '#nnnnnnnnnnnnnnnnnnnn#eeeeeeeeeeeeeeeeeeee#hhhh#yyyyyyyyyyyyyyyyyyyy|yyyyyyyyyyyyyyyyyyyy#',
+    '#nnnnnnnnnnnnnnnnnnnn#eeeeeeeeeeeeeeeeeeee#hhhh#yyyyyyyyyyyyyyyyyyyy|yyyyyyyyyyyyyyyyyyyy#',
+    '#nnnnnnnnnnnnnnnnnnnn#eeeeeeeeeeeeeeeeeeee#hhhh#yyyyyyyyyyyyyyyyyyyy|yyyyyyyyyyyyyyyyyyyy#',
+    '#nnnnnnnnnnnnnnnnnnnn#eeeeeeeeeeeeeeeeeeee#hhhh#yyyyyyyyyyyyyyyyyyyy|yyyyyyyyyyyyyyyyyyyy#',
+    '#nnnnnnnnnnnnnnnnnnnn#eeeeeeeeeeeeeeeeeeee#hhhh#yyyyyyyyyyyyyyyyyyyy|yyyyyyyyyyyyyyyyyyyy#',
+    '#nnnnnnnnnnnnnnnnnnnn#eeeeeeeeeeeeeeeeeeee#hhhh#yyyyyyyyyyyyyyyyyyyy|yyyyyyyyyyyyyyyyyyyy#',
+    '#nnnnnnnnnnnnnnnnnnnn#eeeeeeeeeeeeeeeeeeee#hhhh#yyyyyyyyyyyyyyyyyyyy|yyyyyyyyyyyyyyyyyyyy#',
+    '#nnnnnnnnnnnnnnnnnnnn#eeeeeeeeeeeeeeeeeeee#hhhh#yyyyyyyyyyyyyyyyyyyy|yyyyyyyyyyyyyyyyyyyy#',
+    '#nnnnnnnnnnnnnnnnnnnn#eeeeeeeeeeeeeeeeeeee#hhhh#yyyyyyyyyyyyyyyyyyyy|yyyyyyyyyyyyyyyyyyyy#',
+    '#nnnnnnnnnnnnnnnnnnnn#eeeeeeeeeeeeeeeeeeee#hhhh#yyyyyyyyyyyyyyyyyyyy|yyyyyyyyyyyyyyyyyyyy#',
+    '#nnnnnnnnnnnnnnnnnnnn#eeeeeeeeeeeeeeeeeeee#hhhh#yyyyyyyyyyyyyyyyyyyy|yyyyyyyyyyyyyyyyyyyy#',
+    '#nnnnnnnnnnnnnnnnnnnn#eeeeeeeeeeeeeeeeeeee#hhhh#yyyyyyyyyyyyyyyyyyyy|yyyyyyyyyyyyyyyyyyyy#',
+    '#nnnnnnnnnnnnnnnnnnnn#eeeeeeeeeeeeeeeeeeee#hhhh#yyyyyyyyyyyyyyyyyyyy|yyyyyyyyyyyyyyyyyyyy#',
+    '#nnnnnnnnnnnnnnnnnnnn#eeeeeeeeeeeeeeeeeeee#hhhh#yyyyyyyyyyyyyyyyyyyy|yyyyyyyyyyyyyyyyyyyy#',
+    '#nnnnnnnnnnnnnnnnnnnn#eeeeeeeeeeeeeeeeeeee#hhhh#yyyyyyyyyyyyyyyyyyyy|yyyyyyyyyyyyyyyyyyyy#',
+    '###W####W####W####W####W####W####W####W##S#DDDD#S####W####W####W####W####W####W####W####W#',
+    'HssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssH',
+    'Hssssssssssssssssssssssssssssssssssssssssssss@sssssssssssssssssssssssssssssssssssssssssssH',
+    'HssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssH',
+    'Hggaaaaaaa123aaaaa123aaaaa123aaaaaaaaaaaaaazzzzaaaaaaaaaaa123aaaaa123aaaaa123aaaaaaaaaaggH',
+    'Hgga-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-zzzza-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-ggH',
+    'HggaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaazzzzaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaggH',
+    'HggaaaaaaggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggaaaaaaggH',
+    'HggaaaaaaggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggaaaaaaggH',
+    'HggaaaaaaggggggggggggggggggggggggggggggggggggfgggggggggggggggggggggggggggggggggggaaaaaaggH',
+    'HggaaaaaaggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggaaaaaaggH',
+    'HggaaaaaaggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggaaaaaaggH',
+    'HggaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaggH',
+    'Hgga-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-a-ggH',
+    'HggaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaggH',
+    'HggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggH',
+    'HggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggH',
+    'HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH',
+  ],
+  zones: [
+    '..........................................................................................',
+    '.RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR.',
+    '.RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR.',
+    '.RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR.',
+    '.RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR.',
+    '.RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR.',
+    '.RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR.',
+    '.RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR.',
+    '.RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR.',
+    '.RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR.',
+    '.RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR.',
+    '.RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR.',
+    '.RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR.',
+    '.RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR.',
+    '..........................................................................................',
+    '.CCCCCCCCCCCCCCCCCCCCCC.LLLLLLLLLLLLLLLLLL......AAAAAAAAAAAAAAAAAAA.MMMMMMMMMMMMMMMMMMMMM.',
+    '.CCCCCCCCCCCCCCCCCCCCCC.LLLLLLLLLLLLLLLLLL......AAAAAAAAAAAAAAAAAAA.MMMMMMMMMMMMMMMMMMMMM.',
+    '.CCCCCCCCCCCCCCCCCCCCCC.LLLLLLLLLLLLLLLLLL......AAAAAAAAAAAAAAAAAAA.MMMMMMMMMMMMMMMMMMMMM.',
+    '.CCCCCCCCCCCCCCCCCCCCCC.LLLLLLLLLLLLLLLLLL......AAAAAAAAAAAAAAAAAAA.MMMMMMMMMMMMMMMMMMMMM.',
+    '.CCCCCCCCCCCCCCCCCCCCCC.LLLLLLLLLLLLLLLLLL......AAAAAAAAAAAAAAAAAAA.MMMMMMMMMMMMMMMMMMMMM.',
+    '.CCCCCCCCCCCCCCCCCCCCCC.LLLLLLLLLLLLLLLLLL......AAAAAAAAAAAAAAAAAAA.MMMMMMMMMMMMMMMMMMMMM.',
+    '.CCCCCCCCCCCCCCCCCCCCCC.LLLLLLLLLLLLLLLLLL......AAAAAAAAAAAAAAAAAAA.MMMMMMMMMMMMMMMMMMMMM.',
+    '.CCCCCCCCCCCCCCCCCCCCCC.LLLLLLLLLLLLLLLLLL......AAAAAAAAAAAAAAAAAAA.MMMMMMMMMMMMMMMMMMMMM.',
+    '.CCCCCCCCCCCCCCCCCCCCCC.LLLLLLLLLLLLLLLLLL......AAAAAAAAAAAAAAAAAAA.MMMMMMMMMMMMMMMMMMMMM.',
+    '.CCCCCCCCCCCCCCCCCCCCCC.LLLLLLLLLLLLLLLLLL......AAAAAAAAAAAAAAAAAAA.MMMMMMMMMMMMMMMMMMMMM.',
+    '.CCCCCCCCCCCCCCCCCCCCCC.LLLLLLLLLLLLLLLLLL......AAAAAAAAAAAAAAAAAAA.MMMMMMMMMMMMMMMMMMMMM.',
+    '.CCCCCCCCCCCCCCCCCCCCCC.LLLLLLLLLLLLLLLLLL......AAAAAAAAAAAAAAAAAAA.MMMMMMMMMMMMMMMMMMMMM.',
+    '.CCCCCCCCCCCCCCCCCCCCCC.LLLLLLLLLLLLLLLLLL......AAAAAAAAAAAAAAAAAAA.MMMMMMMMMMMMMMMMMMMMM.',
+    '.CCCCCCCCCCCCCCCCCCCCCC.LLLLLLLLLLLLLLLLLL......AAAAAAAAAAAAAAAAAAA.MMMMMMMMMMMMMMMMMMMMM.',
+    '.CCCCCCCCCCCCCCCCCCCCCC.LLLLLLLLLLLLLLLLLL......AAAAAAAAAAAAAAAAAAA.MMMMMMMMMMMMMMMMMMMMM.',
+    '..........................................................................................',
+    '..........................................................................................',
+    '..........................................................................................',
+    '..........................................................................................',
+    '..........................................................................................',
+    '..........................................................................................',
+    '..........................................................................................',
+    '.NNNNNNNNNNNNNNNNNNNN.SSSSSSSSSSSSSSSSSSSS......GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG.',
+    '.NNNNNNNNNNNNNNNNNNNN.SSSSSSSSSSSSSSSSSSSS......GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG.',
+    '.NNNNNNNNNNNNNNNNNNNN.SSSSSSSSSSSSSSSSSSSS......GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG.',
+    '.NNNNNNNNNNNNNNNNNNNN.SSSSSSSSSSSSSSSSSSSS......GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG.',
+    '.NNNNNNNNNNNNNNNNNNNN.SSSSSSSSSSSSSSSSSSSS......GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG.',
+    '.NNNNNNNNNNNNNNNNNNNN.SSSSSSSSSSSSSSSSSSSS......GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG.',
+    '.NNNNNNNNNNNNNNNNNNNN.SSSSSSSSSSSSSSSSSSSS......GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG.',
+    '.NNNNNNNNNNNNNNNNNNNN.SSSSSSSSSSSSSSSSSSSS......GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG.',
+    '.NNNNNNNNNNNNNNNNNNNN.SSSSSSSSSSSSSSSSSSSS......GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG.',
+    '.NNNNNNNNNNNNNNNNNNNN.SSSSSSSSSSSSSSSSSSSS......GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG.',
+    '.NNNNNNNNNNNNNNNNNNNN.SSSSSSSSSSSSSSSSSSSS......GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG.',
+    '.NNNNNNNNNNNNNNNNNNNN.SSSSSSSSSSSSSSSSSSSS......GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG.',
+    '.NNNNNNNNNNNNNNNNNNNN.SSSSSSSSSSSSSSSSSSSS......GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG.',
+    '.NNNNNNNNNNNNNNNNNNNN.SSSSSSSSSSSSSSSSSSSS......GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG.',
+    '.NNNNNNNNNNNNNNNNNNNN.SSSSSSSSSSSSSSSSSSSS......GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG.',
+    '..........................................................................................',
+    '.UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU.',
+    '.UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU.',
+    '.UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU.',
+    '.UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU.',
+    '.UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU.',
+    '.UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU.',
+    '.UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU.',
+    '.UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU.',
+    '.UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU.',
+    '.UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU.',
+    '.UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU.',
+    '.UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU.',
+    '.UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU.',
+    '.UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU.',
+    '.UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU.',
+    '.UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU.',
+    '..........................................................................................',
+  ],
+};
+
+/** Sunnyside is one big map (the whole school is on one floor). */
+export const SUNNYSIDE_MAPS: MapPlan[] = [MAIN];
