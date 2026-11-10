@@ -455,9 +455,9 @@ const LIST: MonsterData[] = [
     look: { body: 'bowl', eyes: 'happy', mouth: 'smile', top: 'round', tail: 'none', feet: 'none', arms: 'nubs', pattern: 'sprinkles' },
   },
   {
-    id: 'chillwich', name: 'Chillwich', habitat: 'frozen', type: 'Frost', rarity: 'common', size: 'small',
+    id: 'chillwich', name: 'Coolcookie', habitat: 'frozen', type: 'Frost', rarity: 'common', size: 'small',
     ability: { name: 'Cool Bite', description: 'Shares a cold, creamy bite on a hot day!' },
-    fact: 'Chillwich is cookie on the outside and ice cream inside.',
+    fact: 'Coolcookie is cookie on the outside and ice cream inside.',
     colors: { main: C.brownDark, accent: C.white, belly: C.white },
     look: { body: 'square', eyes: 'round', mouth: 'grin', top: 'none', tail: 'none', feet: 'stubs', arms: 'nubs', pattern: 'stripes' },
   },
@@ -676,9 +676,9 @@ const LIST: MonsterData[] = [
     look: { body: 'beast', eyes: 'big', mouth: 'cat', top: 'cat', tail: 'long', feet: 'paws', arms: 'none', pattern: 'stripes', belly: true },
   },
   {
-    id: 'tweetle', name: 'Tweetle', habitat: 'pets', type: 'Fluff', rarity: 'uncommon', size: 'tiny',
+    id: 'tweetle', name: 'Chirpbell', habitat: 'pets', type: 'Fluff', rarity: 'uncommon', size: 'tiny',
     ability: { name: 'Copy Song', description: 'Sings back any tune you whistle to it!' },
-    fact: 'Tweetle rings the little bell in its cage every morning.',
+    fact: 'Chirpbell rings the little bell in its cage every morning.',
     colors: { main: C.greenBright, accent: C.gold, belly: C.yellowLight, wing: C.green },
     look: { body: 'bird', eyes: 'round', mouth: 'beak', top: 'tuft', tail: 'plume', feet: 'stubs', arms: 'bird', pattern: 'none', belly: true, cheeks: true },
   },

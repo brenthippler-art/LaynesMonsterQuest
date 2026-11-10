@@ -28,13 +28,28 @@ What's in it:
 |---|---|---|---|---|
 | Island | `island` | 200×200 island from a fixed seed, 6 caves | grass, forest, desert, snow, hills, beach, swamp, volcano, cave | 108 |
 | Home Sweet Home | `home` | 90×70 house and yard (drawn as ASCII), attic and basement | kitchen, living, bath, bedroom, laundry, garage, attic, basement, yard | 108 |
+| The Woods | `woods` | 200×200 forest from a fixed seed: nine areas in a 3×3 grid, crossing trails, a winding creek and 3 caves | glade, pines, mushroom, fern, creek, briar, ancient, mist, shadow | 108 |
 | Bun Town Burgers | `buntown` | 90×70 burger restaurant, drive-thru and back alley (drawn as ASCII), walk-in freezer | counter, grill, fries, soda, freezer, dining, play, drive, alley | 108 |
 | Cherry Mart | `cherrymart` | 90×68 department store with a red racetrack aisle, front doors and parking lot (drawn as ASCII); the holiday aisle follows the device's month | deals, toys, home, clothes, tech, cafe, grocery, beauty, holiday | 108 |
 | Sunnyside Elementary | `sunnyside` | 90×70 one-story school (drawn as ASCII): a long hallway with rooms off it, the playground out back and the bus loop out front | class, library, lunch, gym, recess, art, music, science, bus | 108 |
 | Big Blue Mart | `bigblue` | 100×96 giant superstore (drawn as ASCII): a huge parking lot out front, a fenced garden center on the left, an auto center on the right, and departments split by shelves inside; you start in the lot facing the doors | parking, garden, auto, produce, bakery, frozen, sports, pets, tools | 108 |
 | Wonderwhirl Park | `wonderwhirl` | 90×72 outdoor theme park (drawn as ASCII): a front gate and little main street at the bottom, paths around a central fountain, the fireworks plaza at the top; the rides really move (coaster, Ferris wheel, carousel, bumper cars, lazy river, fireworks), and the funhouse is a small map through its doors | gate, coaster, carousel, splash, funhouse, wheel, snacks, bumper, fireworks | 108 |
 
-New worlds are added with one checklist: see [docs/ADDING-A-WORLD.md](docs/ADDING-A-WORLD.md).
+### Adding a world, step by step
+
+A new world (a farm, a zoo, a grocery store…) is one prompt. The full checklist,
+with a prompt you can copy, is [docs/ADDING-A-WORLD.md](docs/ADDING-A-WORLD.md). In short:
+
+1. **Plan:** a permanent id, a short name, 9 realms with one-word badges.
+2. **Register** the id in `src/worlds/worldIds.ts`.
+3. **Tiles** (`tiles.ts`): every kind of floor and wall, and how it's drawn.
+4. **Decorations** (`decor/*.ts`): furniture and things, as 16×16 pixel art.
+5. **Layout** (`layout.ts`): the maps drawn as ASCII, plus a zones map saying which realm each square is in.
+6. **Realms** (`realms.ts`): badge, icon, music, what's scattered around, the encounter background, coloring-page pictures.
+7. **Music** (`src/audio/tracks.ts`) and the **card picture** (`scene.ts`).
+8. **Put it together** (`index.ts`) and add it to `src/worlds/index.ts`.
+9. **108 monsters** (`src/monsters/worlds/<id>.ts`), one realm at a time, then add them to `src/monsters/worlds/index.ts`.
+10. **Check:** `npm run typecheck`, `/gallery` with zero problems, play it, `npm run build`, `npm run check:build`, and the offline check below.
 
 ### Monster art parts
 
@@ -69,12 +84,21 @@ Developer pages (only while `npm run dev` is running, never part of the real gam
 
 | Address | What it is |
 |---|---|
-| `/gallery` | Every monster of every world, in color and as coloring pages, with data checks per world, and filters (one world, rares only). The **Parts** tab (`/gallery#parts`) shows every body and part at all 4 sizes, plus 6 gallery-only test monsters with a coloring-page print check |
+| `/gallery` | Every monster of every world, in color and as coloring pages, with data checks per world, and filters (one world, rares only). The **Parts** tab (`/gallery#parts`) shows every body and part at all 4 sizes, plus 6 gallery-only test monsters with a coloring-page print check. The **Saves** tab (`/gallery#saves`) runs the save checks: old versions, damaged saves, unknown worlds, export and import (it never touches the real save) |
 | `/devices` | The game at iPad and phone sizes, portrait and landscape, side by side |
 
 In the browser console during `npm run dev`, `__lmq` lets you peek at the game
 (for example `__lmq.save`, `__lmq.screen`, `__lmq.session.wild.list`, or
 `__lmq.renderer.chunks.size`, which drops to 0 whenever Layne leaves a world).
+Each time Layne enters a world, the console also says how fast it was, for example
+`Wonderwhirl Park: first frame in 85 ms`.
+
+What `/gallery` checks, in every world: 9 realms of 12 monsters (2 rare), unique ids,
+names and abilities, at most 4 round/blob bodies per realm, no two monsters in a realm
+with the same body and the same (or a nearly identical) main color, and, across ALL
+worlds, no two names only one letter apart. Newer worlds also get the creature mix and
+the name and text lengths. Whether a name sounds like a brand or a famous character
+can't be checked by code: read the names yourself.
 
 ### Try it on a real tablet
 
@@ -92,6 +116,7 @@ on a tablet on the same Wi-Fi.
 | `npm run build` | Type-checks and builds the finished game into `dist/` |
 | `npm run preview` | Serves `dist/` locally, to try the real build (including offline mode) |
 | `npm run typecheck` | Just the TypeScript check |
+| `npm run check:build` | After `npm run build`: checks the built game is safe (the strict safety rule is in `index.html`, no network code, nothing pointing at other sites, every file kept for offline play) and prints the size of each file |
 | `npm run icons` | Re-makes the app icons in `public/icons/` from Layne's pixel art |
 
 ---
@@ -126,9 +151,30 @@ It then opens full-screen like an app, and after the first visit it works
 **offline**: a small service worker keeps copies of the game's own files.
 Every world is inside the one game file, so every world works offline.
 
-To check offline play on a computer: `npm run build`, `npm run preview`, open
-the address once and visit each world, then stop the preview server (Ctrl+C)
-or turn off Wi-Fi, reload, and play each world.
+To check offline play on a computer:
+
+1. `npm run build`, then `npm run check:build` (it should end with "All good").
+2. `npm run preview` and open the address it prints (`http://localhost:4173`) in Chrome.
+3. Open DevTools (F12) → **Network** tab, make sure **Disable cache** is NOT ticked (it would skip the offline copy), and reload.
+   Every request should be to `localhost:4173`; nothing else.
+4. Go into every world once (title → worlds → each card → home button).
+5. DevTools → **Application** → **Service workers**: it should say "activated and is running".
+6. Turn off Wi-Fi (or stop the preview server with Ctrl+C), reload the page, and play each world.
+
+### Speed and memory
+
+The whole game is one JavaScript file of about 720 kB (about 153 kB zipped, which is what
+actually travels over the network the first time; after that it comes from the offline copy).
+Building a world's maps takes 5 to 75 ms on a laptop (The Woods is the slowest), so even on
+an older tablet a new world's first frame shows well under a second after the wipe.
+
+Leaving a world drops its maps, wandering monsters and map pictures, so hopping between
+worlds doesn't make memory grow. To see it yourself in Chrome: DevTools → **Memory** →
+take a heap snapshot, switch worlds 10 times, take another; they should be about the same size.
+(Monster pictures are kept once made, so the very first visit to each world adds a little.)
+
+The monster data and the maps could be split into one file per world (loaded when a world is
+opened) to make the very first download smaller, but it isn't worth it at this size.
 
 **Known limitation:** on iPad/iPhone, printing coloring pages may not work from
 the Home Screen app (an iOS restriction). If nothing happens, open the game in
@@ -182,6 +228,8 @@ field a sensible default.
 ### Damaged saves
 
 The game **never crashes** because of a bad save:
+
+All of these cases are tested on `/gallery#saves`.
 
 - If the save can't be read (broken data, or a version from the future), a copy
   goes to a **backup key**, `lmq-save-v1-backup`, and a fresh game starts.

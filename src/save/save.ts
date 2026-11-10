@@ -16,9 +16,15 @@ import { isWorldId, type WorldId } from '../worlds/worldIds';
  * If the save is damaged (or from a future version we don't understand), we
  * NEVER crash: a copy goes to a backup key and the game starts fresh.
  */
-const SAVE_KEY = 'lmq-save-v1';
+export const SAVE_KEY = 'lmq-save-v1';
 /** Holds a copy of the most recent save we couldn't read (or the save from just before a reset). */
-const BACKUP_KEY = 'lmq-save-v1-backup';
+export const BACKUP_KEY = 'lmq-save-v1-backup';
+
+/**
+ * Where saves are kept: the browser's localStorage, unless another store is passed in.
+ * (The save checks on /gallery pass a pretend store, so testing never touches the real save.)
+ */
+export type KeyValueStore = Pick<Storage, 'getItem' | 'setItem'>;
 
 export type Facing = 'down' | 'up' | 'left' | 'right';
 const FACINGS: Facing[] = ['down', 'up', 'left', 'right'];
@@ -151,10 +157,10 @@ export interface LoadResult {
   recovered: boolean;
 }
 
-export function loadSave(): LoadResult {
+export function loadSave(store?: KeyValueStore): LoadResult {
   let text: string | null;
   try {
-    text = localStorage.getItem(SAVE_KEY);
+    text = (store ?? localStorage).getItem(SAVE_KEY);
   } catch {
     return { data: freshSave(), recovered: false }; // storage blocked: play without saving
   }
@@ -168,7 +174,7 @@ export function loadSave(): LoadResult {
   }
   if (data) return { data, recovered: false };
 
-  backupSave(text, 'damaged');
+  backupSave(text, 'damaged', store);
   return { data: freshSave(), recovered: true };
 }
 
@@ -196,10 +202,10 @@ export interface Backup {
   text: string;
 }
 
-export function backupSave(text: string, reason: Backup['reason']): void {
+export function backupSave(text: string, reason: Backup['reason'], store?: KeyValueStore): void {
   try {
     const backup: Backup = { reason, savedAt: new Date().toISOString(), text };
-    localStorage.setItem(BACKUP_KEY, JSON.stringify(backup));
+    (store ?? localStorage).setItem(BACKUP_KEY, JSON.stringify(backup));
   } catch {
     // storage full or blocked: nothing more we can do
   }

@@ -51,6 +51,8 @@ const { data: save, recovered } = loadSave();
 let session: WorldSession | null = null;
 type ScreenName = 'title' | 'picker' | 'world';
 let screen: ScreenName = 'title';
+/** Dev only: when the current world started loading, to measure how fast its first frame appears. */
+let loadStarted: number | null = null;
 
 const autosave = new AutoSave(save, () => session?.whereabouts() ?? null);
 // Dev only: /devices shows several copies of the game at once; "?nosave" stops them overwriting the real save.
@@ -151,6 +153,7 @@ function enterWorld(id: WorldId): void {
   if (wipe.isRunning) return;
   sfx.whoosh();
   wipe.run(() => {
+    if (import.meta.env.DEV) loadStarted = performance.now();
     leaveWorld();
     session = new WorldSession(WORLDS[id], save.players[id], camera);
     autosave.now(); // remembers lastWorld = this world (and his spot in it)
@@ -226,6 +229,11 @@ startLoop(
   () => {
     if (session) renderer.draw({ ...session.scene(), camera, glasses, time });
     else renderer.clear(camera.viewW, camera.viewH);
+    // Dev only: "Wonderwhirl Park: first frame in 85 ms" in the console (building the maps + drawing the screen).
+    if (import.meta.env.DEV && session && loadStarted !== null) {
+      console.info(`${session.def.name}: first frame in ${Math.round(performance.now() - loadStarted)} ms`);
+      loadStarted = null;
+    }
   },
 );
 

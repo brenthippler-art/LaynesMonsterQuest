@@ -1,2 +1,6 @@
 node_modules
 dist
+
+# Patch files saved next to the project (they belong in your Downloads, not in git)
+/*.txt
+*.patch

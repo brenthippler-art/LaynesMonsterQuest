@@ -235,7 +235,7 @@ const LIST: MonsterData[] = [
     id: 'twirlamb', name: 'Twirlamb', habitat: 'carousel', type: 'Fluff', rarity: 'uncommon', size: 'small',
     ability: { name: 'Wool Spin', description: 'Spins so fast its wool turns into a fluffy cloud!' },
     fact: 'Twirlamb gets curlier every time it spins around.',
-    colors: { main: C.pinkLight, accent: C.plum, belly: C.white },
+    colors: { main: C.yellowLight, accent: C.plum, belly: C.white },
     look: { body: 'beast', eyes: 'sleepy', mouth: 'smile', top: 'horns', tail: 'puff', feet: 'hooves', arms: 'none', pattern: 'patches', belly: true, cheeks: true },
   },
   {
@@ -562,9 +562,9 @@ const LIST: MonsterData[] = [
     look: { body: 'serpent', eyes: 'round', mouth: 'grin', top: 'none', tail: 'curl', feet: 'none', arms: 'none', pattern: 'sprinkles', belly: true },
   },
   {
-    id: 'lemonsip', name: 'Lemonsip', habitat: 'snacks', type: 'Splash', rarity: 'common', size: 'tiny',
+    id: 'lemonsip', name: 'Lemonstraw', habitat: 'snacks', type: 'Splash', rarity: 'common', size: 'tiny',
     ability: { name: 'Cool Sip', description: 'Shares a cold sip on a hot day!' },
-    fact: 'Lemonsip has a curly straw that it uses as a hat.',
+    fact: 'Lemonstraw has a curly straw that it uses as a hat.',
     colors: { main: C.lime, accent: C.yellowLight, belly: C.limeLight },
     look: { body: 'bowl', eyes: 'happy', mouth: 'smile', top: 'antennae', tail: 'none', feet: 'stubs', arms: 'nubs', pattern: 'spots' },
   },

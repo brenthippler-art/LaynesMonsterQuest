@@ -483,9 +483,9 @@ const LIST: MonsterData[] = [
     look: { body: 'square', eyes: 'round', mouth: 'open', top: 'tuft', tail: 'none', feet: 'stubs', arms: 'nubs', pattern: 'stripes' },
   },
   {
-    id: 'cinnapup', name: 'Cinnapup', habitat: 'cafe', type: 'Snack', rarity: 'common', size: 'small',
+    id: 'cinnapup', name: 'Swirlpup', habitat: 'cafe', type: 'Snack', rarity: 'common', size: 'small',
     ability: { name: 'Swirl Roll', description: 'Rolls into a swirly ball and giggles!' },
-    fact: 'Cinnapup has a sweet swirl on the end of its tail.',
+    fact: 'Swirlpup has a sweet swirl on the end of its tail.',
     colors: { main: C.orangeLight, accent: C.brownRed, belly: C.white },
     look: { body: 'beast', eyes: 'round', mouth: 'smile', top: 'round', tail: 'curl', feet: 'paws', arms: 'none', pattern: 'spots', belly: true },
   },

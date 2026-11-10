@@ -72,7 +72,7 @@ const LIST: MonsterData[] = [
     look: { body: 'cart', eyes: 'dot', mouth: 'smile', top: 'leaf', tail: 'none', feet: 'stubs', arms: 'nubs', pattern: 'patches', belly: true },
   },
   {
-    id: 'woods-butterfin', name: 'Butterfin', habitat: 'sunny-glade',
+    id: 'woods-butterfin', name: 'Sunbox', habitat: 'sunny-glade',
     type: 'Gear', rarity: 'uncommon', size: 'small',
     ability: { name: 'Petal Twirl', description: 'Spins until the nearby butterflies join in.' },
     fact: 'It builds little nests from twigs and soft moss.',
@@ -145,7 +145,7 @@ const LIST: MonsterData[] = [
     look: { body: 'serpent', eyes: 'big', mouth: 'smile', top: 'horns', tail: 'curl', feet: 'none', arms: 'none', pattern: 'patches', belly: true },
   },
   {
-    id: 'woods-twigglet', name: 'Twigglet', habitat: 'pinewood',
+    id: 'woods-twigglet', name: 'Pinecup', habitat: 'pinewood',
     type: 'Snack', rarity: 'common', size: 'tiny',
     ability: { name: 'Needle Bloom', description: 'Helps a sleepy flower open its petals.' },
     fact: 'It keeps a smooth pebble as its lucky treasure.',
@@ -767,7 +767,7 @@ const LIST: MonsterData[] = [
     look: { body: 'round', eyes: 'happy', mouth: 'smile', top: 'leaf', tail: 'puff', feet: 'stubs', arms: 'nubs', pattern: 'spots', belly: true },
   },
   {
-    id: 'woods-vaporin', name: 'Vaporin', habitat: 'misty-marsh',
+    id: 'woods-vaporin', name: 'Mistmallow', habitat: 'misty-marsh',
     type: 'Shadow', rarity: 'uncommon', size: 'medium',
     ability: { name: 'Misty Shimmer', description: 'Glows softly when the stars appear.' },
     fact: 'It likes counting the stars through gaps in the branches.',
@@ -816,7 +816,7 @@ const LIST: MonsterData[] = [
     look: { body: 'dragon', eyes: 'big', mouth: 'grin', top: 'horns', tail: 'spiky', feet: 'paws', arms: 'wings', pattern: 'patches', belly: true },
   },
   {
-    id: 'woods-noctella', name: 'Noctella', habitat: 'shadow-grove',
+    id: 'woods-noctella', name: 'Nightcoil', habitat: 'shadow-grove',
     type: 'Stone', rarity: 'rare', size: 'small',
     ability: { name: 'Shadow Spark', description: 'Lights a friendly spark above its head.' },
     fact: 'It collects fallen leaves to decorate its favorite hiding spot.',
@@ -832,7 +832,7 @@ const LIST: MonsterData[] = [
     look: { body: 'bowl', eyes: 'happy', mouth: 'smile', top: 'mushroom', tail: 'none', feet: 'stubs', arms: 'nubs', pattern: 'spots', belly: true },
   },
   {
-    id: 'woods-hushling', name: 'Hushling', habitat: 'shadow-grove',
+    id: 'woods-hushling', name: 'Hushbox', habitat: 'shadow-grove',
     type: 'Gear', rarity: 'uncommon', size: 'medium',
     ability: { name: 'Shadow Tumble', description: 'Rolls over roots without a single bump.' },
     fact: 'It sleeps beneath a mushroom when rain begins.',
@@ -864,7 +864,7 @@ const LIST: MonsterData[] = [
     look: { body: 'round', eyes: 'happy', mouth: 'smile', top: 'leaf', tail: 'puff', feet: 'stubs', arms: 'nubs', pattern: 'spots', belly: true },
   },
   {
-    id: 'woods-umbrella', name: 'Umbrella', habitat: 'shadow-grove',
+    id: 'woods-umbrella', name: 'Duskdrop', habitat: 'shadow-grove',
     type: 'Shadow', rarity: 'uncommon', size: 'medium',
     ability: { name: 'Shadow Shimmer', description: 'Glows softly when the stars appear.' },
     fact: 'It keeps a smooth pebble as its lucky treasure.',

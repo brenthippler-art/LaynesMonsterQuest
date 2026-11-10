@@ -1,7 +1,12 @@
 # Adding a world (checklist)
 
-A new world should fit in one prompt. Use `src/worlds/home/` and
-`src/monsters/worlds/home.ts` as the example to copy. Rules are in `CLAUDE.md`.
+A new world (a farm, a zoo, a grocery store…) should fit in one prompt. Use
+`src/worlds/home/` and `src/monsters/worlds/home.ts` as the example to copy
+(and `src/worlds/wonderwhirl/` for rides). Rules are in `CLAUDE.md`.
+
+What a world is made of: **template** (the ASCII maps) · **realms** · **tiles** ·
+**decorations** · **music** · **card picture** · **108 monsters** · **the checker**.
+The steps below go through them in that order. There's a prompt you can copy at the end.
 
 ## 0. Plan it
 - [ ] Pick an **id** (lowercase, permanent: it goes into saves) and a short **name**.
@@ -43,7 +48,8 @@ A new world should fit in one prompt. Use `src/worlds/home/` and
 ## 8. Monsters: `src/monsters/worlds/<id>.ts`
 - [ ] 108 monsters, **12 per realm: 2 rare, 4 uncommon, 6 common**.
 - [ ] Per realm, besides the rares: at least 4 creatures (dragon, serpent, beast, bird, long, bugs, fish) and 2 living objects (bowl, appliance, cart, square); at most 4 round/blob bodies; at least 5 body shapes; no two with the same body AND main color.
-- [ ] Names: one word, 2-4 syllables, no "-mon", unique across ALL worlds, not one letter from another name, nothing that sounds like a brand or character.
+- [ ] Names: one word, 2-4 syllables, no "-mon", unique across ALL worlds, not one letter from another name (`/gallery` checks these), nothing that sounds like a brand or character (check by eye; list doubtful ones for a grown-up).
+- [ ] Ids: lowercase, unique across ALL worlds, and permanent once shipped (saves use them). Names can change later; ids can't.
 - [ ] Ability: 2-3 word name (unique in the world), one cheerful sentence under 12 words. Fact: one sentence under 15 words.
 - [ ] Rares look the most impressive (bigger, extra parts, crown or glow).
 - [ ] Write ONE realm at a time and check `/gallery` after each.
@@ -51,8 +57,20 @@ A new world should fit in one prompt. Use `src/worlds/home/` and
 
 ## 9. Check it
 - [ ] `npm run typecheck`
-- [ ] `/gallery`: zero problems (monster rules AND "every square reachable").
-- [ ] `/gallery` with the world filter: no two monsters in a realm that are hard to tell apart.
-- [ ] Play it: every room's badge, every staircase both ways, the corner map, an encounter background, the book tab, a coloring page.
-- [ ] `npm run build`, `npm run preview`, then the offline check from README.md.
-- [ ] Update the worlds table in `README.md`.
+- [ ] `/gallery`: zero problems (monster rules, look-alikes, one-letter names AND "every square reachable").
+- [ ] `/gallery` with the world filter: no two monsters in a realm that are hard to tell apart by eye (the checker only catches the same body in the same or nearly the same color).
+- [ ] `/gallery#saves`: every save check passes (only matters if the save code changed).
+- [ ] Play it: every room's badge, every staircase both ways, the corner map, an encounter background, the book tab, the world's card, a coloring page (grown-ups area → its world → a realm).
+- [ ] The console says `<World name>: first frame in … ms`: well under 1000 ms.
+- [ ] `npm run build`, then `npm run check:build` ("All good"), then the offline check from README.md.
+- [ ] Update `README.md`: the worlds table, and the monster count at the top (108 more per world).
+
+## A prompt you can copy
+
+> Read CLAUDE.md and docs/ADDING-A-WORLD.md first. Add a new world to Layne's Monster
+> Quest: **[name]** (id `[id]`), inspired by **[a place]**. It's [indoors / outdoors],
+> about 90×70 squares. The 9 realms are: [realm 1: what's there], [realm 2: …], … [realm 9].
+> Layne starts at [where], facing [which way]. Things that should move: [none / a ride, …].
+> The song should feel [cheerful / sleepy / bouncy…]. Rare monsters: [2 ideas per realm, or
+> "you pick"]. Follow every step of the checklist, show me any doubtful names before you
+> use them, and explain what changed file by file so I can type it myself, with test steps.

@@ -25,15 +25,18 @@ These rules apply to every task in this project.
 
 - The game has several worlds (registry in `src/worlds/`, monsters in `src/monsters/worlds/`).
 - Every world has exactly 9 realms and 108 monsters: 12 per realm, exactly 2 rare per realm (the island, made first, may have fewer).
-- In every world, every realm: at most 4 round/blob bodies, and no two monsters with the same body AND the same main color.
-- Names: one word, 2-4 syllables, easy to say, no "-mon" ending, not one letter away from another monster's name, and nothing that sounds like a brand, product or famous character.
+- In every world, every realm: at most 4 round/blob bodies, and no two monsters with the same body AND the same (or a nearly identical) main color. `/gallery` checks both.
+- Names: one word, 2-4 syllables, easy to say, no "-mon" ending, not one letter away from another monster's name in ANY world (`/gallery` checks this), and nothing that sounds like a brand, product or famous character (Pokémon included: no "-eon" endings or near-copies). Code can't check the brand rule: show the user any doubtful names before shipping.
+- Renaming a monster is safe for saves (saves store ids, not names), but change the name everywhere it appears (its `fact` often says it).
 - Friendly art only: round eyes, rounded teeth, soft shapes.
 - To add a world, follow docs/ADDING-A-WORLD.md.
 - Worlds may be inspired by real places, but use original names, and no real logos, mascots, brand colors used as a logo, or menu item names.
 - Monster ids and names are unique across ALL worlds. World ids, monster ids and map ids are saved: never change them once shipped. New worlds' map ids are `<worldId>/<mapName>`.
 - Indoor / real-place worlds use the building engine (`src/worlds/building/`): draw the maps as ASCII templates, list tiles, decorations and realms. Every walkable square must be reachable from the start (checked on `/gallery`).
 - Monster rules for every world after the island are in `src/monsters/newWorldRules.ts` (2 rare / 4 uncommon / 6 common per realm, creature and object mix, name and text lengths).
-- `/gallery` must show zero problems.
+- `/gallery` must show zero problems, `/gallery#saves` must pass every save check, and after `npm run build`, `npm run check:build` must say "All good".
+- Leaving a world must free everything it made (maps, wandering monsters, map pictures): keep caches outside a WorldSession either bounded (one entry per monster or realm) or emptied in `leaveWorld()` in `src/main.ts`.
+- Every world is in the one game bundle, so the service worker caches all of them. If worlds are ever split into separate files, `npm run check:build` still checks that every built file is cached.
 
 ## Tech
 

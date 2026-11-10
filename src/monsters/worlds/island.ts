@@ -457,7 +457,7 @@ const LIST: MonsterData[] = [
     id: 'shellby', name: 'Shellby', habitat: 'beach', type: 'Splash', rarity: 'common', size: 'tiny',
     ability: { name: 'Shell Hide', description: 'Pops into its shell for a cozy nap!' },
     fact: "Shellby's shell has a swirl just like a seashell.",
-    colors: { main: C.pinkLight, accent: C.rose, belly: C.white },
+    colors: { main: C.salmon, accent: C.rose, belly: C.white },
     look: { body: 'drop', eyes: 'round', mouth: 'smile', top: 'antennae', tail: 'curl', feet: 'none', arms: 'none', pattern: 'spots', cheeks: true },
   },
   {

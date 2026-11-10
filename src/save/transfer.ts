@@ -6,13 +6,18 @@ import { migrate, type SaveData } from './save';
  */
 const GAME = "Layne's Monster Quest";
 
+/** The text of a save file (what "Download save file" puts in the .json). */
+export function saveFileText(data: SaveData): string {
+  const file = { game: GAME, exportedAt: new Date().toISOString(), save: data };
+  return JSON.stringify(file, null, 2);
+}
+
 /** Make a save file and hand it to the browser as a download. */
 export function downloadSave(data: SaveData): void {
-  const file = { game: GAME, exportedAt: new Date().toISOString(), save: data };
   // Today's date where you are (toISOString would use UTC, which can be "tomorrow" in the evening).
   const now = new Date();
   const date = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-  downloadText(JSON.stringify(file, null, 2), `laynes-monster-quest-save-${date}.json`);
+  downloadText(saveFileText(data), `laynes-monster-quest-save-${date}.json`);
 }
 
 /** Download any text as a file (also used for the damaged-save backup). */

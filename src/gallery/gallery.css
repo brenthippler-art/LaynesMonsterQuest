@@ -194,3 +194,10 @@ p {
 [hidden] {
   display: none !important;
 }
+
+/* The Saves tab (#saves): one line per check. */
+.save-checks {
+  list-style: none;
+  padding: 0;
+  line-height: 1.8;
+}

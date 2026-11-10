@@ -36,6 +36,7 @@ export function checkAllWorlds(worlds: WorldDef[], monsters: Monster[]): CheckRe
     ids.add(m.id);
     names.add(m.name.toLowerCase());
   }
+  across.push(...nearNames(monsters));
   const perWorld = worlds.map((world) => ({ world, problems: checkWorld(world, monsters.filter((m) => m.world === world.id)) }));
   return { across, perWorld };
 }
@@ -78,4 +79,31 @@ function checkWorld(world: WorldDef, list: Monster[]): string[] {
     }
   }
   return problems;
+}
+
+/**
+ * Names a kid could mix up: two names that differ by just ONE letter (one letter changed,
+ * added or taken away), like Twiggle and Twigglet. Checked across ALL worlds.
+ */
+function nearNames(monsters: Monster[]): string[] {
+  const problems: string[] = [];
+  const names = monsters.map((m) => m.name.toLowerCase());
+  for (let i = 0; i < names.length; i++) {
+    for (let j = i + 1; j < names.length; j++) {
+      if (oneLetterApart(names[i], names[j])) {
+        problems.push(`${monsters[i].name} (${monsters[i].world}) and ${monsters[j].name} (${monsters[j].world}) are only one letter apart.`);
+      }
+    }
+  }
+  return problems;
+}
+
+/** True if a and b differ by exactly one changed, added or removed letter. */
+export function oneLetterApart(a: string, b: string): boolean {
+  if (a === b || Math.abs(a.length - b.length) > 1) return false;
+  const [short, long] = a.length <= b.length ? [a, b] : [b, a];
+  let i = 0;
+  while (i < short.length && short[i] === long[i]) i++; // skip the matching start
+  // Same length: the rest must match after one changed letter. One longer: after one extra letter.
+  return short.length === long.length ? short.slice(i + 1) === long.slice(i + 1) : short.slice(i) === long.slice(i + 1);
 }

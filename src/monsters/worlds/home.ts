@@ -376,9 +376,9 @@ const LIST: MonsterData[] = [
     look: { body: 'cloud', eyes: 'dot', mouth: 'smile', top: 'tuft', tail: 'none', feet: 'none', arms: 'none', pattern: 'none', cheeks: true },
   },
   {
-    id: 'bubblebee', name: 'Bubblebee', habitat: 'laundry', type: 'Bubble', rarity: 'common', size: 'tiny',
+    id: 'bubblebee', name: 'Soapbee', habitat: 'laundry', type: 'Bubble', rarity: 'common', size: 'tiny',
     ability: { name: 'Soap Buzz', description: 'Buzzes around blowing shiny soap bubbles!' },
-    fact: 'Bubblebee makes honey that smells like clean laundry.',
+    fact: 'Soapbee makes honey that smells like clean laundry.',
     colors: { main: C.gold, accent: C.skyLight, belly: C.yellowLight, wing: C.skyLight },
     look: { body: 'drop', eyes: 'big', mouth: 'smile', top: 'antennae', tail: 'none', feet: 'none', arms: 'insect', pattern: 'stripes' },
   },
@@ -393,7 +393,7 @@ const LIST: MonsterData[] = [
     id: 'staticat', name: 'Staticat', habitat: 'laundry', type: 'Zap', rarity: 'common', size: 'small',
     ability: { name: 'Fluffy Zap', description: 'Its fur puffs up with a tiny tickly zap!' },
     fact: 'Staticat sticks to warm towels and will not let go.',
-    colors: { main: C.pastelBlue, accent: C.gold, belly: C.white },
+    colors: { main: C.sky, accent: C.gold, belly: C.white },
     look: { body: 'beast', eyes: 'round', mouth: 'cat', top: 'cat', tail: 'zigzag', feet: 'paws', arms: 'none', pattern: 'none', belly: true },
   },
   {
@@ -439,9 +439,9 @@ const LIST: MonsterData[] = [
     look: { body: 'dragon', eyes: 'round', mouth: 'grin', top: 'dragonhorns', tail: 'dragon', feet: 'claws', arms: 'dragonwings', pattern: 'none', belly: true, cheeks: true },
   },
   {
-    id: 'lintleon', name: 'Lintleon', habitat: 'laundry', type: 'Fluff', rarity: 'rare', size: 'large',
+    id: 'lintleon', name: 'Lintlion', habitat: 'laundry', type: 'Fluff', rarity: 'rare', size: 'large',
     ability: { name: 'Fuzzy Roar', description: 'Lets out a soft, fluffy, very quiet roar!' },
-    fact: 'Lintleon grows its mane from the fluffiest dryer lint.',
+    fact: 'Lintlion grows its mane from the fluffiest dryer lint.',
     colors: { main: C.lavender, accent: C.grayLight, belly: C.white },
     look: { body: 'beast', eyes: 'big', mouth: 'snout', top: 'mane', tail: 'fluffy', feet: 'paws', arms: 'none', pattern: 'none', belly: true, cheeks: true },
   },

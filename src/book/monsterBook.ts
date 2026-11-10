@@ -1,7 +1,7 @@
 import './book.css';
 import { sfx } from '../audio/sfx';
 import { type Monster } from '../monsters/monsterTypes';
-import { MONSTERS, monstersIn, monstersOf } from '../monsters/worlds';
+import { MONSTER_BY_ID, monstersIn, monstersOf } from '../monsters/worlds';
 import { monsterSprite, monsterSvg } from '../monsters/pixel/monsterSprite';
 import { pixelsToSvg } from '../monsters/pixel/paint';
 import { typeIconSvg } from '../monsters/typeIcons';
@@ -115,12 +115,12 @@ export class MonsterBook {
     if (printButton) {
       // Right inside the tap, so tablet browsers allow the print dialog to open.
       sfx.click();
-      printColoringPages([MONSTERS.find((x) => x.id === printButton.dataset.id)!]);
+      printColoringPages([MONSTER_BY_ID.get(printButton.dataset.id!)!]);
       return;
     }
     const slot = target.closest<HTMLElement>('.slot');
     if (!slot) return;
-    const m = MONSTERS.find((x) => x.id === slot.dataset.id)!;
+    const m = MONSTER_BY_ID.get(slot.dataset.id!)!;
     if (this.found(m)) {
       sfx.click();
       this.gridScroll = this.body.scrollTop;
@@ -191,7 +191,7 @@ export class MonsterBook {
 
   /** One slot's picture: in color if found, a dark silhouette if not. Made once, then reused. */
   private async drawSlot(slot: HTMLElement): Promise<void> {
-    const m = MONSTERS.find((x) => x.id === slot.dataset.id);
+    const m = MONSTER_BY_ID.get(slot.dataset.id!);
     if (!m) return;
     const known = !!this.found(m);
     const key = `${m.id}:${known ? 'known' : 'mystery'}`;

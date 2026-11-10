@@ -16,6 +16,9 @@ import { WOODS_MONSTERS } from '../data/woods';
  */
 export const MONSTERS: Monster[] = [...ISLAND_MONSTERS, ...HOME_MONSTERS, ...WOODS_MONSTERS, ...BUNTOWN_MONSTERS, ...CHERRYMART_MONSTERS, ...SUNNYSIDE_MONSTERS, ...BIGBLUE_MONSTERS, ...WONDERWHIRL_MONSTERS];
 
+/** Monster id → monster, for quick look-ups (the Monster Book finds slots by id). */
+export const MONSTER_BY_ID: ReadonlyMap<string, Monster> = new Map(MONSTERS.map((m) => [m.id, m]));
+
 /** One world's monsters. */
 export function monstersOf(world: WorldId): Monster[] {
   return MONSTERS.filter((m) => m.world === world);

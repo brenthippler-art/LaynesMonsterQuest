@@ -7,15 +7,17 @@ import { typeIconSvg } from '../monsters/typeIcons';
 import { WORLD_LIST } from '../worlds';
 import { type WorldDef } from '../worlds/types';
 import { renderPartsPage } from './partsPage';
+import { runSaveChecks } from './saveChecks';
 
 /**
  * DEV-ONLY review page: every monster as pixel art, in color and as a
  * coloring page, side by side, grouped by world and realm, with data problems
  * listed at the top of each world. Open it with `npm run dev`, then go to /gallery.
+ * Tabs: Monsters, Parts (#parts) and Saves (#saves: old, broken and moved saves).
  */
 const gallery = document.getElementById('gallery')!;
-// Two tabs: the monsters (with the data checks) and the parts (#parts).
-gallery.innerHTML = `<div class="tabs"><a href="#monsters" data-tab="monsters">Monsters</a><a href="#parts" data-tab="parts">Parts</a></div><div id="page"></div>`;
+// Three tabs: the monsters (with the data checks), the parts (#parts) and the save checks (#saves).
+gallery.innerHTML = `<div class="tabs"><a href="#monsters" data-tab="monsters">Monsters</a><a href="#parts" data-tab="parts">Parts</a><a href="#saves" data-tab="saves">Saves</a></div><div id="page"></div>`;
 const root = document.getElementById('page')!;
 
 function esc(text: string): string {
@@ -110,15 +112,28 @@ async function fillPictures(): Promise<void> {
   }
 }
 
+/** The Saves tab: every save check, passed or not. (They never touch the real save.) */
+function renderSavesPage(): void {
+  const checks = runSaveChecks();
+  const failed = checks.filter((c) => !c.ok);
+  const rows = checks.map((c) => `<li>${c.ok ? '✅' : '❌'} ${esc(c.name)}${c.ok ? '' : `<br><b>${esc(c.detail)}</b>`}</li>`).join('');
+  root.innerHTML = `
+    <h1>Save checks <small>dev only · old, broken and moved saves · never touches the real save</small></h1>
+    ${status(failed.map((c) => `${c.name}: ${c.detail}`), `All ${checks.length} save checks passed.`)}
+    <ul class="save-checks">${rows}</ul>`;
+}
+
 /** Show the tab the address asks for. In-page links (#island-forest, #parts-bodies) don't redraw the page. */
 let shown = '';
 function route(): void {
-  const tab = location.hash.startsWith('#parts') ? 'parts' : 'monsters';
+  const tab = location.hash.startsWith('#parts') ? 'parts' : location.hash.startsWith('#saves') ? 'saves' : 'monsters';
   if (tab === shown) return;
   shown = tab;
   for (const a of gallery.querySelectorAll<HTMLElement>('.tabs a')) a.classList.toggle('on', a.dataset.tab === tab);
   if (tab === 'parts') {
     renderPartsPage(root);
+  } else if (tab === 'saves') {
+    renderSavesPage();
   } else {
     renderPage();
     for (const id of ['filter-world', 'filter-rare']) document.getElementById(id)!.addEventListener('change', applyFilters);

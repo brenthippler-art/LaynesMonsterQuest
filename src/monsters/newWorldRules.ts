@@ -52,7 +52,8 @@ export function checkRealmMix(label: string, here: Monster[]): string[] {
 
 /**
  * Rules for EVERY world's realms (the island too): at most 4 round/blob bodies, and no two
- * monsters a kid could mix up (the same body shape in the same main color).
+ * monsters a kid could mix up: the same body shape in the same main color, or in two main
+ * colors so close that they look the same on a tablet (light pink and lavender, for example).
  */
 export function checkRealmLooks(label: string, here: Monster[]): string[] {
   const problems: string[] = [];
@@ -65,7 +66,42 @@ export function checkRealmLooks(label: string, here: Monster[]): string[] {
     if (other) problems.push(`${label}: ${other} and ${m.name} look alike (same body, same main color).`);
     else seen.set(key, m.name);
   }
+  for (let i = 0; i < here.length; i++) {
+    for (let j = i + 1; j < here.length; j++) {
+      const [a, b] = [here[i], here[j]];
+      if (a.look.body !== b.look.body || a.colors.main === b.colors.main) continue; // same color: reported above
+      if (colorDistance(a.colors.main, b.colors.main) < CLOSE_COLORS) {
+        problems.push(`${label}: ${a.name} and ${b.name} look alike (same body, main colors ${a.colors.main} and ${b.colors.main} are too close).`);
+      }
+    }
+  }
   return problems;
+}
+
+/**
+ * Below this, two main colors look the same at a glance. (Light pink #F8B8F8 and lavender
+ * #D8B8F8 are about 55 apart; the closest pairs that still look different are about 90.)
+ */
+const CLOSE_COLORS = 80;
+
+/**
+ * How different two "#RRGGBB" colors look to people (0 = the same, about 765 = black vs white).
+ * Plain red/green/blue differences, weighted the way eyes see them ("redmean" formula):
+ * green counts most, and red or blue count more depending on how red the colors are.
+ */
+export function colorDistance(a: string, b: string): number {
+  const [r1, g1, b1] = rgb(a);
+  const [r2, g2, b2] = rgb(b);
+  const redMean = (r1 + r2) / 2;
+  const dr = r1 - r2;
+  const dg = g1 - g2;
+  const db = b1 - b2;
+  return Math.sqrt((2 + redMean / 256) * dr * dr + 4 * dg * dg + (2 + (255 - redMean) / 256) * db * db);
+}
+
+function rgb(hex: string): [number, number, number] {
+  const n = parseInt(hex.slice(1), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 }
 
 export function checkMonsterText(m: Monster): string[] {
