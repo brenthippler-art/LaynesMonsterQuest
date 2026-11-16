@@ -22,6 +22,7 @@ export const WONDERWHIRL = makeBuildingWorld({
   id: 'wonderwhirl',
   name: 'Wonderwhirl Park',
   seed: 3131,
+  view: '3d',
   scene: WONDERWHIRL_SCENE,
   tiles: WONDERWHIRL_TILES,
   decor: { ...PARK_GATE, ...COASTER_CAROUSEL, ...SPLASH_FUNHOUSE, ...WHEEL_SNACKS, ...BUMPER_FIREWORKS },

@@ -20,6 +20,7 @@ export const CHERRYMART = makeBuildingWorld({
   id: 'cherrymart',
   name: 'Cherry Mart',
   seed: 2626,
+  view: '3d',
   scene: CHERRYMART_SCENE,
   tiles: CHERRYMART_TILES,
   decor: { ...DEALS_TOYS, ...HOME_CLOTHES, ...TECH_CAFE, ...GROCERY_BEAUTY, ...HOLIDAY },

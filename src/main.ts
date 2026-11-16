@@ -12,6 +12,7 @@ import { ParentArea } from './parent/parentArea';
 import { GLASSES_STYLES, pickNewGlasses } from './player/glasses';
 import { Camera } from './render/camera';
 import { setupCanvas } from './render/canvas';
+import { FlatView } from './render/flatView';
 import { Renderer } from './render/renderer';
 import { AutoSave } from './save/autosave';
 import { loadSave, recordFound } from './save/save';
@@ -23,6 +24,12 @@ import { MuteButton } from './ui/muteButton';
 import { PixelWipe } from './ui/pixelWipe';
 import { RealmBadge } from './ui/realmBadge';
 import { WorldMap } from './ui/worldMap';
+import { CardMonsters } from './world3d/cardMonsters';
+import { Controls3D } from './world3d/controls3d';
+import { menuRenderer } from './world3d/menuRenderer';
+import { TitleStage } from './world3d/titleStage';
+import { Turntable } from './world3d/turntable';
+import { View3D } from './world3d/view3d';
 import { WORLDS } from './worlds';
 import { DEFAULT_WORLD, type WorldId } from './worlds/worldIds';
 
@@ -38,6 +45,10 @@ import { DEFAULT_WORLD, type WorldId } from './worlds/worldIds';
  *
  * Everything about ONE world lives in a WorldSession, made when Layne enters a
  * world and dropped when he leaves (together with the map picture caches).
+ *
+ * Worlds are drawn one of two ways (WorldDef.view):
+ *   2D  the original pixel-art canvas (#game), seen from above
+ *   3D  a Nintendo 64 style 3D world (world3d/), on its own canvas, made the first time it's needed
  */
 const canvas = document.getElementById('game') as HTMLCanvasElement;
 const ui = document.getElementById('ui') as HTMLElement;
@@ -80,9 +91,26 @@ document.addEventListener('click', (e) => {
 
 // ----- Drawing and controls (one of each for the whole visit, shared by every world) -----
 const camera = new Camera();
+const flatView = new FlatView(camera);
 const renderer = new Renderer(ctx);
 const keyboard = new Keyboard();
-const pointer = new PointerControls(canvas, (cssX, cssY) => session?.tap(cssX, cssY));
+const flatPointer = new PointerControls(canvas, (cssX, cssY) => session?.tap(cssX, cssY));
+
+// 3D worlds: their own canvas (just under the buttons) and their own finger controls.
+// Made the first time Layne enters a 3D world, then kept for the whole visit.
+let view3d: View3D | null = null;
+let pointer3d: PointerControls | null = null;
+/** The finger controls of the canvas that's showing right now. */
+let pointer = flatPointer;
+const is3D = () => session !== null && session.view === view3d;
+
+function get3D(): View3D {
+  if (!view3d) {
+    view3d = new View3D(document.body, ui, glasses);
+    pointer3d = new PointerControls(view3d.canvas, (cssX, cssY) => session?.tap(cssX, cssY));
+  }
+  return view3d;
+}
 
 // ----- In-world pieces: the corner sign and map, the book, home, the encounter screen -----
 // They live in one layer that's hidden on the title screen and world picker.
@@ -94,6 +122,17 @@ const badge = new RealmBadge(hud);
 const worldMap = new WorldMap(hud);
 const book = new MonsterBook(hud, save, () => session?.def ?? WORLDS[save.lastWorld ?? DEFAULT_WORLD]);
 new HomeButton(hud, goHome);
+const controls3d = new Controls3D(hud, {
+  jump: () => {
+    if (session?.player.jump()) sfx.jump();
+  },
+  turn: (steps) => {
+    view3d?.turn(steps);
+    sfx.click();
+  },
+  canAct: () =>
+    is3D() && screen === 'world' && !encounter.isOpen && !book.isOpen && !parentArea.isOpen && !howToPlay.isOpen && !wipe.isRunning,
+});
 const encounter = new EncounterScreen(
   hud,
   (m) => {
@@ -103,15 +142,21 @@ const encounter = new EncounterScreen(
   },
   () => session?.endEncounter(),
 );
+// In 3D worlds the monster on the encounter screen is a turning 3D model.
+const turntable = new Turntable();
+encounter.portrait = (m) => (is3D() ? turntable.show(m) : null);
 
 // ----- Screens. (Made before the grown-ups area, so its Escape key is seen after theirs.) -----
 const wipe = new PixelWipe(ui);
-const title = new TitleScreen(ui, glasses, { onPlay: play, onWorlds: showPicker });
+// The title screen's 3D show and the 3D monsters on the world cards share one small 3D surface.
+// (No 3D on this device? menu is null, and both screens keep their flat pictures.)
+const menu = menuRenderer();
+const title = new TitleScreen(ui, glasses, { onPlay: play, onWorlds: showPicker }, menu ? new TitleStage(menu, glasses) : undefined);
 const picker = new WorldPicker(ui, {
   onPick: enterWorld,
   onBack: showTitle,
   canUseKeys: () => !howToPlay.isOpen && !parentArea.isOpen && !wipe.isRunning,
-});
+}, menu ? new CardMonsters(menu) : undefined);
 
 new MuteButton(ui, save.muted, (muted) => {
   save.muted = muted;
@@ -130,6 +175,10 @@ const parentArea = new ParentArea(ui, save, autosave, recovered, () => howToPlay
 
 function showTitle(): void {
   screen = 'title';
+  // The title screen draws on the 2D canvas.
+  canvas.style.visibility = '';
+  view3d?.setVisible(false);
+  controls3d.setVisible(false);
   picker.hide();
   hud.hidden = true;
   title.show(save);
@@ -155,7 +204,14 @@ function enterWorld(id: WorldId): void {
   wipe.run(() => {
     if (import.meta.env.DEV) loadStarted = performance.now();
     leaveWorld();
-    session = new WorldSession(WORLDS[id], save.players[id], camera);
+    const def = WORLDS[id];
+    const view = def.view === '3d' ? get3D() : flatView;
+    // Show the right canvas. (The 2D one is only made invisible, so it keeps its size.)
+    canvas.style.visibility = view === flatView ? '' : 'hidden';
+    view3d?.setVisible(view !== flatView);
+    controls3d.setVisible(view !== flatView);
+    pointer = view === flatView ? flatPointer : pointer3d!;
+    session = new WorldSession(def, save.players[id], view);
     autosave.now(); // remembers lastWorld = this world (and his spot in it)
     title.hide();
     picker.hide();
@@ -185,23 +241,28 @@ function leaveWorld(): void {
   session = null;
   renderer.forgetMaps();
   worldMap.forgetMaps();
-  pointer.release();
+  view3d?.leave(); // its chunks of ground and the 3D monster models
+  flatPointer.release();
+  pointer3d?.release();
 }
 
 setupCanvas(canvas, (vp) => {
   camera.resize(vp);
-  session?.snapCamera();
+  if (session?.view === flatView) session.snapCamera();
 });
 
 // ----- Game loop -----
 let time = 0;
+let frameDt = 0;
 startLoop(
   (dt) => {
     time += dt;
+    frameDt = dt;
     encounter.update(dt);
     parentArea.update();
     howToPlay.update(dt);
     title.update(dt);
+    picker.update(dt);
     autosave.update(dt); // saves every 5 s if Layne has moved (even while a screen is open)
 
     if (!session || screen !== 'world') {
@@ -212,6 +273,7 @@ startLoop(
     // Music: exciting while catching, quiet for the result (so the fanfare shines), otherwise the realm's own song.
     if (encounter.isOpen) music.play(encounter.isCatching ? 'catch' : null);
     else music.play(session.realm.music);
+    if (encounter.isOpen && is3D()) turntable.update(dt);
     // The world waits while a monster, the book, the how-to-play or the grown-ups area is open.
     if (encounter.isOpen || book.isOpen || parentArea.isOpen || howToPlay.isOpen) return;
 
@@ -219,6 +281,7 @@ startLoop(
     const input = kb.x || kb.y ? kb : pointer.direction(session.layneOnScreen());
     const { bumped, movedMap } = session.update(dt, input, pointer.steerPoint());
     if (movedMap) autosave.now(); // remember which map he's on
+    if (session.player.splashed) sfx.splash();
     badge.show(session.realm);
     worldMap.update(session.world.current, session.player.x, session.player.y, time);
     if (bumped) {
@@ -227,7 +290,8 @@ startLoop(
     }
   },
   () => {
-    if (session) renderer.draw({ ...session.scene(), camera, glasses, time });
+    if (session && view3d && session.view === view3d) view3d.draw(session, frameDt, time);
+    else if (session) renderer.draw({ ...session.scene(), camera, glasses, time });
     else renderer.clear(camera.viewW, camera.viewH);
     // Dev only: "Wonderwhirl Park: first frame in 85 ms" in the console (building the maps + drawing the screen).
     if (import.meta.env.DEV && session && loadStarted !== null) {
@@ -253,6 +317,9 @@ if (import.meta.env.DEV) {
       },
       get screen() {
         return screen;
+      },
+      get view3d() {
+        return view3d;
       },
       book, encounter, parentArea, howToPlay, autosave, save, renderer, camera, title, picker,
     },

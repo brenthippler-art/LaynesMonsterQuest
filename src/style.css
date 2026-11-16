@@ -84,6 +84,65 @@ button {
   touch-action: none;
 }
 
+/* 3D worlds: drawn small (about 360 pixels tall) and stretched up with crisp, chunky pixels. */
+.game3d {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+  image-rendering: pixelated;
+}
+.game3d[hidden],
+.game3d-fade[hidden] {
+  display: none;
+}
+/* Fades the 3D picture to black and back when Layne goes through a door. */
+.game3d-fade {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ---------- 3D worlds: jump and turn-the-camera buttons ---------- */
+.controls3d[hidden] {
+  display: none;
+}
+.controls3d button {
+  position: absolute;
+  width: 72px;
+  height: 72px;
+  padding: 10px;
+  pointer-events: auto;
+  touch-action: none;
+}
+.controls3d svg {
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}
+/* Jump: bottom right, above the grown-ups gear (easy to reach with a right thumb). */
+.controls3d__jump {
+  right: calc(104px + env(safe-area-inset-right));
+  bottom: calc(104px + env(safe-area-inset-bottom));
+}
+/* Turn left / right: bottom left, just above the book. */
+.controls3d__turn {
+  bottom: calc(104px + env(safe-area-inset-bottom));
+}
+.controls3d__turn--left {
+  left: calc(16px + env(safe-area-inset-left));
+}
+.controls3d__turn--right {
+  left: calc(96px + env(safe-area-inset-left));
+}
+.controls3d__turn--right svg {
+  transform: scaleX(-1);
+}
+
 /* UI layer sits above the canvas. Touches pass through it to the game.
    (A future button would opt back in with `pointer-events: auto`.) */
 #ui {

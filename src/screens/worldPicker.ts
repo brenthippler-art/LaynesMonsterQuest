@@ -1,4 +1,6 @@
 import './picker.css';
+import { type Monster } from '../monsters/monsterTypes';
+import { monstersOf } from '../monsters/worlds';
 import { NES } from '../render/nesPalette';
 import { type SaveData } from '../save/save';
 import { gridSvg, realmIconColor, realmIconSvg, realmSilhouetteSvg, worldSceneSvg } from '../ui/pixelIcon';
@@ -16,6 +18,10 @@ import { isWorldId, type WorldId } from '../worlds/worldIds';
  *
  * Landscape: cards in a row that scrolls sideways. Portrait: stacked, scrolls up/down.
  * Swipe to scroll, tap a card to go. Arrow keys move between cards, Enter goes.
+ *
+ * On a device that draws 3D, each card's picture also has a 3D monster from that
+ * world standing on it (world3d/cardMonsters.ts): one Layne has caught, or a dark
+ * mystery shape if he hasn't caught any there yet. The middle card's monster turns and hops.
  */
 const BACK_ICON = '<svg viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true"><path d="M10 3L5 8l5 5" fill="none" stroke="#FCFCFC" stroke-width="3"/></svg>';
 const CROWN = gridSvg(
@@ -27,6 +33,12 @@ const MONSTER_ICON = gridSvg(
   realmIconColor,
 );
 const NOT_YET = '#2c2c2c';
+
+/** The 3D monsters on the cards (world3d/cardMonsters.ts). */
+export interface CardMonsters3D {
+  show(cards: { canvas: HTMLCanvasElement; monster: Monster; mystery: boolean }[]): void;
+  update(dt: number, middle: HTMLCanvasElement | null): void;
+}
 
 export interface PickerActions {
   onPick: (world: WorldId) => void;
@@ -42,6 +54,8 @@ export class WorldPicker {
   constructor(
     parent: HTMLElement,
     private actions: PickerActions,
+    /** Leave it out (no 3D on this device) and the cards show just their pictures. */
+    private monsters3d?: CardMonsters3D,
   ) {
     this.root = document.createElement('div');
     this.root.className = 'picker';
@@ -132,8 +146,17 @@ rightArrow.addEventListener('click', () => scrollToWorld(1));
 
   /** Show fresh cards (progress may have changed). `focusWorld` gets keyboard focus (the last world played). */
   show(save: SaveData, focusWorld: WorldId | null): void {
-    this.cards.innerHTML = WORLD_LIST.map((w) => cardHtml(w, save)).join('');
+    this.cards.innerHTML = WORLD_LIST.map((w) => cardHtml(w, save, !!this.monsters3d)).join('');
     this.root.hidden = false;
+    this.monsters3d?.show(
+      WORLD_LIST.map((w) => {
+        const all = monstersOf(w.id);
+        const caught = all.filter((m) => save.collection[m.id]);
+        const pool = caught.length ? caught : all;
+        const canvas = this.cards.querySelector<HTMLCanvasElement>(`[data-world="${w.id}"] .world-card__monster`)!;
+        return { canvas, monster: pool[Math.floor(Math.random() * pool.length)], mystery: caught.length === 0 };
+      }),
+    );
     const card = this.cardEls().find((c) => c.dataset.world === focusWorld) ?? this.cardEls()[0];
     card?.focus({ preventScroll: true });
     card?.scrollIntoView({ block: 'nearest', inline: 'center' });
@@ -141,6 +164,22 @@ rightArrow.addEventListener('click', () => scrollToWorld(1));
 
   hide(): void {
     this.root.hidden = true;
+  }
+
+  /** Called every frame: the monster on the card in the middle of the screen turns and hops. */
+  update(dt: number): void {
+    if (this.root.hidden || !this.monsters3d) return;
+    const box = this.cards.getBoundingClientRect();
+    const cx = box.left + box.width / 2;
+    const cy = box.top + box.height / 2;
+    let middle: HTMLElement | null = null;
+    let best = Infinity;
+    for (const card of this.cardEls()) {
+      const r = card.getBoundingClientRect();
+      const d = Math.hypot(r.left + r.width / 2 - cx, r.top + r.height / 2 - cy);
+      if (d < best) [best, middle] = [d, card];
+    }
+    this.monsters3d.update(dt, middle?.querySelector<HTMLCanvasElement>('.world-card__monster') ?? null);
   }
 
   private cardEls(): HTMLElement[] {
@@ -166,7 +205,7 @@ rightArrow.addEventListener('click', () => scrollToWorld(1));
 }
 
 /** One world's card. */
-function cardHtml(w: WorldDef, save: SaveData): string {
+function cardHtml(w: WorldDef, save: SaveData, monster3d: boolean): string {
   const p = worldProgress(w, save.collection);
   const realms = w.realms
     .map((r) => `<span class="world-card__realm">${p.realmsDone.has(r.id) ? realmIconSvg(r) : realmSilhouetteSvg(r, NOT_YET)}</span>`)
@@ -174,7 +213,7 @@ function cardHtml(w: WorldDef, save: SaveData): string {
   return `
     <button class="world-card${p.complete ? ' complete' : ''}" data-world="${w.id}" aria-label="${w.name}: ${p.found} of ${p.total} found">
       ${p.complete ? `<span class="world-card__crown">${CROWN}</span>` : ''}
-      <span class="world-card__scene">${worldSceneSvg(w)}</span>
+      <span class="world-card__scene">${worldSceneSvg(w)}${monster3d ? '<canvas class="world-card__monster" width="128" height="128" aria-hidden="true"></canvas>' : ''}</span>
       <span class="world-card__name">${pixelTextSvg([w.name], NES.white)}</span>
       <span class="world-card__realms">${realms}</span>
       <span class="world-card__count">${MONSTER_ICON}${pixelTextSvg([`${p.found}/${p.total}`], NES.gold)}</span>

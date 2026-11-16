@@ -40,6 +40,12 @@ export class EncounterScreen {
   private ring: HTMLCanvasElement;
   private confetti: Confetti;
 
+  /**
+   * 3D worlds show the monster as a turning 3D model instead of its pixel picture:
+   * main.ts sets this to a function that returns the element to show (null = use the picture).
+   */
+  portrait: ((m: Monster) => HTMLElement | null) | null = null;
+
   private state: State = 'closed';
   private monster: Monster | null = null;
   private rules: CatchRules = RULES.common;
@@ -144,9 +150,13 @@ export class EncounterScreen {
     this.el.ability.append(m.ability.description);
     this.el.monster.className = 'catch-monster pop-in';
     this.el.monster.innerHTML = '';
-    void monsterSvg(m, 'color').then((svg) => {
-      if (this.monster === m) this.el.monster.innerHTML = svg;
-    });
+    const model = this.portrait?.(m) ?? null;
+    if (model) this.el.monster.append(model);
+    else {
+      void monsterSvg(m, 'color').then((svg) => {
+        if (this.monster === m) this.el.monster.innerHTML = svg;
+      });
+    }
     this.setMessage(m.rarity === 'rare' ? 'A rare friend!' : `It's ${m.name}!`);
     this.drawTries();
     this.ring.hidden = false;

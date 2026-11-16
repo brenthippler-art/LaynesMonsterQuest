@@ -8,6 +8,19 @@ What a world is made of: **template** (the ASCII maps) · **realms** · **tiles*
 **decorations** · **music** · **card picture** · **108 monsters** · **the checker**.
 The steps below go through them in that order. There's a prompt you can copy at the end.
 
+**3D:** a building world (one made with `src/worlds/building/`) can be 3D straight away:
+add `view: '3d',` to its WorldDef, next to `seed`. Then walk around it and check that
+walls look the right height; if one doesn't, give that tile kind a `height3d`. Rides lie
+flat unless they set `stand3d`. See "3D worlds" in `CLAUDE.md`.
+
+**Jumping and lookouts (optional):** in the world's `index.ts`, after the maps are made:
+- `map.hops = map.tiles.map((t) => (t === Tile.ShallowWater ? 1 : 0))` makes squares Layne can
+  jump over but not walk on (copy from `src/worlds/island/index.ts`). Keep a way round on foot
+  (a bridge or a path) wherever the hop squares cut a map in two.
+- `map.lookouts = hilltopLookouts(map, walkableFrom(map, spawn), lives)` puts a lookout on the
+  highest walkable square of each realm (needs `map.ground`). You can add your own spots too,
+  like the stepping stones in `src/worlds/woods/stones.ts`.
+
 ## 0. Plan it
 - [ ] Pick an **id** (lowercase, permanent: it goes into saves) and a short **name**.
 - [ ] Pick **9 realms**: an id (lowercase) and ONE short uppercase badge word each (e.g. `KITCHEN`).

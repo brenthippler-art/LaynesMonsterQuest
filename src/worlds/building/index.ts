@@ -1,6 +1,7 @@
 import { inBounds, indexOf, type MapLabel, type MapLook, type TileMap } from '../../world/tilemap';
 import { type RealmDef, type WorldDef } from '../types';
 import { stampDecor } from './decorPaint';
+import { height3d } from './height3d';
 import { unreachableSquares } from './reach';
 import { attachRides } from './rides';
 import { scatterDecor } from './scatter';
@@ -35,6 +36,7 @@ export function makeBuildingWorld(plan: BuildingPlan): WorldDef {
     drawDecor(buf, d, _x, _y, ox, oy) {
       if (d) stampDecor(buf, plan.decor[decorNames[d - 1]].sprite, ox, oy);
     },
+    height3d: (t) => height3d(tileNames[t] ?? '', tileKind(t)),
   };
 
   const realms: RealmDef[] = plan.realms.map((r) => {
@@ -56,6 +58,7 @@ export function makeBuildingWorld(plan: BuildingPlan): WorldDef {
     name: plan.name,
     scene: plan.scene,
     seed: plan.seed,
+    view: plan.view,
     realms,
     build(seed) {
       const { maps, spawn, entries } = parseMaps(plan, look, tileIds, decorIds);

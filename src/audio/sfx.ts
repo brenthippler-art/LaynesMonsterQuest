@@ -89,6 +89,17 @@ class Sfx {
     this.tone(220, 0, dur, 'triangle', 0.12, 880); // a soft rising tone underneath
   }
 
+  /** Boing! Layne jumps (3D worlds). */
+  jump(): void {
+    this.tone(260, 0, 0.16, 'square', 0.07, 620);
+  }
+
+  /** Plop! A jump landed in the water and Layne bobs back to the bank (3D worlds). */
+  splash(): void {
+    this.tone(520, 0, 0.12, 'triangle', 0.08, 180);
+    this.tone(700, 0.08, 0.08, 'triangle', 0.05, 300);
+  }
+
   /** A soft click for buttons. */
   click(): void {
     this.tone(noteFreq('E5'), 0, 0.04, 'square', 0.06);

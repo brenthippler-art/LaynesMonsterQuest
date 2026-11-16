@@ -14,6 +14,9 @@ import { pixelTextSvg } from '../ui/pixelText';
  * The title screen: the game's name in big pixel letters, Layne walking in
  * place with a few of his monster friends hopping around him, one huge PLAY
  * button and a WORLDS (globe) button. Everything is drawn in code.
+ *
+ * Layne and his friends are a little 3D show (world3d/titleStage.ts) when the
+ * device can draw 3D, and flat pixel pictures when it can't.
  */
 const PLAY_ICON = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2l10 6-10 6z" fill="#FCFCFC"/></svg>';
 const GLOBE = gridSvg(
@@ -40,6 +43,13 @@ const GLOBE = gridSvg(
 const SILHOUETTE = '#1c1c1c';
 const HOPPERS = 4;
 
+/** The 3D show in the middle of the title screen (world3d/titleStage.ts). */
+export interface TitleStage3D {
+  canvas: HTMLCanvasElement;
+  setFriends(monsters: readonly Monster[], mystery: boolean): void;
+  update(dt: number): void;
+}
+
 export interface TitleActions {
   onPlay: () => void;
   onWorlds: () => void;
@@ -58,6 +68,8 @@ export class TitleScreen {
     parent: HTMLElement,
     private glasses: GlassesStyle,
     actions: TitleActions,
+    /** Leave it out (no 3D on this device) and Layne and his friends are drawn flat. */
+    private stage3d?: TitleStage3D,
   ) {
     this.root = document.createElement('div');
     this.root.className = 'title';
@@ -76,6 +88,12 @@ export class TitleScreen {
     this.layne = this.root.querySelector('.title__layne')!;
     this.friends = [...this.root.querySelectorAll<HTMLElement>('.title__friend')];
     this.play = this.root.querySelector('.title__play')!;
+    if (stage3d) {
+      // The 3D show takes the place of the flat Layne and friends (title.css hides them).
+      const stage = this.root.querySelector('.title__stage')!;
+      stage.classList.add('title__stage--3d');
+      stage.append(stage3d.canvas);
+    }
     this.play.addEventListener('click', actions.onPlay);
     this.root.querySelector('.title__worlds')!.addEventListener('click', actions.onWorlds);
   }
@@ -102,6 +120,10 @@ export class TitleScreen {
   /** Called every frame: Layne walks in place. */
   update(dt: number): void {
     if (this.root.hidden) return;
+    if (this.stage3d) {
+      this.stage3d.update(dt);
+      return;
+    }
     this.time += dt;
     const ctx = this.layne.getContext('2d')!;
     ctx.clearRect(0, 0, this.layne.width, this.layne.height);
@@ -115,6 +137,10 @@ export class TitleScreen {
     const pool = shuffle(mystery ? monstersOf('island') : caught);
     const count = Math.min(pool.length, mystery ? HOPPERS : 3 + Math.floor(Math.random() * 2));
     const chosen: (Monster | undefined)[] = pool.slice(0, count);
+    if (this.stage3d) {
+      this.stage3d.setFriends(pool.slice(0, count), mystery);
+      return;
+    }
     const visit = ++this.showing;
     for (const [i, el] of this.friends.entries()) {
       const m = chosen[i];

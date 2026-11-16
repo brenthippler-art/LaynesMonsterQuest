@@ -28,6 +28,7 @@ const SHOW_TIME = 5; // seconds for one firework, from launch to the last twinkl
 
 const fireworks: RidePlan = {
   map: 'main', x: 31, y: 1, w: 28, h: 7,
+  stand3d: 2, // 3D: up in the sky
   sprites: {
     trail: ['w', 'y', 'o', 'O'],
     ...Object.fromEntries(
@@ -75,6 +76,7 @@ const CLOUDS = [
 
 const clouds: RidePlan = {
   map: 'main', x: 1, y: 1, w: 28, h: 2,
+  stand3d: 6, // 3D: clouds float high up
   sprites: { big: cloud(30), small: cloud(22) },
   // Clouds drift slowly back and forth (never off the edge, so they never pop in or out).
   pose: (time) => CLOUDS.map((c, k) => ({ sprite: c.sprite, x: c.x + Math.sin(time * c.speed + k * 2) * c.sway, y: c.y })),
@@ -94,6 +96,7 @@ const DROPS = 10;
 
 const fountain: RidePlan = {
   map: 'main', x: 43, y: 33, w: 4, h: 4,
+  stand3d: 0, // 3D: the spray stands up out of the basin
   sprites: { jet0: jet(0), jet1: jet(1), jet2: jet(2), drop: ['ww', 'UU'] },
   pose(time) {
     const parts: RidePart[] = [{ sprite: `jet${Math.floor(time * 6) % 3}`, x: 28, y: 12 }];

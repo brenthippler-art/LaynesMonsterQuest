@@ -1,12 +1,17 @@
 # Layne's Monster Quest
 
-A gentle, NES-style pixel-art exploring game made for a 6-year-old. Layne picks
-a world, walks around it, and finds original monsters that live in the places
-that suit them. Every world has 9 realms and 108 monsters (864 so far).
+A gentle exploring game made for a 6-year-old. Layne picks a world, walks around
+it, and finds original monsters that live in the places that suit them. Every world
+is now Nintendo 64 style 3D (jump, turn the camera, 3D monsters), and the title screen
+opens on a little 3D floating island; the menus keep the NES-style pixel art. Every world has 9 realms and 108 monsters (864 so far).
 
 - **No losing, ever.** A catch that doesn't work out just means the monster hops off to play; you can find it again.
 - **No reading needed.** Icons, pictures and a wordless how-to-play.
 - **Works on tablets and computers:** tap or hold to walk, or use the arrow keys / WASD.
+- **In 3D worlds:** the jump button or Space to jump, the two curved arrows or Q / E to turn the camera.
+  Jump across The Woods' creek on its stepping stones, or over the Island's shallow water.
+  A gold ring with a floating gem is a lookout (a hilltop or a stepping stone): a monster,
+  often a rarer one, likes to wait there.
 - **Totally offline and private.** The game never talks to the internet: no accounts, chat, ads, analytics or sharing.
 
 What's in it:
@@ -109,6 +114,12 @@ npm run dev -- --host
 Then open the "Network" address it prints (for example `http://192.168.x.x:5173`)
 on a tablet on the same Wi-Fi.
 
+The game checks its own speed: if the 3D picture can't keep up on a tablet (slower than
+about 40 frames a second for 2 seconds), it draws with fewer, bigger pixels, in two steps
+(`src/world3d/frameSpeed.ts`). It only steps down, never back up. To see what it chose,
+open the tablet's page in a desktop browser's remote debugger and type
+`__lmq.view3d.speed.rows` in the console (360 = full, 300, or 240; this only works with `npm run dev`).
+
 ### Other commands
 
 | Command | Does |
@@ -163,8 +174,9 @@ To check offline play on a computer:
 
 ### Speed and memory
 
-The whole game is one JavaScript file of about 720 kB (about 153 kB zipped, which is what
+The whole game is one JavaScript file of about 1.3 MB (about 300 kB zipped, which is what
 actually travels over the network the first time; after that it comes from the offline copy).
+About half of that is three.js, the library that draws the 3D worlds.
 Building a world's maps takes 5 to 75 ms on a laptop (The Woods is the slowest), so even on
 an older tablet a new world's first frame shows well under a second after the wipe.
 
@@ -272,9 +284,15 @@ There's no cloud sync, on purpose.
 | Monster names, abilities, facts, colors, looks | `src/monsters/worlds/` (one file per world, e.g. `island.ts`) |
 | Monster body parts (ears, tails, eyes…) | `src/monsters/art/` (one file per group: `bodies.ts`, `creatureBodies.ts`, `objectBodies.ts`, `tops.ts`, `creatureTops.ts`, `hats.ts`, `limbs.ts`, `creatureLimbs.ts`, `wings.ts`, `creatureTails.ts`, `face.ts`, `patterns.ts`, `heads.ts`) |
 | Layne's pixel art | `src/render/layneSprites.ts` |
+| Everything 3D (camera, ground, trees, 3D Layne, 3D monsters, jump and turn buttons) | `src/world3d/` (start with `view3d.ts`) |
+| Building worlds in 3D (painted floors and walls, decoration cut-outs, rides) | `src/world3d/textured.ts`, `standees.ts`, `rides3d.ts`, and `src/worlds/building/height3d.ts` |
+| 3D Layne, 3D monsters | `src/world3d/layneModel.ts`, `src/world3d/monsters/` |
 | Trees, cacti and other decorations | `src/render/decorSprites.ts` |
 | The music (written as text!) | `src/audio/tracks.ts` |
-| Title screen, world picker | `src/screens/` |
+| Title screen, world picker | `src/screens/` (their 3D parts: `src/world3d/titleStage.ts`, `cardMonsters.ts`) |
+| Jumping, the creek and shallows Layne jumps over, landing | `src/player/player.ts` (`hops` on the map) |
+| Lookouts (hilltops and stepping stones where a monster waits) | `src/world/lookouts.ts`, `src/worlds/woods/stones.ts`, `tryPerch` in `src/encounters/wildMonsters.ts` |
+| The tablet speed check | `src/world3d/frameSpeed.ts` |
 | Playing in one world (Layne, doors, wild monsters) | `src/game/worldSession.ts` |
 | Switching between title, picker and worlds | `src/main.ts` |
 | Sound effects | `src/audio/sfx.ts` |

@@ -64,6 +64,20 @@
   50% { transform: translateY(-30%); }
 }
 
+/* The 3D show (world3d/titleStage.ts): one wide picture instead of Layne and the friends. */
+.title__stage--3d .title__friend,
+.title__stage--3d .title__layne {
+  display: none;
+}
+.title__stage3d {
+  display: block;
+  /* 8:5, as wide as fits, but never taller than about 40% of the screen. */
+  width: min(100%, 640px, 64vh);
+  width: min(100%, 640px, 64dvh);
+  aspect-ratio: 8 / 5;
+  image-rendering: pixelated;
+}
+
 .title__buttons {
   display: flex;
   align-items: center;
@@ -103,5 +117,9 @@
   .title__friend,
   .title__layne {
     width: clamp(48px, 18vh, 96px);
+  }
+  .title__stage3d {
+    width: min(100%, 56vh);
+    width: min(100%, 56dvh);
   }
 }

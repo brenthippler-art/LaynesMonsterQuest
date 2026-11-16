@@ -3,14 +3,15 @@ import { Biome } from './biomes';
 import { Tile } from './tiles';
 import { inBounds, type TileMap } from './tilemap';
 
-const RADIUS = 12;
+export const VOLCANO_RADIUS = 12;
+const RADIUS = VOLCANO_RADIUS;
 const EDGE_MARGIN = 28;
 
 /**
  * Put ONE volcano on the hottest, highest spot that isn't near the coast.
  * Rings from the middle out: lava crater (can't walk in) → dark rock → grey ash.
  */
-export function stampVolcano(map: TileMap, elev: Float32Array, temp: Float32Array): void {
+export function stampVolcano(map: TileMap, elev: Float32Array, temp: Float32Array): { x: number; y: number } {
   let best = -Infinity;
   let cx = map.width >> 1;
   let cy = map.height >> 1;
@@ -38,4 +39,5 @@ export function stampVolcano(map: TileMap, elev: Float32Array, temp: Float32Arra
       map.tiles[i] = d < 2.6 ? Tile.Lava : d < 7 ? Tile.VolcanoRock : Tile.Ash;
     }
   }
+  return { x: cx, y: cy }; // the 3D view builds the volcano's cone around this spot
 }

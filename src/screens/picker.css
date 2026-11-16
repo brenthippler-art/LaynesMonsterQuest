@@ -297,6 +297,24 @@
   height: auto;
 }
 
+/* The 3D monster standing on the picture (world3d/cardMonsters.ts). */
+.world-card__scene {
+  position: relative;
+}
+
+.world-card__monster {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+
+  height: 82%;
+  aspect-ratio: 1;
+
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+
 /* ---------- World name ---------- */
 
 /*

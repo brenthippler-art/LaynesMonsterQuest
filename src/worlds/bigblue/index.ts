@@ -19,6 +19,7 @@ export const BIGBLUE = makeBuildingWorld({
   id: 'bigblue',
   name: 'Big Blue Mart',
   seed: 2828,
+  view: '3d',
   scene: BIGBLUE_SCENE,
   tiles: BIGBLUE_TILES,
   decor: { ...PARKING_GARDEN, ...AUTO_TOOLS, ...FOOD_AISLES, ...SPORTS_PETS },

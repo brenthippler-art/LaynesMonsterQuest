@@ -38,10 +38,30 @@ These rules apply to every task in this project.
 - Leaving a world must free everything it made (maps, wandering monsters, map pictures): keep caches outside a WorldSession either bounded (one entry per monster or realm) or emptied in `leaveWorld()` in `src/main.ts`.
 - Every world is in the one game bundle, so the service worker caches all of them. If worlds are ever split into separate files, `npm run check:build` still checks that every built file is cached.
 
+## 3D worlds (Nintendo 64 style)
+
+- A world is drawn in 3D when its WorldDef has `view: '3d'`. Every world is 3D now; the 2D drawing code is kept (a new world can start in 2D, and the title screen falls back to it on a device that can't draw 3D).
+- Hills: a map can carry `ground` (a height per square, 3D only). The Island's come from its elevation (`src/world/heights.ts`), The Woods' are gentle rolling hills with a valley along the creek (`src/worlds/woods/heights.ts`). Maps without `ground` are flat floors with block walls.
+- A forest (an overworld whose outside is land, like The Woods) carries on past its edges in 3D as a thick ring of trees and dark forest floor (`forestEdge` in `src/world3d/ground.ts`), so the world never just stops. Layne still can't walk past the edge.
+- The game itself doesn't change in 3D: maps, walls, doors, wandering monsters, catching and saves all still work in squares (tiles). `src/world3d/` only DRAWS that world in 3D, so saves are the same in 2D and 3D.
+- The look: low-poly shapes with plain colors and flat faces, drawn small (about 360 pixels tall) and stretched up with crisp pixels, fog in the distance, round blob shadows. No picture files: every color and picture is made in code.
+- Building worlds (`src/worlds/building/`) reuse their own 16x16 pixel-art squares in 3D: floors and walls are painted with the same tile pictures (`src/world3d/textured.ts`), and decorations become thick little pixel cut-outs that turn to face the camera (`src/world3d/standees.ts`). Big decorations Layne can walk on (rugs, mats) lie flat on the floor.
+- How tall a building square is in 3D comes from its tile name (`src/worlds/building/height3d.ts`: walls 1.3, fences and counters 0.5, shelves and hedges 0.9, water sinks a little). A tile kind can set `height3d` itself when the name rule gets it wrong.
+- Rides still use their `pose(time)` pictures. In 3D they lie flat on the ground, unless the ride sets `stand3d` (how high it stands, in squares), and then it stands up and faces the camera (the Ferris wheel, the carousel, the fireworks).
+- 3D monsters are built from each monster's own art data (body, eyes, top, tail, feet, arms, pattern) in `src/world3d/monsters/`, so every monster gets a 3D model automatically. Keep new art parts working in both `src/monsters/art/` and `src/world3d/monsters/`.
+- Layne must never be lost from view: when something is in front of him he shows through as a blue shadow.
+- Extra 3D controls: jump (Space or the jump button) and turn the camera (Q / E or the two arrow buttons). Walking is the same as 2D. Every button is at least 64px.
+- Jumping is part of the game, not just the picture: `Player` (src/player/player.ts) keeps `air` (how high he is). A map can mark `hops`, squares Layne can only cross in the air (the Woods creek, the Island's shallow water). If he comes down on one, he lands on the nearest dry square within reach, or goes back to where he jumped from (with a splash sound). Never let him end up standing on a hop square, and save `player.safeSpot` (not his position in mid-air).
+- `flat` squares stand at their own height from `ground` as flat blocks (the Woods stepping stones).
+- Lookouts: `map.lookouts` are perches (a hilltop, a stepping stone) marked in 3D with a gold ring and a floating gem. One monster at a time waits on a lookout near Layne (`tryPerch` in src/encounters/wildMonsters.ts), more often uncommon or rare. `hilltopLookouts()` in src/world/lookouts.ts finds the highest square Layne can walk to in each realm.
+- The title screen's floating island show (src/world3d/titleStage.ts) and the 3D monsters on the world cards (src/world3d/cardMonsters.ts) share one small 3D surface (src/world3d/menuRenderer.ts). Without 3D, both screens keep their flat pictures.
+- Tablet speed check: `FrameSpeed` (src/world3d/frameSpeed.ts) watches the frame time and draws the 3D picture with fewer pixels (360 → 300 → 240 rows) when a device can't keep up. It never steps back up.
+- Leaving a world must free its 3D pieces too: `View3D.leave()` (called from `leaveWorld()` in `src/main.ts`) drops the ground chunks and the monster models.
+
 ## Tech
 
-- Vite + TypeScript. HTML5 Canvas for the world, plain DOM/CSS for menus.
-- No game framework unless the reason is explained to the user and they agree first.
+- Vite + TypeScript. HTML5 Canvas for 2D worlds, three.js for 3D worlds, plain DOM/CSS for menus.
+- No game framework unless the reason is explained to the user and they agree first. three.js is a drawing library, not a game framework: it only draws the 3D worlds, and the game's own code runs everything else. It's installed from npm at an exact version and bundled into the game (never loaded from a CDN).
 - Save data goes in localStorage under one key, `lmq-save-v1`, with a `version` field and a migration step for every version change.
 - Must work on a tablet (touch, portrait AND landscape) and on desktop (keyboard + mouse).
 - Static build that deploys to Vercel.
