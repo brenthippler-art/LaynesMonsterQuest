@@ -1,6 +1,8 @@
 import { WORLD_SEED } from '../../config';
 import { type Biome } from '../../world/biomes';
+import { hilltopLookouts, walkableFrom } from '../../world/lookouts';
 import { generateOverworld } from '../../world/overworld';
+import { Tile } from '../../world/tiles';
 import { inBounds, indexOf, type TileMap } from '../../world/tilemap';
 import { type RealmDef, type WorldDef } from '../types';
 import { ISLAND_REALMS } from './realms';
@@ -22,6 +24,11 @@ export const ISLAND: WorldDef = {
 
   build(seed) {
     const { map, caves, spawn } = generateOverworld(seed);
+    // Shallow water can be jumped over (little coves and channels). Deep sea can't.
+    map.hops = map.tiles.map((t) => (t === Tile.ShallowWater ? 1 : 0));
+    // A monster perches on the highest hilltop of each realm.
+    const lives = (i: number) => REALM_OF_BIOME.has(map.biome[i] as Biome);
+    map.lookouts = hilltopLookouts(map, walkableFrom(map, spawn), lives, 1.2);
     return {
       maps: [map, ...caves],
       spawn: { map: map.id, x: spawn.x, y: spawn.y },

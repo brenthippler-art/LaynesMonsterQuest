@@ -66,6 +66,21 @@ export interface TileMap {
    * Maps without it are drawn as flat floors and block walls (caves, buildings).
    */
   ground?: Float32Array;
+  /**
+   * 3D only: squares drawn as a flat-topped block at their `ground` height instead of a smooth
+   * slope (stepping stones in a creek). 1 = flat.
+   */
+  flat?: Uint8Array;
+  /**
+   * Squares Layne can't walk on but can JUMP over: the creek in The Woods, the island's shallow
+   * sea. 1 = hop square. A jump that lands in one takes him back to where he jumped from.
+   */
+  hops?: Uint8Array;
+  /**
+   * Lookouts: hilltops and stepping stones where a monster likes to perch and wait for Layne
+   * (usually one of the rarer ones). Reaching some of them takes a climb or a jump.
+   */
+  lookouts?: { x: number; y: number }[];
   /** Doors, keyed by square index for quick lookup. */
   doors: Map<number, Door>;
   /** What's "outside" the edges (ocean for the overworld, rock for caves). */
@@ -118,6 +133,11 @@ export function isWalkable(map: TileMap, x: number, y: number): boolean {
   if (!(map.look ? map.look.walkable(t) : isWalkableTile(t))) return false;
   // Furniture (building worlds only) blocks the square it stands on.
   return !(map.solid && inBounds(map, x, y) && map.solid[indexOf(map, x, y)]);
+}
+
+/** Can Layne jump over this square (see `hops`)? */
+export function canHop(map: TileMap, x: number, y: number): boolean {
+  return !!map.hops && inBounds(map, x, y) && map.hops[indexOf(map, x, y)] === 1;
 }
 
 export function doorAt(map: TileMap, x: number, y: number): Door | undefined {

@@ -28,6 +28,7 @@ import { PixelBuffer } from '../render/pixels';
 import { type TileMap } from '../world/tilemap';
 import { CameraRig } from './cameraRig';
 import { Chunks } from './chunks';
+import { FrameSpeed } from './frameSpeed';
 import { EDGE, forestEdge, groundY, tileColor, WATER_LEVEL } from './ground';
 import { LayneModel } from './layneModel';
 import { rgb, shade } from './meshBuilder';
@@ -57,9 +58,6 @@ import { HORIZON, Sky } from './sky';
  *   2. any part of him that's BEHIND something, as a see-through blue shadow ("ghost")
  *   3. the parts of him that can be seen, normally
  */
-const PIXEL_ROWS = 360; // about how many pixels tall the 3D picture is drawn
-const GRAVITY = 22;
-const JUMP_SPEED = 7.5;
 const TURN_SPEED = 12;
 
 const CAVE_DARK = new Color('#140c04');
@@ -73,6 +71,8 @@ export class View3D implements WorldView {
   private renderer: WebGLRenderer;
   private scene = new Scene();
   private rig = new CameraRig();
+  /** The tablet speed check: draws fewer pixels if this device is too slow (frameSpeed.ts). */
+  readonly speed = new FrameSpeed();
   private chunks: Chunks;
   private layne: LayneModel;
   private layneShadow: Mesh;
@@ -102,8 +102,8 @@ export class View3D implements WorldView {
   private buildAll = true;
   private heading = Math.PI; // Layne faces the camera when he arrives
   private walk = 0;
+  /** How high Layne's feet were last frame (the camera rises a little with a jump). */
   private air = 0;
-  private airSpeed = 0;
   private last: Point = { x: 0, y: 0 };
 
   constructor(parent: HTMLElement, before: Element | null, glasses: GlassesStyle) {
@@ -166,7 +166,6 @@ export class View3D implements WorldView {
     // The next world starts fresh: camera looking north, Layne facing the camera, feet on the ground.
     this.rig.resetTurn();
     this.heading = Math.PI;
-    this.air = 0;
   }
 
   // ----- WorldView -----
@@ -212,26 +211,14 @@ export class View3D implements WorldView {
     this.rig.turn(steps);
   }
 
-  /** Boing! (Only when his feet are on the ground.) Returns true if he jumped. */
-  jump(): boolean {
-    if (this.air > 0) return false;
-    this.airSpeed = JUMP_SPEED;
-    this.air = 0.001;
-    return true;
-  }
-
   /** Draw one frame. */
   draw(session: WorldSession, dt: number, time: number): void {
+    if (this.speed.frame(dt)) this.resize();
     const map = session.world.current;
     if (map !== this.map) this.enterMap(map);
     const p = session.player;
 
-    // Jumping: up, then gravity brings him back down.
-    if (this.air > 0) {
-      this.airSpeed -= GRAVITY * dt;
-      this.air = Math.max(0, this.air + this.airSpeed * dt);
-    }
-
+    const air = (this.air = p.air); // jumping is part of the game now (player.ts), so the view just shows it
     // Turn to face the way he's walking, smoothly.
     const dx = p.x - this.last.x;
     const dy = p.y - this.last.y;
@@ -241,11 +228,11 @@ export class View3D implements WorldView {
     this.walk = moving ? this.walk + dt : 0;
 
     const gy = groundY(map, p.x, p.y);
-    this.layne.root.position.set(p.x, gy + this.air, p.y);
+    this.layne.root.position.set(p.x, gy + air, p.y);
     this.layne.root.rotation.y = this.heading;
-    this.layne.pose(this.walk, this.air);
+    this.layne.pose(this.walk, air);
     this.layneShadow.position.set(p.x, gy + 0.03, p.y);
-    this.layneShadow.scale.setScalar(1 / (1 + this.air));
+    this.layneShadow.scale.setScalar(1 / (1 + air));
     this.lantern.position.set(p.x, gy + 1.6, p.y);
 
     this.chunks.update(map, p.x, p.y, this.rig.facing, this.buildAll);
@@ -369,7 +356,8 @@ export class View3D implements WorldView {
     const h = this.canvas.clientHeight;
     if (!w || !h) return;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const scale = Math.max(1, Math.round((h * dpr) / PIXEL_ROWS));
+    // About speed.rows pixels tall: each 3D pixel is a whole number of screen pixels, so the blocks stay sharp.
+    const scale = Math.max(1, Math.round((h * dpr) / this.speed.rows));
     this.renderer.setSize(Math.round((w * dpr) / scale), Math.round((h * dpr) / scale), false);
     this.rig.resize(w, h);
   }

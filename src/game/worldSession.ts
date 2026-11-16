@@ -65,7 +65,8 @@ export class WorldSession {
   /** For the auto-save. */
   whereabouts(): Whereabouts {
     const p = this.player;
-    return { world: this.def.id, spot: { map: this.world.current.id, x: p.x, y: p.y, facing: p.facing } };
+    const { x, y } = p.safeSpot; // never saved in mid-air over the creek
+    return { world: this.def.id, spot: { map: this.world.current.id, x, y, facing: p.facing } };
   }
 
   /** Jump the camera to Layne (at the start, after a door, after the screen changes size). */

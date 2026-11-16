@@ -19,9 +19,12 @@ const HOME_RADIUS = 3; // how far a monster wanders from where it appeared
 const SPEED = 1.3; // tiles per second
 const TOUCH_DIST = 0.9; // closer than this = Layne bumped into it (generous: side by side counts)
 const SPAWN_GRACE = 0.6; // seconds before a new monster can be bumped (it's still popping in)
+const PERCH_DIST = 11; // a monster appears on a lookout (hilltop, stepping stone) when Layne is this close
 
 /** Rare monsters show up less often: out of every 15 picks, about 10 common, 4 uncommon, 1 rare. */
 const RARITY_WEIGHT: Record<Rarity, number> = { common: 10, uncommon: 4, rare: 1 };
+/** ...but up on a lookout, the rarer ones like to perch: about 1 common, 2 uncommon, 2 rare out of every 5. */
+const PERCH_WEIGHT: Record<Rarity, number> = { common: 1, uncommon: 2, rare: 2 };
 
 export interface WildMonster {
   monster: Monster;
@@ -38,16 +41,18 @@ export interface WildMonster {
   age: number;
   /** The small pixel sprite, once it's ready. */
   sprite: HTMLCanvasElement | null;
+  /** Perched on a lookout (a hilltop or a stepping stone): it stays put and waits for Layne. */
+  perch?: boolean;
 }
 
 /** How likely a monster is to be picked: its rarity, times its spawn boost (a few favorites show up extra often). */
-const weight = (m: Monster) => RARITY_WEIGHT[m.rarity] * (m.spawnBoost ?? 1);
+const weight = (m: Monster, table = RARITY_WEIGHT) => table[m.rarity] * (m.spawnBoost ?? 1);
 
-function pickMonster(list: Monster[]): Monster | null {
-  const total = list.reduce((sum, m) => sum + weight(m), 0);
+function pickMonster(list: Monster[], table = RARITY_WEIGHT): Monster | null {
+  const total = list.reduce((sum, m) => sum + weight(m, table), 0);
   let roll = Math.random() * total;
   for (const m of list) {
-    roll -= weight(m);
+    roll -= weight(m, table);
     if (roll < 0) return m;
   }
   return list[0] ?? null;
@@ -57,6 +62,7 @@ export class WildMonsters {
   list: WildMonster[] = [];
   private mapId = '';
   private spawnTimer = 0.5;
+  private perchTimer = 1;
   /** Who lives in each realm of this world (realm id → monsters). */
   private byRealm: Map<string, Monster[]>;
 
@@ -71,14 +77,21 @@ export class WildMonsters {
       this.list = [];
       this.mapId = map.id;
       this.spawnTimer = 0.6;
+      this.perchTimer = 1;
     }
     this.list = this.list.filter((w) => Math.hypot(w.x - px, w.y - py) < DESPAWN_DIST);
 
     this.spawnTimer -= dt;
     if (this.spawnTimer <= 0) {
-      if (this.list.length < MAX_NEARBY) this.trySpawn(map, px, py);
+      const roaming = this.list.filter((w) => !w.perch).length;
+      if (roaming < MAX_NEARBY) this.trySpawn(map, px, py);
       // Fill up quickly to 2, then add the 3rd (and replacements) more slowly.
-      this.spawnTimer = this.list.length < 2 ? 0.5 : 2.5 + Math.random() * 2.5;
+      this.spawnTimer = roaming < 2 ? 0.5 : 2.5 + Math.random() * 2.5;
+    }
+    this.perchTimer -= dt;
+    if (this.perchTimer <= 0) {
+      this.perchTimer = 1.5;
+      this.tryPerch(map, px, py);
     }
 
     for (const w of this.list) {
@@ -100,6 +113,38 @@ export class WildMonsters {
     w.wait = seconds;
   }
 
+  /** Near a lookout with nobody on it? A monster (often a rare one) appears there and waits. One at a time. */
+  private tryPerch(map: TileMap, px: number, py: number): void {
+    if (!map.lookouts || this.list.some((w) => w.perch)) return;
+    for (const spot of map.lookouts) {
+      const d = Math.hypot(spot.x + 0.5 - px, spot.y + 0.5 - py);
+      if (d > PERCH_DIST || d < 2.5) continue;
+      const realm = this.world.realmAt(map, spot.x, spot.y);
+      const monster = realm ? pickMonster(this.byRealm.get(realm.id) ?? [], PERCH_WEIGHT) : null;
+      if (!realm || !monster) continue;
+      this.add(monster, spot.x, spot.y, realm, true);
+      return;
+    }
+  }
+
+  private add(monster: Monster, tx: number, ty: number, realm: RealmDef, perch = false): void {
+    const w: WildMonster = {
+      monster,
+      x: tx + 0.5,
+      y: ty + 0.5,
+      home: { x: tx + 0.5, y: ty + 0.5, realm },
+      target: { x: tx + 0.5, y: ty + 0.5 },
+      wait: 0.5 + Math.random(),
+      facing: Math.random() < 0.5 ? 1 : -1,
+      moving: false,
+      age: 0,
+      sprite: null,
+      perch,
+    };
+    this.list.push(w);
+    void monsterCanvas(monster, 'color', 'small').then((canvas) => (w.sprite = canvas));
+  }
+
   private trySpawn(map: TileMap, px: number, py: number): void {
     for (let attempt = 0; attempt < 25; attempt++) {
       const angle = Math.random() * Math.PI * 2;
@@ -112,27 +157,17 @@ export class WildMonsters {
       if (this.list.some((w) => Math.hypot(w.x - tx - 0.5, w.y - ty - 0.5) < 2.5)) continue;
       const monster = pickMonster(this.byRealm.get(realm.id) ?? []);
       if (!monster) continue;
-
-      const w: WildMonster = {
-        monster,
-        x: tx + 0.5,
-        y: ty + 0.5,
-        home: { x: tx + 0.5, y: ty + 0.5, realm },
-        target: { x: tx + 0.5, y: ty + 0.5 },
-        wait: 0.5 + Math.random(),
-        facing: Math.random() < 0.5 ? 1 : -1,
-        moving: false,
-        age: 0,
-        sprite: null,
-      };
-      this.list.push(w);
-      void monsterCanvas(monster, 'color', 'small').then((canvas) => (w.sprite = canvas));
+      this.add(monster, tx, ty, realm);
       return;
     }
   }
 
   /** Stand around for a bit, then hop to a nearby spot in its own realm. */
   private wander(w: WildMonster, dt: number, map: TileMap): void {
+    if (w.perch) {
+      w.moving = false; // a percher stays on its lookout
+      return;
+    }
     if (w.wait > 0) {
       w.wait -= dt;
       w.moving = false;

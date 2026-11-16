@@ -129,7 +129,8 @@ export class Chunks {
           if (edge) edgeTile(map, x, y, ground, props, glow);
           continue;
         }
-        if (map.ground) smoothTile(map, x, y, ground, glow);
+        if (map.ground && map.flat?.[y * map.width + x]) blockTile(map, x, y, ground, glow); // a stepping stone
+        else if (map.ground) smoothTile(map, x, y, ground, glow);
         else if (map.look) texturedTile(map, x, y, kx, ky, ground);
         else blockTile(map, x, y, ground, glow);
         addProps(map, x, y, props, glow);

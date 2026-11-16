@@ -40,7 +40,7 @@ These rules apply to every task in this project.
 
 ## 3D worlds (Nintendo 64 style)
 
-- A world is drawn in 3D when its WorldDef has `view: '3d'`. Every world is 3D now; the 2D drawing code is kept (the title screen uses it, and a new world can start in 2D).
+- A world is drawn in 3D when its WorldDef has `view: '3d'`. Every world is 3D now; the 2D drawing code is kept (a new world can start in 2D, and the title screen falls back to it on a device that can't draw 3D).
 - Hills: a map can carry `ground` (a height per square, 3D only). The Island's come from its elevation (`src/world/heights.ts`), The Woods' are gentle rolling hills with a valley along the creek (`src/worlds/woods/heights.ts`). Maps without `ground` are flat floors with block walls.
 - A forest (an overworld whose outside is land, like The Woods) carries on past its edges in 3D as a thick ring of trees and dark forest floor (`forestEdge` in `src/world3d/ground.ts`), so the world never just stops. Layne still can't walk past the edge.
 - The game itself doesn't change in 3D: maps, walls, doors, wandering monsters, catching and saves all still work in squares (tiles). `src/world3d/` only DRAWS that world in 3D, so saves are the same in 2D and 3D.
@@ -51,6 +51,11 @@ These rules apply to every task in this project.
 - 3D monsters are built from each monster's own art data (body, eyes, top, tail, feet, arms, pattern) in `src/world3d/monsters/`, so every monster gets a 3D model automatically. Keep new art parts working in both `src/monsters/art/` and `src/world3d/monsters/`.
 - Layne must never be lost from view: when something is in front of him he shows through as a blue shadow.
 - Extra 3D controls: jump (Space or the jump button) and turn the camera (Q / E or the two arrow buttons). Walking is the same as 2D. Every button is at least 64px.
+- Jumping is part of the game, not just the picture: `Player` (src/player/player.ts) keeps `air` (how high he is). A map can mark `hops`, squares Layne can only cross in the air (the Woods creek, the Island's shallow water). If he comes down on one, he lands on the nearest dry square within reach, or goes back to where he jumped from (with a splash sound). Never let him end up standing on a hop square, and save `player.safeSpot` (not his position in mid-air).
+- `flat` squares stand at their own height from `ground` as flat blocks (the Woods stepping stones).
+- Lookouts: `map.lookouts` are perches (a hilltop, a stepping stone) marked in 3D with a gold ring and a floating gem. One monster at a time waits on a lookout near Layne (`tryPerch` in src/encounters/wildMonsters.ts), more often uncommon or rare. `hilltopLookouts()` in src/world/lookouts.ts finds the highest square Layne can walk to in each realm.
+- The title screen's floating island show (src/world3d/titleStage.ts) and the 3D monsters on the world cards (src/world3d/cardMonsters.ts) share one small 3D surface (src/world3d/menuRenderer.ts). Without 3D, both screens keep their flat pictures.
+- Tablet speed check: `FrameSpeed` (src/world3d/frameSpeed.ts) watches the frame time and draws the 3D picture with fewer pixels (360 → 300 → 240 rows) when a device can't keep up. It never steps back up.
 - Leaving a world must free its 3D pieces too: `View3D.leave()` (called from `leaveWorld()` in `src/main.ts`) drops the ground chunks and the monster models.
 
 ## Tech

@@ -92,6 +92,8 @@ export function groundY(map: TileMap, x: number, y: number): number {
     // Flat floors. (Standing ON a wall only happens to monsters popping in at the edge: put them on the floor.)
     return isWalkable(map, tx, ty) ? tileTop(map, tx, ty) : 0;
   }
+  // A flat block (a stepping stone): its own height, all over.
+  if (map.flat && inBounds(map, tx, ty) && map.flat[ty * map.width + tx]) return map.ground[ty * map.width + tx];
   const fx = x - tx;
   const fy = y - ty;
   const a = cornerAt(map, tx, ty);

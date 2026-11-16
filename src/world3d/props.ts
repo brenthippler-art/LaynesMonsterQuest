@@ -4,6 +4,7 @@ import { groundY } from './ground';
 import { type MeshBuilder } from './meshBuilder';
 import { addDoorway } from './props/doorways';
 import { addIslandDecor } from './props/islandDecor';
+import { addLookout, isLookout } from './props/lookout';
 
 /**
  * Everything that stands on the ground: decorations (trees, rocks...) and the
@@ -25,6 +26,7 @@ export function addProps(map: TileMap, x: number, y: number, props: MeshBuilder,
   const i = y * map.width + x;
   const decor = map.decor[i];
   const door = map.doors.get(i);
+  if (isLookout(map, i)) addLookout(map, x, y, glow);
   if (!decor && !door) return;
   // Spread things around inside the tile a little, so they don't line up on a grid.
   const r1 = hash2(x, y, 11);

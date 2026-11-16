@@ -24,7 +24,10 @@ import { MuteButton } from './ui/muteButton';
 import { PixelWipe } from './ui/pixelWipe';
 import { RealmBadge } from './ui/realmBadge';
 import { WorldMap } from './ui/worldMap';
+import { CardMonsters } from './world3d/cardMonsters';
 import { Controls3D } from './world3d/controls3d';
+import { menuRenderer } from './world3d/menuRenderer';
+import { TitleStage } from './world3d/titleStage';
 import { Turntable } from './world3d/turntable';
 import { View3D } from './world3d/view3d';
 import { WORLDS } from './worlds';
@@ -121,7 +124,7 @@ const book = new MonsterBook(hud, save, () => session?.def ?? WORLDS[save.lastWo
 new HomeButton(hud, goHome);
 const controls3d = new Controls3D(hud, {
   jump: () => {
-    if (view3d?.jump()) sfx.jump();
+    if (session?.player.jump()) sfx.jump();
   },
   turn: (steps) => {
     view3d?.turn(steps);
@@ -145,12 +148,15 @@ encounter.portrait = (m) => (is3D() ? turntable.show(m) : null);
 
 // ----- Screens. (Made before the grown-ups area, so its Escape key is seen after theirs.) -----
 const wipe = new PixelWipe(ui);
-const title = new TitleScreen(ui, glasses, { onPlay: play, onWorlds: showPicker });
+// The title screen's 3D show and the 3D monsters on the world cards share one small 3D surface.
+// (No 3D on this device? menu is null, and both screens keep their flat pictures.)
+const menu = menuRenderer();
+const title = new TitleScreen(ui, glasses, { onPlay: play, onWorlds: showPicker }, menu ? new TitleStage(menu, glasses) : undefined);
 const picker = new WorldPicker(ui, {
   onPick: enterWorld,
   onBack: showTitle,
   canUseKeys: () => !howToPlay.isOpen && !parentArea.isOpen && !wipe.isRunning,
-});
+}, menu ? new CardMonsters(menu) : undefined);
 
 new MuteButton(ui, save.muted, (muted) => {
   save.muted = muted;
@@ -256,6 +262,7 @@ startLoop(
     parentArea.update();
     howToPlay.update(dt);
     title.update(dt);
+    picker.update(dt);
     autosave.update(dt); // saves every 5 s if Layne has moved (even while a screen is open)
 
     if (!session || screen !== 'world') {
@@ -274,6 +281,7 @@ startLoop(
     const input = kb.x || kb.y ? kb : pointer.direction(session.layneOnScreen());
     const { bumped, movedMap } = session.update(dt, input, pointer.steerPoint());
     if (movedMap) autosave.now(); // remember which map he's on
+    if (session.player.splashed) sfx.splash();
     badge.show(session.realm);
     worldMap.update(session.world.current, session.player.x, session.player.y, time);
     if (bumped) {
