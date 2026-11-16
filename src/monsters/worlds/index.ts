@@ -7,6 +7,7 @@ import { HOME_MONSTERS } from './home';
 import { ISLAND_MONSTERS } from './island';
 import { SUNNYSIDE_MONSTERS } from './sunnyside';
 import { WONDERWHIRL_MONSTERS } from './wonderwhirl';
+import { ZOO_MONSTERS } from './zoo';
 import { WOODS_MONSTERS } from '../data/woods';
 
 /**
@@ -14,7 +15,7 @@ import { WOODS_MONSTERS } from '../data/woods';
  * Ids are unique across ALL worlds, so the save can keep one collection.
  * To add a world's monsters: make a file like island.ts and add it here.
  */
-export const MONSTERS: Monster[] = [...ISLAND_MONSTERS, ...HOME_MONSTERS, ...WOODS_MONSTERS, ...BUNTOWN_MONSTERS, ...CHERRYMART_MONSTERS, ...SUNNYSIDE_MONSTERS, ...BIGBLUE_MONSTERS, ...WONDERWHIRL_MONSTERS];
+export const MONSTERS: Monster[] = [...ISLAND_MONSTERS, ...HOME_MONSTERS, ...WOODS_MONSTERS, ...BUNTOWN_MONSTERS, ...CHERRYMART_MONSTERS, ...SUNNYSIDE_MONSTERS, ...BIGBLUE_MONSTERS, ...WONDERWHIRL_MONSTERS, ...ZOO_MONSTERS];
 
 /** Monster id → monster, for quick look-ups (the Monster Book finds slots by id). */
 export const MONSTER_BY_ID: ReadonlyMap<string, Monster> = new Map(MONSTERS.map((m) => [m.id, m]));
