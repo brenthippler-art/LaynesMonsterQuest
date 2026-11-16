@@ -93,14 +93,6 @@ export class WildMonsters {
     this.list = this.list.filter((other) => other !== w);
   }
 
-  /**
-   * The monster drawn at this world spot, if any. Monsters are drawn standing
-   * on their feet, so the body reaches about a tile above (x, y) = feet.
-   */
-  monsterAt(x: number, y: number): WildMonster | null {
-    return this.list.find((w) => w.sprite && Math.abs(x - w.x) < 0.75 && y > w.y - 1.3 && y < w.y + 0.4) ?? null;
-  }
-
   /** "It noticed you!": stop wandering for a while, so Layne can walk right up to it. */
   holdStill(w: WildMonster, seconds = 6): void {
     w.target = { x: w.x, y: w.y };

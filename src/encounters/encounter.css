@@ -88,6 +88,13 @@
   width: 100%;
   height: auto;
 }
+/* 3D worlds: the turning 3D monster, drawn small and stretched up with crisp pixels. */
+.catch-monster .turntable {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  image-rendering: pixelated;
+}
 .catch-ring {
   position: absolute;
   inset: 0;

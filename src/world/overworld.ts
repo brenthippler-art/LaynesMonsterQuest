@@ -5,6 +5,7 @@ import { placeCaves } from './caves';
 import { decorateMap } from './decorations';
 import { Tile } from './tiles';
 import { createMap, isWalkable, doorAt, tileAt, type TileMap } from './tilemap';
+import { overworldHeights } from './heights';
 import { stampVolcano } from './volcano';
 
 export interface Overworld {
@@ -54,9 +55,11 @@ export function generateOverworld(seed: number): Overworld {
     }
   }
 
-  stampVolcano(map, elev, temp);
+  const volcano = stampVolcano(map, elev, temp);
   const caves = placeCaves(map, seed);
   decorateMap(map, seed);
+  // 3D: hills and mountains from the same elevation that picked the tiles (the tiles don't change).
+  map.ground = overworldHeights(map, elev, volcano);
 
   return { map, caves, spawn: findSpawn(map) };
 }

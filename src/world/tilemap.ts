@@ -57,6 +57,11 @@ export interface TileMap {
   biome: Uint8Array;
   /** Decoration for each square (tree, rock, ...). 0 = none. */
   decor: Uint8Array;
+  /**
+   * 3D only: how high the ground is on each square, in tiles (0 = sea level).
+   * Maps without it are drawn as flat floors and block walls (caves, buildings).
+   */
+  ground?: Float32Array;
   /** Doors, keyed by square index for quick lookup. */
   doors: Map<number, Door>;
   /** What's "outside" the edges (ocean for the overworld, rock for caves). */

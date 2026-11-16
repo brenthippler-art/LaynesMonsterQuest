@@ -125,8 +125,25 @@ self.addEventListener('fetch', (event) => {
   };
 }
 
+/**
+ * Build-only: three.js (the 3D drawing library) has a few web addresses inside
+ * its shader code, in comments that point at the maths papers they came from.
+ * They're never visited, but `npm run check:build` (rightly) refuses any web
+ * address in the game. This takes them out of three.js's copy in the build.
+ */
+function stripThreeLinks(): Plugin {
+  return {
+    name: 'lmq-strip-three-links',
+    apply: 'build',
+    transform(code, id) {
+      if (!id.includes('/node_modules/three/')) return null;
+      return { code: code.replace(/https?:\/\/(?!www\.w3\.org\/)[^\s"'`)<>]+/g, '(link removed)'), map: null };
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [allowHotReloadInDev(), devPages(), offlineServiceWorker()],
+  plugins: [allowHotReloadInDev(), devPages(), offlineServiceWorker(), stripThreeLinks()],
   build: {
     // Vite normally adds a tiny helper that fetch()es "preload" links. We have none,
     // so leave it out: the game's own code then contains no network calls at all.

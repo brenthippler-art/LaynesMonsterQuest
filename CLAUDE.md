@@ -38,10 +38,20 @@ These rules apply to every task in this project.
 - Leaving a world must free everything it made (maps, wandering monsters, map pictures): keep caches outside a WorldSession either bounded (one entry per monster or realm) or emptied in `leaveWorld()` in `src/main.ts`.
 - Every world is in the one game bundle, so the service worker caches all of them. If worlds are ever split into separate files, `npm run check:build` still checks that every built file is cached.
 
+## 3D worlds (Nintendo 64 style)
+
+- A world is drawn in 3D when its WorldDef has `view: '3d'` (the Island first; the others are still 2D until they're converted).
+- The game itself doesn't change in 3D: maps, walls, doors, wandering monsters, catching and saves all still work in squares (tiles). `src/world3d/` only DRAWS that world in 3D, so saves are the same in 2D and 3D.
+- The look: low-poly shapes with plain colors and flat faces, drawn small (about 360 pixels tall) and stretched up with crisp pixels, fog in the distance, round blob shadows. No picture files (textures): every color is set in code.
+- 3D monsters are built from each monster's own art data (body, eyes, top, tail, feet, arms, pattern) in `src/world3d/monsters/`, so every monster gets a 3D model automatically. Keep new art parts working in both `src/monsters/art/` and `src/world3d/monsters/`.
+- Layne must never be lost from view: when something is in front of him he shows through as a blue shadow.
+- Extra 3D controls: jump (Space or the jump button) and turn the camera (Q / E or the two arrow buttons). Walking is the same as 2D. Every button is at least 64px.
+- Leaving a world must free its 3D pieces too: `View3D.leave()` (called from `leaveWorld()` in `src/main.ts`) drops the ground chunks and the monster models.
+
 ## Tech
 
-- Vite + TypeScript. HTML5 Canvas for the world, plain DOM/CSS for menus.
-- No game framework unless the reason is explained to the user and they agree first.
+- Vite + TypeScript. HTML5 Canvas for 2D worlds, three.js for 3D worlds, plain DOM/CSS for menus.
+- No game framework unless the reason is explained to the user and they agree first. three.js is a drawing library, not a game framework: it only draws the 3D worlds, and the game's own code runs everything else. It's installed from npm at an exact version and bundled into the game (never loaded from a CDN).
 - Save data goes in localStorage under one key, `lmq-save-v1`, with a `version` field and a migration step for every version change.
 - Must work on a tablet (touch, portrait AND landscape) and on desktop (keyboard + mouse).
 - Static build that deploys to Vercel.

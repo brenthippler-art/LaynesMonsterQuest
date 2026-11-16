@@ -60,4 +60,9 @@ export interface WorldDef {
   /** Exactly 9 (checked on /gallery). */
   realms: readonly RealmDef[];
   build: (seed: number) => BuiltWorld;
+  /**
+   * '3d' = this world is drawn and played in 3D (src/world3d/). Worlds without it
+   * still use the flat pixel-art view while they wait to be converted.
+   */
+  view?: '3d';
 }

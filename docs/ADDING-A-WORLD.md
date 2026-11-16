@@ -8,6 +8,9 @@ What a world is made of: **template** (the ASCII maps) · **realms** · **tiles*
 **decorations** · **music** · **card picture** · **108 monsters** · **the checker**.
 The steps below go through them in that order. There's a prompt you can copy at the end.
 
+**3D:** new worlds start in 2D (leave `view` out of the WorldDef). Converting a world to
+the Nintendo 64 style 3D look is a separate step (see "3D worlds" in `CLAUDE.md`).
+
 ## 0. Plan it
 - [ ] Pick an **id** (lowercase, permanent: it goes into saves) and a short **name**.
 - [ ] Pick **9 realms**: an id (lowercase) and ONE short uppercase badge word each (e.g. `KITCHEN`).

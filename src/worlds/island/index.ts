@@ -18,6 +18,8 @@ export const ISLAND: WorldDef = {
   scene: ISLAND_SCENE,
   seed: WORLD_SEED,
   realms: ISLAND_REALMS,
+  view: '3d', // the first world converted to the Nintendo 64 style 3D look
+
   build(seed) {
     const { map, caves, spawn } = generateOverworld(seed);
     return {
