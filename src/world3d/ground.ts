@@ -9,13 +9,13 @@ import { inBounds, isWalkable, type TileMap } from '../world/tilemap';
  * Two kinds of map:
  *   - with `map.ground` (the island overworld): smooth hills. Each tile's corners
  *     are the average of the tiles around them, so slopes join up with no gaps.
- *   - without it (caves, and later the building worlds): flat floors, and walls
+ *   - without it (caves and the building worlds): flat floors, and walls
  *     that are tall blocks, like a toy model.
  */
 
 /** Height of a tile on maps without `ground` (and of the sea past the island's edge). */
 export function blockHeight(map: TileMap, t: number): number {
-  if (map.look) return map.look.walkable(t) ? 0 : WALL;
+  if (map.look) return map.look.height3d(t); // building worlds: from the tile's name (worlds/building/height3d.ts)
   switch (t) {
     case Tile.CaveWall: return WALL + 0.2;
     case Tile.Peak: return 3;

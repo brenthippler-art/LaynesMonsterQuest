@@ -18,6 +18,7 @@ export const HOME = makeBuildingWorld({
   id: 'home',
   name: 'Home Sweet Home',
   seed: 4242,
+  view: '3d',
   scene: HOME_SCENE,
   tiles: HOME_TILES,
   decor: { ...KITCHEN_LAUNDRY, ...LIVING_BEDROOM, ...BATH, ...GARAGE_ATTIC, ...BASEMENT_YARD },

@@ -21,6 +21,8 @@ export interface MapLook {
   color(t: number): string;
   drawTile(buf: PixelBuffer, map: TileMap, x: number, y: number, ox: number, oy: number): void;
   drawDecor(buf: PixelBuffer, d: number, x: number, y: number, ox: number, oy: number): void;
+  /** 3D only: how tall this tile stands, in tiles (0 = floor, below 0 = water). */
+  height3d(t: number): number;
 }
 
 /** A little picture on the corner map (a room's realm icon). */
@@ -43,6 +45,8 @@ export interface MapRide {
   h: number;
   /** Draw it with its top-left corner at screen spot (sx, sy). p = screen pixels per art pixel. */
   draw(ctx: CanvasRenderingContext2D, sx: number, sy: number, p: number, time: number): void;
+  /** 3D only: stand the ride up, raised this many tiles off the ground (undefined = lying flat, like a track seen from above). */
+  stand3d?: number;
 }
 
 /** One playable map: the overworld, a single cave, or the inside of a building. */

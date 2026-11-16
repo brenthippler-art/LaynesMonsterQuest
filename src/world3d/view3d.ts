@@ -1,4 +1,6 @@
 import {
+  BufferAttribute,
+  BufferGeometry,
   Color,
   GreaterDepth,
   DirectionalLight,
@@ -10,6 +12,7 @@ import {
   PlaneGeometry,
   PointLight,
   Raycaster,
+  RepeatWrapping,
   Scene,
   Vector2,
   Vector3,
@@ -21,6 +24,7 @@ import { type WorldView } from '../game/worldView';
 import { type GlassesStyle } from '../player/glasses';
 import { type Point } from '../player/player';
 import { NES } from '../render/nesPalette';
+import { PixelBuffer } from '../render/pixels';
 import { type TileMap } from '../world/tilemap';
 import { CameraRig } from './cameraRig';
 import { Chunks } from './chunks';
@@ -28,6 +32,9 @@ import { groundY, WATER_LEVEL } from './ground';
 import { LayneModel } from './layneModel';
 import { MonsterActors, wrapAngle } from './monsterActors';
 import { forgetMonsterModels } from './monsters/monsterModel';
+import { Rides3D } from './rides3d';
+import { forgetStandees } from './standees';
+import { crispTexture } from './textured';
 import { SHAPES } from './shapes';
 import { HORIZON, Sky } from './sky';
 
@@ -55,6 +62,8 @@ const JUMP_SPEED = 7.5;
 const TURN_SPEED = 12;
 
 const CAVE_DARK = new Color('#140c04');
+/** Building maps closed in by walls (an attic, a basement, a freezer): the dark around the dollhouse. */
+const INDOOR_DARK = new Color('#20180c');
 /** Layne lives on his own layer, so he can be drawn separately (see above). */
 const LAYNE_LAYER = 1;
 
@@ -76,6 +85,9 @@ export class View3D implements WorldView {
   private sun = new DirectionalLight('#ffffff', 2.2);
   private fade: HTMLDivElement;
   private raycaster = new Raycaster();
+  private rides: Rides3D;
+  /** Building worlds: the ground past the map's edges (grass, a parking lot...), with the outside tile's picture repeated. */
+  private outside = new Mesh(new BufferGeometry(), new MeshLambertMaterial());
   private ghost = new MeshBasicMaterial({
     color: NES.blue,
     transparent: true,
@@ -123,7 +135,8 @@ export class View3D implements WorldView {
     // The sea: a see-through blue sheet at water level, and a darker sea floor under it.
     this.water = new Mesh(new PlaneGeometry(1, 1).rotateX(-Math.PI / 2), new MeshLambertMaterial({ color: NES.sky, transparent: true, opacity: 0.8 }));
     this.seabed = new Mesh(new PlaneGeometry(1, 1).rotateX(-Math.PI / 2), new MeshLambertMaterial({ color: NES.blue }));
-    this.scene.add(this.water, this.seabed);
+    this.scene.add(this.water, this.seabed, this.outside);
+    this.rides = new Rides3D(this.scene);
 
     // Tap-to-walk: a spinning yellow diamond over the spot.
     this.marker = new Mesh(SHAPES.diamond(), new MeshBasicMaterial({ color: NES.gold }));
@@ -144,7 +157,10 @@ export class View3D implements WorldView {
   leave(): void {
     this.chunks.clear();
     this.actors.clear();
+    this.rides.clear();
+    this.setOutside(null);
     forgetMonsterModels();
+    forgetStandees();
     this.map = null;
     // The next world starts fresh: camera looking north, Layne facing the camera, feet on the ground.
     this.rig.resetTurn();
@@ -231,7 +247,7 @@ export class View3D implements WorldView {
     this.layneShadow.scale.setScalar(1 / (1 + this.air));
     this.lantern.position.set(p.x, gy + 1.6, p.y);
 
-    this.chunks.update(map, p.x, p.y, this.buildAll);
+    this.chunks.update(map, p.x, p.y, this.rig.facing, this.buildAll);
     this.buildAll = false;
     this.actors.update(session.wild.list, map, p.x, p.y, dt);
 
@@ -242,6 +258,7 @@ export class View3D implements WorldView {
       this.marker.rotation.y = time * 3;
     }
 
+    this.rides.update(time, this.rig.yaw, p.x, p.y);
     this.water.position.y = WATER_LEVEL + Math.sin(time * 1.2) * 0.03; // the sea gently rises and falls
     this.rig.update(dt, this.groundFn);
     const cam = this.rig.camera.position;
@@ -273,28 +290,56 @@ export class View3D implements WorldView {
 
   private groundFn = (x: number, z: number): number => (this.map ? Math.max(groundY(this.map, x, z), WATER_LEVEL) : 0);
 
-  /** Arriving on a map: the island outside (sky, sea, sunshine) or a cave (dark, with a lantern). */
+  /**
+   * Arriving on a map. Three kinds:
+   *   the island outside   sky, sea and sunshine
+   *   a cave               dark, with a lantern around Layne
+   *   a building map       sunshine and sky like a dollhouse with no roof, and the outside tile
+   *                        (grass, a parking lot) stretching away. Maps closed in by walls
+   *                        (an attic, a basement) have darkness around them instead of sky.
+   */
   private enterMap(map: TileMap): void {
     this.chunks.clear();
     this.actors.clear();
     this.map = map;
     this.buildAll = true;
-    const outdoors = map.kind === 'overworld';
-    const bg = outdoors ? HORIZON : CAVE_DARK;
+    this.rides.enter(map);
+    const enclosed = !!map.look && map.look.height3d(map.outside) >= 1;
+    const outdoors = map.kind === 'overworld' || (!!map.look && !enclosed);
+    const bg = outdoors ? HORIZON : map.look ? INDOOR_DARK : CAVE_DARK;
     this.scene.background = bg;
-    this.scene.fog = outdoors ? new Fog(bg, 22, 52) : new Fog(bg, 6, 20);
+    this.scene.fog = outdoors ? new Fog(bg, 22, 52) : map.look ? new Fog(bg, 14, 34) : new Fog(bg, 6, 20);
     this.sky.group.visible = outdoors;
     this.water.visible = this.seabed.visible = outdoors && !map.look;
+    this.setOutside(outdoors && map.look ? map : null);
     // The sea reaches far past the island's edge.
     for (const [mesh, y] of [[this.water, WATER_LEVEL], [this.seabed, -1.6]] as const) {
       mesh.scale.set(map.width + 300, 1, map.height + 300);
       mesh.position.set(map.width / 2, y, map.height / 2);
     }
-    this.hemi.intensity = outdoors ? 2.2 : 0.9;
-    this.sun.intensity = outdoors ? 2.2 : 0.3;
-    this.lantern.intensity = outdoors ? 0 : 6;
+    const cave = !outdoors && !map.look;
+    this.hemi.intensity = cave ? 0.9 : 2.2;
+    this.sun.intensity = cave ? 0.3 : 2.2;
+    this.lantern.intensity = cave ? 6 : 0;
     this.sun.position.set(map.width / 2 - 40, 80, map.height / 2 + 30);
     this.sun.target.position.set(map.width / 2, 0, map.height / 2);
+  }
+
+  /** The ground past a building map's edges: its outside tile's picture, repeated (null = none). */
+  private setOutside(map: TileMap | null): void {
+    const material = this.outside.material as MeshLambertMaterial;
+    material.map?.dispose();
+    material.map = null;
+    this.outside.geometry.dispose();
+    this.outside.visible = !!map;
+    if (!map?.look) return;
+    const buf = new PixelBuffer(16, 16);
+    map.look.drawTile(buf, map, -1, -1, 0, 0); // a square off the map = the outside tile
+    const texture = crispTexture(buf);
+    texture.wrapS = texture.wrapT = RepeatWrapping; // the picture repeats once per tile
+    material.map = texture;
+    material.needsUpdate = true;
+    this.outside.geometry = outsideFrame(map.width, map.height, 120);
   }
 
   /** Walk along a ray until it goes under the ground: that's the spot that was tapped. */
@@ -318,4 +363,30 @@ export class View3D implements WorldView {
     this.renderer.setSize(Math.round((w * dpr) / scale), Math.round((h * dpr) / scale), false);
     this.rig.resize(w, h);
   }
+}
+
+/**
+ * A big flat frame around the map (a hole in the middle where the map is), 120
+ * tiles wide. Its picture spots are just its tile positions, so the repeated
+ * picture lines up with the map's squares.
+ */
+function outsideFrame(w: number, h: number, m: number): BufferGeometry {
+  const pos: number[] = [];
+  const uv: number[] = [];
+  const rect = (x0: number, z0: number, x1: number, z1: number) => {
+    // Two triangles, counter-clockwise seen from above.
+    for (const [x, z] of [[x0, z0], [x0, z1], [x1, z1], [x0, z0], [x1, z1], [x1, z0]]) {
+      pos.push(x, 0, z);
+      uv.push(x, -z);
+    }
+  };
+  rect(-m, -m, w + m, 0); // north
+  rect(-m, h, w + m, h + m); // south
+  rect(-m, 0, 0, h); // west
+  rect(w, 0, w + m, h); // east
+  const g = new BufferGeometry();
+  g.setAttribute('position', new BufferAttribute(new Float32Array(pos), 3));
+  g.setAttribute('uv', new BufferAttribute(new Float32Array(uv), 2));
+  g.computeVertexNormals();
+  return g;
 }

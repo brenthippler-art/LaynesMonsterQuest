@@ -1,19 +1,24 @@
-import { type BufferGeometry, type Material, Mesh, type Object3D, Vector3 } from 'three';
+import { type BufferGeometry, type Material, Mesh, MeshLambertMaterial, type Object3D, Vector3 } from 'three';
 import { hash2 } from '../core/rng';
 import { inBounds, type TileMap } from '../world/tilemap';
-import { blockHeight, cornerAt, tileColor, tileGlows, tileTop } from './ground';
-import { MeshBuilder, rgb, shade } from './meshBuilder';
+import { blockHeight, cornerAt, groundY, tileColor, tileGlows, tileTop } from './ground';
+import { MeshBuilder, place, rgb, shade } from './meshBuilder';
 import { addProps } from './props';
+import { standeeAt } from './standees';
+import { chunkPicture, texturedTile } from './textured';
 
 /**
  * The world is cut into square CHUNKS of 16x16 tiles. Only the chunks near Layne
  * are built (and the fog hides the rest), and chunks far behind him are thrown
  * away again, so even the 200x200 island stays light on a tablet.
  *
- * Each chunk has up to three meshes:
- *   ground  the tiles (hills, floors, walls)
- *   props   trees, rocks, flowers... (lit, like the ground)
- *   glow    lava, crystals, cave lights (always bright, even in a dark cave)
+ * Each chunk has up to four meshes:
+ *   ground    the tiles (hills, floors, walls). Building worlds: with the tiles' own
+ *             pixel-art pictures on them (textured.ts)
+ *   props     trees, rocks, flowers... (lit, like the ground)
+ *   glow      lava, crystals, cave lights (always bright, even in a dark cave)
+ *   standees  building-world furniture made from pixel art (standees.ts). They face
+ *             the camera, so they're rebuilt (a few per frame) when the camera turns.
  */
 export const CHUNK = 16;
 /** Chunks this far from Layne's chunk are built (2 = a 5x5 block of chunks around him). */
@@ -22,6 +27,8 @@ const NEAR = 2;
 const KEEP = NEAR + 1;
 /** Building takes a moment, so while walking only this many new chunks are built per frame. */
 const BUILDS_PER_FRAME = 2;
+/** Turning the camera re-faces this many chunks' furniture per frame. */
+const TURNS_PER_FRAME = 4;
 
 /** Materials are made once in view3d.ts. */
 export interface ChunkMaterials {
@@ -30,7 +37,14 @@ export interface ChunkMaterials {
 }
 
 interface Chunk {
+  kx: number;
+  ky: number;
   meshes: Mesh[];
+  /** Building worlds: the chunk's own material with its picture of the tiles (freed with the chunk). */
+  material: MeshLambertMaterial | null;
+  standees: Mesh | null;
+  /** Which way the standees face (the camera's turn when they were built). */
+  facing: number;
 }
 
 const a = new Vector3();
@@ -51,7 +65,7 @@ export class Chunks {
    * Make sure the chunks around (x, y) exist. `all` = build every missing one now
    * (when arriving somewhere), otherwise just a couple per frame.
    */
-  update(map: TileMap, x: number, y: number, all = false): void {
+  update(map: TileMap, x: number, y: number, facing: number, all = false): void {
     if (map !== this.map) {
       this.clear();
       this.map = map;
@@ -73,7 +87,13 @@ export class Chunks {
       }
     }
     wanted.sort((p, q) => p[2] - q[2]);
-    for (const [kx, ky] of all ? wanted : wanted.slice(0, BUILDS_PER_FRAME)) this.build(map, kx, ky);
+    for (const [kx, ky] of all ? wanted : wanted.slice(0, BUILDS_PER_FRAME)) this.build(map, kx, ky, facing);
+
+    // The camera turned? Turn the furniture to face it again, nearest chunks first.
+    if (!map.look) return;
+    const turned = [...this.built.values()].filter((ch) => ch.facing !== facing);
+    turned.sort((p, q) => Math.hypot(p.kx - cx, p.ky - cy) - Math.hypot(q.kx - cx, q.ky - cy));
+    for (const chunk of all ? turned : turned.slice(0, TURNS_PER_FRAME)) this.buildStandees(map, chunk, facing);
   }
 
   /** Throw everything away (leaving the map, or the world). */
@@ -83,14 +103,18 @@ export class Chunks {
   }
 
   private drop(key: string, chunk: Chunk): void {
-    for (const m of chunk.meshes) {
+    for (const m of [...chunk.meshes, ...(chunk.standees ? [chunk.standees] : [])]) {
       this.parent.remove(m);
       m.geometry.dispose(); // free the graphics memory too
+    }
+    if (chunk.material) {
+      chunk.material.map?.dispose();
+      chunk.material.dispose();
     }
     this.built.delete(key);
   }
 
-  private build(map: TileMap, kx: number, ky: number): void {
+  private build(map: TileMap, kx: number, ky: number, facing: number): void {
     const ground = new MeshBuilder();
     const props = new MeshBuilder();
     const glow = new MeshBuilder();
@@ -99,23 +123,57 @@ export class Chunks {
     for (let y = ky * CHUNK; y < y1; y++) {
       for (let x = kx * CHUNK; x < x1; x++) {
         if (map.ground) smoothTile(map, x, y, ground, glow);
+        else if (map.look) texturedTile(map, x, y, kx, ky, ground);
         else blockTile(map, x, y, ground, glow);
         addProps(map, x, y, props, glow);
       }
     }
+    // Building worlds: the ground wears a picture of this chunk's tiles, so it needs its own material.
+    const material = map.look ? new MeshLambertMaterial({ map: chunkPicture(map, kx, ky), vertexColors: true }) : null;
     const meshes: Mesh[] = [];
     const add = (geo: BufferGeometry | null, mat: Material, name: string) => {
       if (!geo) return;
-      const mesh = new Mesh(geo, mat);
-      mesh.name = name;
-      mesh.matrixAutoUpdate = false; // chunks never move
-      this.parent.add(mesh);
-      meshes.push(mesh);
+      meshes.push(this.addMesh(geo, mat, name));
     };
-    add(ground.build(), this.materials.lit, 'ground');
+    add(ground.build(), material ?? this.materials.lit, 'ground');
     add(props.build(), this.materials.lit, 'props');
     add(glow.build(), this.materials.glow, 'glow');
-    this.built.set(`${kx},${ky}`, { meshes });
+    const chunk: Chunk = { kx, ky, meshes, material, standees: null, facing };
+    if (map.look) this.buildStandees(map, chunk, facing);
+    this.built.set(`${kx},${ky}`, chunk);
+  }
+
+  /** (Re)build a chunk's furniture, facing the camera. */
+  private buildStandees(map: TileMap, chunk: Chunk, facing: number): void {
+    chunk.facing = facing;
+    if (chunk.standees) {
+      this.parent.remove(chunk.standees);
+      chunk.standees.geometry.dispose();
+      chunk.standees = null;
+    }
+    const out = new MeshBuilder();
+    const x1 = Math.min(map.width, (chunk.kx + 1) * CHUNK);
+    const y1 = Math.min(map.height, (chunk.ky + 1) * CHUNK);
+    for (let y = chunk.ky * CHUNK; y < y1; y++) {
+      for (let x = chunk.kx * CHUNK; x < x1; x++) {
+        const s = standeeAt(map, y * map.width + x);
+        if (!s) continue;
+        const gy = groundY(map, x + 0.5, y + 0.5);
+        // Flat ones lie on the floor with the top of the picture to the north, like the 2D map.
+        if (s.flat) out.addPainted(s.geometry, place(x + 0.5, gy + 0.01, y + 1, 1, 1, 1, -Math.PI / 2));
+        else out.addPainted(s.geometry, place(x + 0.5, gy, y + 0.5, 1, 1, 1, 0, facing));
+      }
+    }
+    const geo = out.build();
+    if (geo) chunk.standees = this.addMesh(geo, this.materials.lit, 'standees');
+  }
+
+  private addMesh(geo: BufferGeometry, mat: Material, name: string): Mesh {
+    const mesh = new Mesh(geo, mat);
+    mesh.name = name;
+    mesh.matrixAutoUpdate = false; // chunks never move
+    this.parent.add(mesh);
+    return mesh;
   }
 }
 

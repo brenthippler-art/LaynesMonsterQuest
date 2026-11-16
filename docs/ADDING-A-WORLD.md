@@ -8,8 +8,10 @@ What a world is made of: **template** (the ASCII maps) · **realms** · **tiles*
 **decorations** · **music** · **card picture** · **108 monsters** · **the checker**.
 The steps below go through them in that order. There's a prompt you can copy at the end.
 
-**3D:** new worlds start in 2D (leave `view` out of the WorldDef). Converting a world to
-the Nintendo 64 style 3D look is a separate step (see "3D worlds" in `CLAUDE.md`).
+**3D:** a building world (one made with `src/worlds/building/`) can be 3D straight away:
+add `view: '3d',` to its WorldDef, next to `seed`. Then walk around it and check that
+walls look the right height; if one doesn't, give that tile kind a `height3d`. Rides lie
+flat unless they set `stand3d`. See "3D worlds" in `CLAUDE.md`.
 
 ## 0. Plan it
 - [ ] Pick an **id** (lowercase, permanent: it goes into saves) and a short **name**.

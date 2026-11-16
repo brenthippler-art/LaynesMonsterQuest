@@ -22,9 +22,14 @@ export type Bend = (p: Vector3) => void;
 const corner = [new Vector3(), new Vector3(), new Vector3()];
 const middle = new Vector3();
 
+/** A spot on a picture (texture): u across, v up, both 0..1. */
+export type UV = [number, number];
+
 export class MeshBuilder {
   private pos: number[] = [];
   private col: number[] = [];
+  /** Only used by textured meshes (building-world floors and walls): where each corner is on the picture. */
+  private uv: number[] = [];
 
   get isEmpty(): boolean {
     return this.pos.length === 0;
@@ -51,6 +56,29 @@ export class MeshBuilder {
     return this;
   }
 
+  /**
+   * Copy in a shape that already has its own colors (a "color" attribute), like a
+   * decoration made from pixel art (see standees.ts).
+   */
+  addPainted(shape: BufferGeometry, m: Matrix4): this {
+    const src = shape.getAttribute('position');
+    const colorsOf = shape.getAttribute('color');
+    for (let i = 0; i < src.count; i++) {
+      corner[0].fromBufferAttribute(src, i).applyMatrix4(m);
+      this.pos.push(corner[0].x, corner[0].y, corner[0].z);
+      this.col.push(colorsOf.getX(i), colorsOf.getY(i), colorsOf.getZ(i));
+    }
+    return this;
+  }
+
+  /** A quad with a picture on it: like quad(), plus where each corner is on the picture. */
+  quadUV(a: Vector3, b: Vector3, c: Vector3, d: Vector3, color: Color, ua: UV, ub: UV, uc: UV, ud: UV): this {
+    this.quad(a, b, c, d, color);
+    // quad() makes triangles (a, b, c) and (a, c, d): the picture spots go in the same order.
+    this.uv.push(...ua, ...ub, ...uc, ...ua, ...uc, ...ud);
+    return this;
+  }
+
   /** One triangle, corners given counter-clockwise when seen from the side that should face out. */
   tri(a: Vector3, b: Vector3, c: Vector3, color: Color): this {
     this.pos.push(a.x, a.y, a.z, b.x, b.y, b.z, c.x, c.y, c.z);
@@ -69,6 +97,7 @@ export class MeshBuilder {
     const g = new BufferGeometry();
     g.setAttribute('position', new BufferAttribute(new Float32Array(this.pos), 3));
     g.setAttribute('color', new BufferAttribute(new Float32Array(this.col), 3));
+    if (this.uv.length) g.setAttribute('uv', new BufferAttribute(new Float32Array(this.uv), 2));
     g.computeVertexNormals(); // non-indexed, so every face keeps its own normal = flat shading
     g.computeBoundingSphere();
     return g;

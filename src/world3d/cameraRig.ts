@@ -32,6 +32,11 @@ export class CameraRig {
     this.camera.updateProjectionMatrix();
   }
 
+  /** Which way the camera is turning to (a whole number of 45° steps, in radians). Furniture faces this way. */
+  get facing(): number {
+    return this.wantYaw;
+  }
+
   /** Turn the camera: -1 = to the left, 1 = to the right. */
   turn(steps: number): void {
     this.wantYaw += steps * STEP;

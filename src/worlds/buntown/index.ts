@@ -20,6 +20,7 @@ export const BUNTOWN = makeBuildingWorld({
   id: 'buntown',
   name: 'Bun Town Burgers',
   seed: 5150,
+  view: '3d',
   scene: BUNTOWN_SCENE,
   tiles: BUNTOWN_TILES,
   decor: { ...COUNTER_GRILL, ...FRIES_SODA, ...FREEZER_DINING, ...PLAY_DRIVE, ...ALLEY },

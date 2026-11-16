@@ -61,6 +61,7 @@ const CABIN_COLORS = ['r', 'u', 'Y', 'P'];
 
 const wheel: RidePlan = {
   map: 'main', x: 5, y: 4, w: 7, h: 7,
+  stand3d: 0, // 3D: stands up, on the ground
   sprites: {
     stand: wheelStand(),
     ...Object.fromEntries(Array.from({ length: WHEEL_FRAMES }, (_, i) => [`wheel${i}`, wheelFrame(i)])),
@@ -140,6 +141,7 @@ const pole = (h: number) => Array.from({ length: h }, () => 'Y');
 
 const carousel: RidePlan = {
   map: 'main', x: 9, y: 51, w: 9, h: 6,
+  stand3d: 0,
   sprites: {
     canopy: canopy(),
     deck: carouselDeck(),
@@ -177,6 +179,7 @@ const SIGN_SYMMETRY = TAU / 3; // 3 colors going round twice: it looks the same 
 
 const sign: RidePlan = {
   map: 'main', x: 44, y: 69, w: 2, h: 2,
+  stand3d: 1, // 3D: up on a pole over the gate
   sprites: Object.fromEntries(Array.from({ length: SIGN_FRAMES }, (_, i) => [`spin${i}`, pinwheelRows(30, (i / SIGN_FRAMES) * SIGN_SYMMETRY, 'rYb', 'w')])),
   pose(time) {
     const i = Math.floor((wrap(time * SIGN_SPEED, SIGN_SYMMETRY) / SIGN_SYMMETRY) * SIGN_FRAMES) % SIGN_FRAMES;

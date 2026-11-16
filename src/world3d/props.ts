@@ -32,7 +32,8 @@ export function addProps(map: TileMap, x: number, y: number, props: MeshBuilder,
   const px = x + 0.5 + (r1 - 0.5) * 0.3;
   const pz = y + 0.5 + (r2 - 0.5) * 0.3;
   const spot: Spot = { x: px, y: groundY(map, px, pz), z: pz, r1, r2 };
+  // Building worlds: stairs and ladders are painted on their tiles, and furniture is made in standees.ts.
+  if (map.look) return;
   if (door) addDoorway(map, x, y, props, glow);
-  // Building worlds bring their own furniture: they'll get a 3D version when they're converted.
-  else if (!map.look) addIslandDecor(decor, spot, props, glow);
+  else addIslandDecor(decor, spot, props, glow);
 }

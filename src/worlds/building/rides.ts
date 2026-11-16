@@ -43,6 +43,7 @@ function toMapRide(ride: RidePlan): MapRide {
     y: ride.y,
     w: ride.w,
     h: ride.h,
+    stand3d: ride.stand3d,
     draw(ctx, sx, sy, p, time) {
       for (const part of ride.pose(time)) {
         const pic = picture(part.sprite);

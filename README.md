@@ -2,8 +2,8 @@
 
 A gentle exploring game made for a 6-year-old. Layne picks a world, walks around
 it, and finds original monsters that live in the places that suit them. The Island
-is now a Nintendo 64 style 3D world (jump, turn the camera, 3D monsters); the
-other worlds are still NES-style pixel art for now. Every world has 9 realms and 108 monsters (864 so far).
+and the six building worlds are now Nintendo 64 style 3D (jump, turn the camera,
+3D monsters); The Woods is still NES-style pixel art for now. Every world has 9 realms and 108 monsters (864 so far).
 
 - **No losing, ever.** A catch that doesn't work out just means the monster hops off to play; you can find it again.
 - **No reading needed.** Icons, pictures and a wordless how-to-play.
@@ -276,6 +276,7 @@ There's no cloud sync, on purpose.
 | Monster body parts (ears, tails, eyes…) | `src/monsters/art/` (one file per group: `bodies.ts`, `creatureBodies.ts`, `objectBodies.ts`, `tops.ts`, `creatureTops.ts`, `hats.ts`, `limbs.ts`, `creatureLimbs.ts`, `wings.ts`, `creatureTails.ts`, `face.ts`, `patterns.ts`, `heads.ts`) |
 | Layne's pixel art | `src/render/layneSprites.ts` |
 | Everything 3D (camera, ground, trees, 3D Layne, 3D monsters, jump and turn buttons) | `src/world3d/` (start with `view3d.ts`) |
+| Building worlds in 3D (painted floors and walls, decoration cut-outs, rides) | `src/world3d/textured.ts`, `standees.ts`, `rides3d.ts`, and `src/worlds/building/height3d.ts` |
 | 3D Layne, 3D monsters | `src/world3d/layneModel.ts`, `src/world3d/monsters/` |
 | Trees, cacti and other decorations | `src/render/decorSprites.ts` |
 | The music (written as text!) | `src/audio/tracks.ts` |

@@ -40,9 +40,12 @@ These rules apply to every task in this project.
 
 ## 3D worlds (Nintendo 64 style)
 
-- A world is drawn in 3D when its WorldDef has `view: '3d'` (the Island first; the others are still 2D until they're converted).
+- A world is drawn in 3D when its WorldDef has `view: '3d'`. The Island and the six building worlds are 3D; The Woods is still 2D until it's converted.
 - The game itself doesn't change in 3D: maps, walls, doors, wandering monsters, catching and saves all still work in squares (tiles). `src/world3d/` only DRAWS that world in 3D, so saves are the same in 2D and 3D.
-- The look: low-poly shapes with plain colors and flat faces, drawn small (about 360 pixels tall) and stretched up with crisp pixels, fog in the distance, round blob shadows. No picture files (textures): every color is set in code.
+- The look: low-poly shapes with plain colors and flat faces, drawn small (about 360 pixels tall) and stretched up with crisp pixels, fog in the distance, round blob shadows. No picture files: every color and picture is made in code.
+- Building worlds (`src/worlds/building/`) reuse their own 16x16 pixel-art squares in 3D: floors and walls are painted with the same tile pictures (`src/world3d/textured.ts`), and decorations become thick little pixel cut-outs that turn to face the camera (`src/world3d/standees.ts`). Big decorations Layne can walk on (rugs, mats) lie flat on the floor.
+- How tall a building square is in 3D comes from its tile name (`src/worlds/building/height3d.ts`: walls 1.3, fences and counters 0.5, shelves and hedges 0.9, water sinks a little). A tile kind can set `height3d` itself when the name rule gets it wrong.
+- Rides still use their `pose(time)` pictures. In 3D they lie flat on the ground, unless the ride sets `stand3d` (how high it stands, in squares), and then it stands up and faces the camera (the Ferris wheel, the carousel, the fireworks).
 - 3D monsters are built from each monster's own art data (body, eyes, top, tail, feet, arms, pattern) in `src/world3d/monsters/`, so every monster gets a 3D model automatically. Keep new art parts working in both `src/monsters/art/` and `src/world3d/monsters/`.
 - Layne must never be lost from view: when something is in front of him he shows through as a blue shadow.
 - Extra 3D controls: jump (Space or the jump button) and turn the camera (Q / E or the two arrow buttons). Walking is the same as 2D. Every button is at least 64px.

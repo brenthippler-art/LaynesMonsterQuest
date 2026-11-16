@@ -29,6 +29,11 @@ export interface TileKind {
   doorway?: boolean;
   /** Paint the 16x16 tile. */
   draw(c: TileCtx): void;
+  /**
+   * 3D worlds: how tall it stands, in tiles (0 = floor, below 0 = water, 1.3 = a wall).
+   * Usually left out: it's worked out from the tile's name (see building/height3d.ts).
+   */
+  height3d?: number;
 }
 
 export interface DecorKind {
@@ -120,12 +125,20 @@ export interface RidePlan {
   sprites: Record<string, readonly string[]>;
   /** Where each picture goes `time` seconds after the game started, back to front. */
   pose(time: number): RidePart[];
+  /**
+   * 3D worlds: rides drawn from the side (a Ferris wheel, fireworks) stand up, raised
+   * this many tiles off the ground. Leave it out for rides drawn from above (a track,
+   * bumper cars): they lie flat on the ground.
+   */
+  stand3d?: number;
 }
 
 export interface BuildingPlan {
   id: WorldId;
   name: string;
   seed: number;
+  /** Drawn in Nintendo 64 style 3D (see "3D worlds" in CLAUDE.md). Leave it out for 2D. */
+  view?: '3d';
   scene: readonly string[];
   tiles: Record<string, TileKind>;
   decor: Record<string, DecorKind>;

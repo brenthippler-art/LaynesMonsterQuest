@@ -20,6 +20,7 @@ export const SUNNYSIDE = makeBuildingWorld({
   id: 'sunnyside',
   name: SCHOOL_NAME,
   seed: 2727,
+  view: '3d',
   scene: SUNNYSIDE_SCENE,
   tiles: SUNNYSIDE_TILES,
   decor: { ...CLASS_LIBRARY, ...LUNCH_GYM, ...RECESS_BUS, ...ART_MUSIC, ...SCIENCE_HALL },
