@@ -28,8 +28,9 @@ import { PixelBuffer } from '../render/pixels';
 import { type TileMap } from '../world/tilemap';
 import { CameraRig } from './cameraRig';
 import { Chunks } from './chunks';
-import { groundY, WATER_LEVEL } from './ground';
+import { EDGE, forestEdge, groundY, tileColor, WATER_LEVEL } from './ground';
 import { LayneModel } from './layneModel';
+import { rgb, shade } from './meshBuilder';
 import { MonsterActors, wrapAngle } from './monsterActors';
 import { forgetMonsterModels } from './monsters/monsterModel';
 import { Rides3D } from './rides3d';
@@ -86,7 +87,7 @@ export class View3D implements WorldView {
   private fade: HTMLDivElement;
   private raycaster = new Raycaster();
   private rides: Rides3D;
-  /** Building worlds: the ground past the map's edges (grass, a parking lot...), with the outside tile's picture repeated. */
+  /** The ground past the map's edges: building worlds' outside tile picture repeated (grass, a parking lot...), or a forest's dark floor. */
   private outside = new Mesh(new BufferGeometry(), new MeshLambertMaterial());
   private ghost = new MeshBasicMaterial({
     color: NES.blue,
@@ -293,6 +294,7 @@ export class View3D implements WorldView {
   /**
    * Arriving on a map. Three kinds:
    *   the island outside   sky, sea and sunshine
+   *   The Woods outside    the same sky, with a ring of trees and dark forest floor past its edges
    *   a cave               dark, with a lantern around Layne
    *   a building map       sunshine and sky like a dollhouse with no roof, and the outside tile
    *                        (grass, a parking lot) stretching away. Maps closed in by walls
@@ -311,7 +313,7 @@ export class View3D implements WorldView {
     this.scene.fog = outdoors ? new Fog(bg, 22, 52) : map.look ? new Fog(bg, 14, 34) : new Fog(bg, 6, 20);
     this.sky.group.visible = outdoors;
     this.water.visible = this.seabed.visible = outdoors && !map.look;
-    this.setOutside(outdoors && map.look ? map : null);
+    this.setOutside(outdoors && (map.look || forestEdge(map)) ? map : null);
     // The sea reaches far past the island's edge.
     for (const [mesh, y] of [[this.water, WATER_LEVEL], [this.seabed, -1.6]] as const) {
       mesh.scale.set(map.width + 300, 1, map.height + 300);
@@ -325,14 +327,22 @@ export class View3D implements WorldView {
     this.sun.target.position.set(map.width / 2, 0, map.height / 2);
   }
 
-  /** The ground past a building map's edges: its outside tile's picture, repeated (null = none). */
+  /** The ground past a building map's or a forest's edges (null = none). */
   private setOutside(map: TileMap | null): void {
     const material = this.outside.material as MeshLambertMaterial;
     material.map?.dispose();
     material.map = null;
     this.outside.geometry.dispose();
     this.outside.visible = !!map;
-    if (!map?.look) return;
+    if (!map) return;
+    if (!map.look) {
+      // A forest: plain dark forest floor, starting behind the ring of trees, under the fog.
+      material.color.set(shade(rgb(tileColor(map, map.outside)), -0.25));
+      material.needsUpdate = true;
+      this.outside.geometry = outsideFrame(map.width, map.height, 120, EDGE - 1);
+      return;
+    }
+    material.color.set('#ffffff');
     const buf = new PixelBuffer(16, 16);
     map.look.drawTile(buf, map, -1, -1, 0, 0); // a square off the map = the outside tile
     const texture = crispTexture(buf);
@@ -370,7 +380,7 @@ export class View3D implements WorldView {
  * tiles wide. Its picture spots are just its tile positions, so the repeated
  * picture lines up with the map's squares.
  */
-function outsideFrame(w: number, h: number, m: number): BufferGeometry {
+function outsideFrame(w: number, h: number, m: number, gap = 0): BufferGeometry {
   const pos: number[] = [];
   const uv: number[] = [];
   const rect = (x0: number, z0: number, x1: number, z1: number) => {
@@ -380,13 +390,15 @@ function outsideFrame(w: number, h: number, m: number): BufferGeometry {
       uv.push(x, -z);
     }
   };
-  rect(-m, -m, w + m, 0); // north
-  rect(-m, h, w + m, h + m); // south
-  rect(-m, 0, 0, h); // west
-  rect(w, 0, w + m, h); // east
-  const g = new BufferGeometry();
-  g.setAttribute('position', new BufferAttribute(new Float32Array(pos), 3));
-  g.setAttribute('uv', new BufferAttribute(new Float32Array(uv), 2));
-  g.computeVertexNormals();
-  return g;
+  // `gap` leaves that many squares free all around the map (for a forest's ring of trees).
+  const g = gap;
+  rect(-m, -m, w + m, -g); // north
+  rect(-m, h + g, w + m, h + m); // south
+  rect(-m, -g, -g, h + g); // west
+  rect(w + g, -g, w + m, h + g); // east
+  const geo = new BufferGeometry();
+  geo.setAttribute('position', new BufferAttribute(new Float32Array(pos), 3));
+  geo.setAttribute('uv', new BufferAttribute(new Float32Array(uv), 2));
+  geo.computeVertexNormals();
+  return geo;
 }

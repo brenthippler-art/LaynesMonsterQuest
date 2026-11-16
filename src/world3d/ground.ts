@@ -30,6 +30,16 @@ export const WALL = 1.6;
 /** The water's surface. Dry land is always a bit higher (see world/heights.ts). */
 export const WATER_LEVEL = -0.1;
 
+/**
+ * A forest map (The Woods): an overworld whose outside is land, not sea. In 3D the forest
+ * carries on past its edges as a thick ring of trees (chunks.ts), so it never ends in nothing.
+ */
+export function forestEdge(map: TileMap): boolean {
+  return map.kind === 'overworld' && !map.look && map.outside !== Tile.DeepWater && map.outside !== Tile.ShallowWater;
+}
+/** How many squares deep that ring of trees is. */
+export const EDGE = 5;
+
 /** Tiles that shine by themselves (lava): drawn in the glowing mesh, bright even in the dark. */
 export function tileGlows(map: TileMap, t: number): boolean {
   return !map.look && t === Tile.Lava;

@@ -1,9 +1,11 @@
 import { type BufferGeometry, type Material, Mesh, MeshLambertMaterial, type Object3D, Vector3 } from 'three';
 import { hash2 } from '../core/rng';
 import { inBounds, type TileMap } from '../world/tilemap';
-import { blockHeight, cornerAt, groundY, tileColor, tileGlows, tileTop } from './ground';
+import { Decor } from '../world/decorations';
+import { blockHeight, cornerAt, EDGE, forestEdge, groundY, tileColor, tileGlows, tileTop } from './ground';
 import { MeshBuilder, place, rgb, shade } from './meshBuilder';
 import { addProps } from './props';
+import { addIslandDecor } from './props/islandDecor';
 import { standeeAt } from './standees';
 import { chunkPicture, texturedTile } from './textured';
 
@@ -78,11 +80,13 @@ export class Chunks {
     }
     // Nearest first, so the ground under Layne is always there.
     const wanted: [number, number, number][] = [];
+    // A forest's ring of trees past the edge lives in the chunks just outside the map.
+    const pad = forestEdge(map) ? EDGE : 0;
     for (let oy = -NEAR; oy <= NEAR; oy++) {
       for (let ox = -NEAR; ox <= NEAR; ox++) {
         const kx = cx + ox;
         const ky = cy + oy;
-        if (kx < 0 || ky < 0 || kx * CHUNK >= map.width || ky * CHUNK >= map.height) continue;
+        if ((kx + 1) * CHUNK <= -pad || (ky + 1) * CHUNK <= -pad || kx * CHUNK >= map.width + pad || ky * CHUNK >= map.height + pad) continue;
         if (!this.built.has(`${kx},${ky}`)) wanted.push([kx, ky, Math.hypot(ox, oy)]);
       }
     }
@@ -118,10 +122,13 @@ export class Chunks {
     const ground = new MeshBuilder();
     const props = new MeshBuilder();
     const glow = new MeshBuilder();
-    const x1 = Math.min(map.width, (kx + 1) * CHUNK);
-    const y1 = Math.min(map.height, (ky + 1) * CHUNK);
-    for (let y = ky * CHUNK; y < y1; y++) {
-      for (let x = kx * CHUNK; x < x1; x++) {
+    const edge = forestEdge(map);
+    for (let y = ky * CHUNK; y < (ky + 1) * CHUNK; y++) {
+      for (let x = kx * CHUNK; x < (kx + 1) * CHUNK; x++) {
+        if (!inBounds(map, x, y)) {
+          if (edge) edgeTile(map, x, y, ground, props, glow);
+          continue;
+        }
         if (map.ground) smoothTile(map, x, y, ground, glow);
         else if (map.look) texturedTile(map, x, y, kx, ky, ground);
         else blockTile(map, x, y, ground, glow);
@@ -194,6 +201,29 @@ function smoothTile(map: TileMap, x: number, y: number, ground: MeshBuilder, glo
   const color = tileShade(map, x, y);
   // Same split as groundY(): triangles (a, c, d) and (a, d, b).
   target.tri(a, c, d, color).tri(a, d, b, color);
+}
+
+/**
+ * Past a forest's edge (The Woods): the forest goes on, too thick to walk into. The ground
+ * carries on flat from the edge (cornerAt keeps to the map's edge), a little darker, with a
+ * tree on every square, so the world never just stops. The creek runs on out under the trees.
+ */
+function edgeTile(map: TileMap, x: number, y: number, ground: MeshBuilder, props: MeshBuilder, glow: MeshBuilder): void {
+  const out = Math.max(-x - 1, x - map.width, -y - 1, y - map.height); // 0 = right next to the map
+  if (out >= EDGE) return;
+  a.set(x, cornerAt(map, x, y), y);
+  b.set(x + 1, cornerAt(map, x + 1, y), y);
+  c.set(x, cornerAt(map, x, y + 1), y + 1);
+  d.set(x + 1, cornerAt(map, x + 1, y + 1), y + 1);
+  const color = shade(rgb(tileColor(map, map.outside)), -0.12 + (hash2(x, y, 99) - 0.5) * 0.12);
+  ground.tri(a, c, d, color).tri(a, d, b, color);
+  const top = (a.y + b.y + c.y + d.y) / 4;
+  if (top < 0) return; // no trees standing in the creek
+  if (out > 0 && hash2(x, y, 37) < 0.2) return; // a few gaps further in, so it is not a solid wall
+  const r1 = hash2(x, y, 11);
+  const r2 = hash2(x, y, 23);
+  const decor = r1 < 0.5 ? Decor.Pine : Decor.Tree;
+  addIslandDecor(decor, { x: x + 0.5 + (r1 - 0.5) * 0.3, y: top, z: y + 0.5 + (r2 - 0.5) * 0.3, r1, r2 }, props, glow);
 }
 
 /** A block tile: a flat top, plus a wall down to any lower neighbor. */

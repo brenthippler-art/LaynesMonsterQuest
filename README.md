@@ -1,9 +1,9 @@
 # Layne's Monster Quest
 
 A gentle exploring game made for a 6-year-old. Layne picks a world, walks around
-it, and finds original monsters that live in the places that suit them. The Island
-and the six building worlds are now Nintendo 64 style 3D (jump, turn the camera,
-3D monsters); The Woods is still NES-style pixel art for now. Every world has 9 realms and 108 monsters (864 so far).
+it, and finds original monsters that live in the places that suit them. Every world
+is now Nintendo 64 style 3D (jump, turn the camera, 3D monsters); the title screen
+and menus keep the NES-style pixel art. Every world has 9 realms and 108 monsters (864 so far).
 
 - **No losing, ever.** A catch that doesn't work out just means the monster hops off to play; you can find it again.
 - **No reading needed.** Icons, pictures and a wordless how-to-play.

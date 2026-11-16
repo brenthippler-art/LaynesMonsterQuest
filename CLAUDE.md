@@ -40,7 +40,9 @@ These rules apply to every task in this project.
 
 ## 3D worlds (Nintendo 64 style)
 
-- A world is drawn in 3D when its WorldDef has `view: '3d'`. The Island and the six building worlds are 3D; The Woods is still 2D until it's converted.
+- A world is drawn in 3D when its WorldDef has `view: '3d'`. Every world is 3D now; the 2D drawing code is kept (the title screen uses it, and a new world can start in 2D).
+- Hills: a map can carry `ground` (a height per square, 3D only). The Island's come from its elevation (`src/world/heights.ts`), The Woods' are gentle rolling hills with a valley along the creek (`src/worlds/woods/heights.ts`). Maps without `ground` are flat floors with block walls.
+- A forest (an overworld whose outside is land, like The Woods) carries on past its edges in 3D as a thick ring of trees and dark forest floor (`forestEdge` in `src/world3d/ground.ts`), so the world never just stops. Layne still can't walk past the edge.
 - The game itself doesn't change in 3D: maps, walls, doors, wandering monsters, catching and saves all still work in squares (tiles). `src/world3d/` only DRAWS that world in 3D, so saves are the same in 2D and 3D.
 - The look: low-poly shapes with plain colors and flat faces, drawn small (about 360 pixels tall) and stretched up with crisp pixels, fog in the distance, round blob shadows. No picture files: every color and picture is made in code.
 - Building worlds (`src/worlds/building/`) reuse their own 16x16 pixel-art squares in 3D: floors and walls are painted with the same tile pictures (`src/world3d/textured.ts`), and decorations become thick little pixel cut-outs that turn to face the camera (`src/world3d/standees.ts`). Big decorations Layne can walk on (rugs, mats) lie flat on the floor.
