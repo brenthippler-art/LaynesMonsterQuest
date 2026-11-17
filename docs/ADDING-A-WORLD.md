@@ -21,6 +21,14 @@ flat unless they set `stand3d`. See "3D worlds" in `CLAUDE.md`.
   highest walkable square of each realm (needs `map.ground`). You can add your own spots too,
   like the stepping stones in `src/worlds/woods/stones.ts`.
 
+A **building world** does the same from its plan (see `src/worlds/zoo/`):
+- `hops: ['pond', 'canyon']` in `makeBuildingWorld({...})` lists tile names Layne can jump over.
+  Keep them one square wide wherever he should hop across; the "can Layne get everywhere?"
+  check counts a hop over ONE such square.
+- `lookout: true` on a legend character marks a perch (`'1': { tile: 'mossIsle', lookout: true }`).
+- A walkable tile with its own `height3d` (`height3d: 0.4`) is a raised floor: a rock or island
+  he stands up on in 3D. Nothing gets scattered on it.
+
 ## 0. Plan it
 - [ ] Pick an **id** (lowercase, permanent: it goes into saves) and a short **name**.
 - [ ] Pick **9 realms**: an id (lowercase) and ONE short uppercase badge word each (e.g. `KITCHEN`).

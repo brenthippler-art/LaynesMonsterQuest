@@ -8,6 +8,7 @@ import { type BuildingPlan } from './types';
  * Sprinkle each realm's decorations around its rooms, from a seed (so it's the
  * same every visit). Rules:
  *   - never on a doorway, a staircase, the start square, or right next to them
+ *   - never on a lookout, or on a raised floor (a tile with its own `height3d`)
  *   - 'wall' things go against a wall, 'open' things out in the room
  *   - furniture (solid) is only kept if every square Layne could reach before
  *     can still be reached afterwards, so nothing is ever walled off
@@ -54,6 +55,8 @@ export function scatterDecor(
 function fits(plan: BuildingPlan, map: TileMap, x: number, y: number, place: 'wall' | 'open' | 'any', entries: Point[], tileNames: string[]): boolean {
   const i = y * map.width + x;
   if (map.decor[i] || !isWalkable(map, x, y) || nearDoor(map, x, y)) return false;
+  // Keep lookouts clear, and nothing on raised floors (rocks in a pond): in 3D it would sink into them.
+  if (map.lookouts?.some((p) => p.x === x && p.y === y) || plan.tiles[tileNames[map.tiles[i]]]?.height3d) return false;
   if (entries.some((p) => Math.abs(p.x - x) + Math.abs(p.y - y) <= 1)) return false;
   const tileAt = (dx: number, dy: number) => plan.tiles[tileNames[map.tiles[(y + dy) * map.width + x + dx]]];
   const sides = [[1, 0], [-1, 0], [0, 1], [0, -1]].map(([dx, dy]) => tileAt(dx, dy));

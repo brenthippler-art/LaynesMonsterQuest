@@ -32,6 +32,7 @@ export interface TileKind {
   /**
    * 3D worlds: how tall it stands, in tiles (0 = floor, below 0 = water, 1.3 = a wall).
    * Usually left out: it's worked out from the tile's name (see building/height3d.ts).
+   * Set on a WALKABLE tile, Layne stands up on it (a rock in a pond he jumps onto).
    */
   height3d?: number;
 }
@@ -65,6 +66,11 @@ export interface LegendEntry {
   spawn?: boolean;
   /** With `spawn`: which way Layne looks when he first arrives (default: down, toward the screen). */
   face?: 'up' | 'down' | 'left' | 'right';
+  /**
+   * A lookout: a spot where a monster likes to perch and wait (a rock in a pond, a hilltop).
+   * In 3D it gets a gold ring and a floating gem. Nothing is ever scattered on it.
+   */
+  lookout?: boolean;
 }
 
 export interface MapPlan {
@@ -147,4 +153,10 @@ export interface BuildingPlan {
   realms: RealmPlan[];
   /** Things that move (optional). */
   rides?: RidePlan[];
+  /**
+   * Tiles Layne can JUMP over but not walk on (a pond, a canyon), by tile name. Keep them
+   * one square wide wherever he should hop across (the "can Layne get everywhere?" check
+   * counts a hop over ONE such square), and keep a way round on foot everywhere else.
+   */
+  hops?: string[];
 }

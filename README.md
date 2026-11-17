@@ -3,7 +3,7 @@
 A gentle exploring game made for a 6-year-old. Layne picks a world, walks around
 it, and finds original monsters that live in the places that suit them. Every world
 is now Nintendo 64 style 3D (jump, turn the camera, 3D monsters), and the title screen
-opens on a little 3D floating island; the menus keep the NES-style pixel art. Every world has 9 realms and 108 monsters (864 so far).
+opens on a little 3D floating island; the menus keep the NES-style pixel art. Every world has 9 realms and 108 monsters (972 so far).
 
 - **No losing, ever.** A catch that doesn't work out just means the monster hops off to play; you can find it again.
 - **No reading needed.** Icons, pictures and a wordless how-to-play.
@@ -19,7 +19,7 @@ What's in it:
 | | |
 |---|---|
 | Worlds | See the table below. Each world has 9 realms with 12 monsters each (2 rare) |
-| Monsters | 864 original monsters, drawn from parts as 16-bit pixel art |
+| Monsters | 972 original monsters, drawn from parts as 16-bit pixel art |
 | Catching | Tap when the shrinking ring is in the green zone; 3 tries |
 | Monster Book | A tab per world, a section per realm (found / 12); silhouettes for the ones not found yet |
 | Coloring pages | Print any found monster as a line-art coloring page (US Letter), or a whole world or realm from the grown-ups area |
@@ -39,6 +39,7 @@ What's in it:
 | Sunnyside Elementary | `sunnyside` | 90×70 one-story school (drawn as ASCII): a long hallway with rooms off it, the playground out back and the bus loop out front | class, library, lunch, gym, recess, art, music, science, bus | 108 |
 | Big Blue Mart | `bigblue` | 100×96 giant superstore (drawn as ASCII): a huge parking lot out front, a fenced garden center on the left, an auto center on the right, and departments split by shelves inside; you start in the lot facing the doors | parking, garden, auto, produce, bakery, frozen, sports, pets, tools | 108 |
 | Wonderwhirl Park | `wonderwhirl` | 90×72 outdoor theme park (drawn as ASCII): a front gate and little main street at the bottom, paths around a central fountain, the fireworks plaza at the top; the rides really move (coaster, Ferris wheel, carousel, bumper cars, lazy river, fireworks), and the funhouse is a small map through its doors | gate, coaster, carousel, splash, funhouse, wheel, snacks, bumper, fireworks | 108 |
+| The Zoo | `zoo` | 90×72 zoo (drawn as ASCII): the front gate at the bottom, paths to every area, the reptile house in the middle; jump over a one-square moat or canyon onto a rock or island with a monster waiting on its lookout; the aquarium is a small map through its doors, with a glass tunnel and a touch pool | gate, safari, jungle, polar, desert, farm, birds, reptiles, aquarium | 108 |
 
 ### Adding a world, step by step
 

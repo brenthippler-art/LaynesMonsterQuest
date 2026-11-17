@@ -10,6 +10,7 @@ import { type BuildingPlan } from './types';
  *   - the zone templates → which realm each tile is in (stored in map.biome as realm number + 1)
  *   - two characters with the same `link` on two maps → a pair of doors (stairs, ladders)
  *   - the `spawn` character → where Layne starts
+ *   - `hops` tiles → squares he can jump over; `lookout` characters → perches for monsters
  */
 export interface ParsedMaps {
   maps: TileMap[];
@@ -35,6 +36,7 @@ export function parseMaps(plan: BuildingPlan, look: MapLook, tileIds: Map<string
     const map = createMap(mapIdFor(plan.id, mp.name), 'indoor', W, H, outside as Tile);
     map.look = look;
     map.solid = new Uint8Array(W * H);
+    if (plan.hops) map.hops = new Uint8Array(W * H);
 
     for (let y = 0; y < H; y++) {
       for (let x = 0; x < W; x++) {
@@ -48,6 +50,8 @@ export function parseMaps(plan: BuildingPlan, look: MapLook, tileIds: Map<string
         }
         if (entry.link) links.set(entry.link, [...(links.get(entry.link) ?? []), { map, x, y, arrive: entry.arrive }]);
         if (entry.spawn) spawn = { map: map.id, x, y, facing: entry.face };
+        if (map.hops && plan.hops!.includes(entry.tile)) map.hops[i] = 1;
+        if (entry.lookout) (map.lookouts ??= []).push({ x, y });
         const z = mp.zones[y][x];
         if (z !== '.') map.biome[i] = zoneOf.get(z) ?? fail(`zone letter "${z}" at ${x},${y} isn't a realm.`);
       }

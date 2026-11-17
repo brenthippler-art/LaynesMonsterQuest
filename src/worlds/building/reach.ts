@@ -1,9 +1,11 @@
 import { type Point } from '../../player/player';
-import { doorAt, isWalkable, type TileMap } from '../../world/tilemap';
+import { canHop, doorAt, isWalkable, type TileMap } from '../../world/tilemap';
 
 /**
  * "Can Layne get everywhere?" checks, by flood fill: start somewhere, spread to
  * every walkable square next to a reached one, and see what's left over.
+ * A jump counts too: over ONE "hop" square (a strip of pond) to the walkable square
+ * straight across from it (a rock in the middle of the pond).
  */
 const SIDES = [[1, 0], [-1, 0], [0, 1], [0, -1]] as const;
 
@@ -30,6 +32,13 @@ export function floodMap(map: TileMap, starts: Point[]): { seen: Uint8Array; cou
       if (inside && isWalkable(map, x + dx, y + dy) && !seen[j]) {
         seen[j] = 1;
         stack.push(j);
+      }
+      // Hop over one square of water to the other side.
+      const k = j + dy * map.width + dx;
+      const across = x + 2 * dx >= 0 && x + 2 * dx < map.width && y + 2 * dy >= 0 && y + 2 * dy < map.height;
+      if (across && canHop(map, x + dx, y + dy) && isWalkable(map, x + 2 * dx, y + 2 * dy) && !seen[k]) {
+        seen[k] = 1;
+        stack.push(k);
       }
     }
   }

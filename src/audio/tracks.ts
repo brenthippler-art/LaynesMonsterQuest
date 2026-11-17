@@ -28,7 +28,7 @@ export interface Song {
   parts: Part[];
 }
 
-export type SongName = 'title' | 'explore' | 'cave' | 'catch' | 'home' | 'buntown' | 'cherrymart' | 'sunnyside' | 'bigblue' | 'wonderwhirl';
+export type SongName = 'title' | 'explore' | 'cave' | 'catch' | 'home' | 'buntown' | 'cherrymart' | 'sunnyside' | 'bigblue' | 'wonderwhirl' | 'zoo';
 
 export const SONGS: Record<SongName, Song> = {
   // The title screen: bright and bouncy, "let's go on an adventure!". F major, 8 bars of eighth notes.
@@ -281,6 +281,40 @@ export const SONGS: Record<SongName, Song> = {
         volume: 0.05,
         notes: `k - h - h - | k - h - h - | k - h - h - | k - h - h - | k - h - h - | k - h - h - | k - h - h - | k - h - h -
                 k - h - h - | k - h - h - | k - h - h - | k - h - h - | k - h - h - | k - h - h - | k - h - h - | k - h - - -`,
+      },
+    ],
+  },
+
+  // The Zoo: a happy marching tune, like an animal parade going round the paths. F major, 16 bars of 4/4.
+  zoo: {
+    bpm: 132,
+    stepsPerBeat: 2,
+    parts: [
+      {
+        voice: 'pulse',
+        volume: 0.12,
+        notes: `F5 . A5 . C6 . A5 . | Bb5 . G5 . E5 . C5 . | F5 . A5 . C6 . F6 . | E6 . D6 . C6 . . . | D6 . Bb5 . G5 . Bb5 . | A5 . F5 . C5 . F5 . | G5 . A5 . Bb5 . E5 . | F5 . . . - - - -
+                A5 . C6 . F6 . C6 . | D6 . Bb5 . G5 . Bb5 . | C6 . A5 . F5 . A5 . | G5 . . . C5 . . . | F5 . G5 . A5 . Bb5 . | C6 . D6 . C6 . A5 . | G5 . E5 . C5 . E5 . | F5 . . . - - - -`,
+      },
+      {
+        // A bouncy bass, like big animal footsteps: low, high, low, high.
+        voice: 'triangle',
+        volume: 0.22,
+        notes: `F2 . C3 . F2 . C3 . | C3 . G2 . C3 . G2 . | F2 . C3 . F2 . C3 . | C3 . G2 . C3 . G2 . | Bb2 . F3 . Bb2 . F3 . | F2 . C3 . F2 . C3 . | C3 . G2 . C3 . G2 . | F2 . . . - - - -
+                F2 . C3 . F2 . C3 . | Bb2 . F3 . Bb2 . F3 . | F2 . C3 . F2 . C3 . | C3 . G2 . C3 . G2 . | F2 . C3 . F2 . C3 . | F2 . C3 . F2 . C3 . | C3 . G2 . C3 . G2 . | F2 . . . - - - -`,
+      },
+      {
+        // Little off-beat chords, like a toy xylophone in a parade.
+        voice: 'square',
+        volume: 0.05,
+        notes: `- A4 - C5 - A4 - C5 | - G4 - E4 - G4 - E4 | - A4 - C5 - A4 - C5 | - G4 - E4 - G4 - E4 | - Bb4 - D5 - Bb4 - D5 | - A4 - C5 - A4 - C5 | - G4 - E4 - G4 - E4 | - A4 - C5 - - - -
+                - A4 - C5 - A4 - C5 | - Bb4 - D5 - Bb4 - D5 | - A4 - C5 - A4 - C5 | - G4 - E4 - G4 - E4 | - A4 - C5 - A4 - C5 | - A4 - C5 - A4 - C5 | - G4 - E4 - G4 - E4 | - A4 - C5 - - - -`,
+      },
+      {
+        voice: 'drums',
+        volume: 0.05,
+        notes: `k - h - s - h - | k - h - s - h - | k - h - s - h - | k - h - s - h - | k - h - s - h - | k - h - s - h - | k - h - s - h - | k - h - s - - -
+                k - h - s - h - | k - h - s - h - | k - h - s - h - | k - h - s - h - | k - h - s - h - | k - h - s - h - | k - h - s - h - | k - h - s - - -`,
       },
     ],
   },
